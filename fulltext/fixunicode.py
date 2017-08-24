@@ -3,26 +3,27 @@ import re
 import unicodedata
 
 """
-List of ligatures on wikipedia: https://en.wikipedia.org/wiki/Typographic_ligature
+List of ligatures: https://en.wikipedia.org/wiki/Typographic_ligature
 MKB removed the following elements from the list:
       - et	🙰	U+1F670	&#x1F670;
       - ſs, ſz	ẞ, ß	U+00DF	&szlig;
 
 Additional notes:
 * Some classes of characters were listed in the original utf8 fixes but I'm not
-  sure they don't belong elsewhere (end user processing). In these cases, a pass
+  sure they don't belong elsewhere (end user processing). In these cases, pass
   through unidecode should normalize them to proper ascii. They are listed here
   with reasoning:
-        
-  - Ditch combining diacritics http://unicode.org/charts/PDF/U0300.pdf (0x300-0x36F)
+
+  - Ditch combining diacritics http://unicode.org/charts/PDF/U0300.pdf
     r'[\u0300-\u036F]': ''
 
-  - Ditch other chars that sometimes (incorrectly?) appear as combining diacritics
+  - Ditch chars that sometimes (incorrectly?) appear as combining diacritics
     r'(?:\xa8|[\u02C0-\u02DF])': ''
+
+* Should we run ftfy?
 """
 
-ligature_table = \
-"""
+ligature_table = """
 AA, aa	Ꜳ, ꜳ	U+A732, U+A733	&#xA732; &#xA733;
 AE, ae	Æ, æ	U+00C6, U+00E6	&AElig; &aelig;
 AO, ao	Ꜵ, ꜵ	U+A734, U+A735	&#xA734; &#xA735;
@@ -75,11 +76,11 @@ for row in ligature_table.split('\n'):
 unicode_mapping.update({
     # 'ẞ, ß': careful, some use this for \beta
     r'(\B)\u00DF': r'\1ss',
-    
+
     # Additions (manual normalization that we feel is important)
     # unicode space  u'\xa0'  (not \x{0c} = ^L keep!)
     '\xa0': ' ',
-    
+
     # single + double quotes, dash, and asterisk
     r'[\u2018\u2019]': r"'",
     r'[\u201C\u201D]': r'"',
@@ -97,7 +98,7 @@ def fix_unicode(txt: str) -> str:
     Parameters
     ----------
     txt : unicode string
-    
+
     Returns
     -------
     output : unicode string
