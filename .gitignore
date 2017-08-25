@@ -1,0 +1,5 @@
+*.pdf
+*.txt
+__pycache__
+*.pdf2txt
+*.pdftotext

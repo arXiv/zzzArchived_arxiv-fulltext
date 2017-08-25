@@ -1,7 +1,7 @@
 import logging
 
 default_format = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'
-default_level = logging.INFO
+default_level = logging.DEBUG
 
 
 def getLogger(name: str, fmt: str=default_format,

@@ -16,8 +16,8 @@ RUN pip3 install --no-cache-dir pdfminer3k==1.3.1
 
 RUN mkdir -p /pdfs
 RUN mkdir -p /scripts
-ADD scripts /scripts
+ADD fulltext /scripts
 
 VOLUME ["/pdfs/"]
 
-CMD ["python3", "/scripts/launch.py"]
+CMD ["python3", "/scripts/launch.py", "/pdfs"]

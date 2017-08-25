@@ -5,10 +5,10 @@ import shlex
 
 from subprocess import check_output, CalledProcessError, TimeoutExpired
 
-import logging
+import logger
 import fixunicode
 
-log = logging.getLogger('fulltext')
+log = logger.getLogger('fulltext')
 TIMELIMIT = 10*60
 
 PDF2TXT = 'pdf2txt.py'
@@ -64,6 +64,7 @@ def run_pdf2txt(pdffile: str, timelimit: int=TIMELIMIT, options: str=''):
     output : str
         Full plain text output
     """
+    log.debug('Running {} on {}'.format(PDF2TXT, pdffile))
     tmpfile = reextension(pdffile, 'pdf2txt')
 
     cmd = '{cmd} {options} -o {output} {pdf}'.format(
@@ -94,6 +95,7 @@ def run_pdftotext(pdffile: str, timelimit: int=TIMELIMIT) -> str:
     output : str
         Full plain text output
     """
+    log.debug('Running {} on {}'.format(PDFTOTEXT, pdffile))
     tmpfile = reextension(pdffile, 'pdftotxt')
 
     cmd = '{cmd} {pdf} {output}'.format(
@@ -193,6 +195,8 @@ def convert_directory(path):
     """
     outlist = []
 
+    log.info(os.path.join(path, '*.pdf'))
+    log.info(glob.glob(os.path.join(path, '*.pdf')))
     for pdffile in glob.glob(os.path.join(path, '*.pdf')):
         txtfile = reextension(pdffile, 'txt')
 
@@ -206,6 +210,8 @@ def convert_directory(path):
             with open(txtfile, 'w') as f:
                 f.write(text)
         except Exception as e:
+            log.error("Conversion failed for '{}'".format(pdffile))
+            log.exception(e)
             continue
 
         outlist.append(pdffile)
