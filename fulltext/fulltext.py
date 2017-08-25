@@ -1,5 +1,6 @@
 import os
 import re
+import glob
 import shlex
 
 from subprocess import check_output, CalledProcessError, TimeoutExpired
@@ -10,11 +11,17 @@ import fixunicode
 log = logging.getLogger('fulltext')
 TIMELIMIT = 10*60
 
-PDF2TXT = 'pdf2txt'
+PDF2TXT = 'pdf2txt.py'
 PDFTOTEXT = 'pdftotext'
 
 RE_STAMP = r'(arXiv:.{20,60}\s\d{1,2}\s[A-Z][a-z]{2}\s\d{4})'
 RE_REPEATS = r'(\(cid:\d+\)|lllll|\.\.\.\.\.|\*\*\*\*\*)'
+
+
+def reextension(filename: str, extension: str) -> str:
+    """ Give a filename a new extension """
+    name, _ = os.path.splitext(filename)
+    return '{}.{}'.format(name, extension)
 
 
 def average_word_length(txt):
@@ -57,8 +64,7 @@ def run_pdf2txt(pdffile: str, timelimit: int=TIMELIMIT, options: str=''):
     output : str
         Full plain text output
     """
-    name, ext = os.path.splitext(pdffile)
-    tmpfile = '{}.pdf2txt'.format(name)
+    tmpfile = reextension(pdffile, 'pdf2txt')
 
     cmd = '{cmd} {options} -o {output} {pdf}'.format(
         cmd=PDF2TXT, options=options, output=tmpfile, pdf=pdffile
@@ -88,8 +94,7 @@ def run_pdftotext(pdffile: str, timelimit: int=TIMELIMIT) -> str:
     output : str
         Full plain text output
     """
-    name, ext = os.path.splitext(pdffile)
-    tmpfile = '{}.pdftotxt'.format(name)
+    tmpfile = reextension(pdffile, 'pdftotxt')
 
     cmd = '{cmd} {pdf} {output}'.format(
         cmd=PDFTOTEXT, pdf=pdffile, output=tmpfile
@@ -169,3 +174,39 @@ def fulltext(pdffile: str, timelimit: int=TIMELIMIT):
         )
 
     return output
+
+def convert_directory(path):
+    """
+    Convert all pdfs in a given `path` to full plain text. For each pdf, a file
+    of the same name but extension .txt will be created. If that file exists,
+    it will be skipped.
+
+    Parameters
+    ----------
+    path : str
+        Directory in which to search for pdfs and convert to text
+
+    Returns
+    -------
+    output : list of str
+        List of converted files 
+    """
+    outlist = []
+
+    for pdffile in glob.glob(os.path.join(path, '*.pdf')):
+        txtfile = reextension(pdffile, 'txt')
+
+        if os.path.exists(txtfile):
+            continue
+
+        # we don't want this function to stop half way because of one failed
+        # file so just charge onto the next one
+        try:
+            text = fulltext(pdffile)
+            with open(txtfile, 'w') as f:
+                f.write(text)
+        except Exception as e:
+            continue
+
+        outlist.append(pdffile)
+    return outlist
