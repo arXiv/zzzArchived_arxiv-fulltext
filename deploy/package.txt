@@ -5,3 +5,4 @@ appspec.yml
 fulltext.wsgi
 requirements.txt
 run_consumer.py
+.ebextensions
