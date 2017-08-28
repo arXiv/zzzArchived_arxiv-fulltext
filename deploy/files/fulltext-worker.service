@@ -1,0 +1,11 @@
+[Unit]
+Description=Worker for fulltext Service
+
+[Service]
+Type=notify
+ExecStart=/opt/fulltext/bin/start_worker
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+RestartSec=42s
+RestartPreventExitStatus=255

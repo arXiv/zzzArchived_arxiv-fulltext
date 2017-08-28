@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# fulltext-consumer          FullText Service Notification Consumer
+#
+# chkconfig: 2345 90 60
+# description: Runs the Kinesis notification consumer for the fulltext service.
+#
+
+case "$1" in
+start)
+   sudo /sbin/runuser fulltext-agent -s /bin/bash -c "/opt/fulltext/bin/start_kcl > /tmp/fulltext-agent.pid"
+   ;;
+stop)
+   kill `cat /tmp/fulltext-agent.pid`
+   rm /tmp/fulltext-agent.pid
+   ;;
+restart)
+   $0 stop
+   $0 start
+   ;;
+status)
+   if [ -e /tmp/fulltext-agent.pid ]; then
+      echo fulltext agent is running, pid=`cat /tmp/fulltext-agent.pid`
+   else
+      echo fulltext agent is NOT running
+      exit 1
+   fi
+   ;;
+*)
+   echo "Usage: $0 {start|stop|status|restart}"
+esac
+
+exit 0
