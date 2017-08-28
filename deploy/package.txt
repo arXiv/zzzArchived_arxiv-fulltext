@@ -1,0 +1,7 @@
+deploy
+fulltext
+app.py
+appspec.yml
+fulltext.wsgi
+requirements.txt
+run_consumer.py

@@ -20,4 +20,4 @@ ADD fulltext /scripts
 
 VOLUME ["/pdfs/"]
 
-CMD ["python3", "/scripts/launch.py", "/pdfs"]
+CMD /bin/bash /scripts/extract.sh

@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# fulltext-worker          FullText Service Worker
+#
+# chkconfig: 2345 90 60
+# description: Extracts fulltext from PDFs
+#
+
+case "$1" in
+start)
+   sudo /sbin/runuser fulltext-worker -s /bin/bash -c "/opt/fulltext/bin/start_worker > /tmp/fulltext-worker.pid"
+   ;;
+stop)
+   kill `cat /tmp/fulltext-worker.pid`
+   rm /tmp/fulltext-worker.pid
+   ;;
+restart)
+   $0 stop
+   $0 start
+   ;;
+status)
+   if [ -e /tmp/fulltext-worker.pid ]; then
+      echo fulltext worker is running, pid=`cat /tmp/fulltext-worker.pid`
+   else
+      echo fulltext worker is NOT running
+      exit 1
+   fi
+   ;;
+*)
+   echo "Usage: $0 {start|stop|status|restart}"
+esac
+
+exit 0

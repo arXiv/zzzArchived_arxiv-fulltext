@@ -177,6 +177,7 @@ def fulltext(pdffile: str, timelimit: int=TIMELIMIT):
 
     return output
 
+
 def convert_directory(path):
     """
     Convert all pdfs in a given `path` to full plain text. For each pdf, a file
@@ -191,7 +192,7 @@ def convert_directory(path):
     Returns
     -------
     output : list of str
-        List of converted files 
+        List of converted files
     """
     outlist = []
 
@@ -216,3 +217,31 @@ def convert_directory(path):
 
         outlist.append(pdffile)
     return outlist
+
+
+def convert(path: str) -> str:
+    """
+    Convert a single PDF to text.
+
+    Parameters
+    ----------
+    path : str
+        Location of a PDF file.
+
+    Returns
+    -------
+    str
+        Location of text file.
+    """
+    if not os.path.exists(path):
+        raise RuntimeError('No such path: %s' % path)
+    outpath = reextension(path, 'txt')
+    try:
+        content = fulltext(path)
+        with open(outpath, 'w') as f:
+            f.write(content)
+    except Exception as e:
+        msg = "Conversion failed for '%s'" % path
+        log.error(msg)
+        raise RuntimeError(msg) from e
+    return outpath
