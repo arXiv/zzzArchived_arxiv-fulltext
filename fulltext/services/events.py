@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class ExtractionEventSession(object):
     """Commemorates events for exaction on arXiv documents."""
 
-    table_name = 'FullTextExtractionEvents'
+    table_name = 'FullTextExtractionProgress'
 
     REQUESTED = 'REQU'
     FAILED = 'FAIL'
@@ -22,13 +22,14 @@ class ExtractionEventSession(object):
     STATES = (REQUESTED, FAILED, COMPLETED)
 
     def __init__(self, endpoint_url: str, aws_access_key: str,
-                 aws_secret_key: str, region_name: str) -> None:
+                 aws_secret_key: str, region_name: str, version: str) -> None:
         """Set up remote table."""
         self.dynamodb = boto3.resource('dynamodb',
                                        region_name=region_name,
                                        endpoint_url=endpoint_url,
                                        aws_access_key_id=aws_access_key,
                                        aws_secret_access_key=aws_secret_key)
+        self.version = version
         try:
             self._create_table()
         except ClientError as e:
@@ -41,12 +42,12 @@ class ExtractionEventSession(object):
         table = self.dynamodb.create_table(
             TableName=self.table_name,
             KeySchema=[
-                {'AttributeName': 'sequence', 'KeyType': 'HASH'},
-                {'AttributeName': 'created', 'KeyType': 'RANGE'}
+                {'AttributeName': 'document', 'KeyType': 'HASH'},
+                {'AttributeName': 'version', 'KeyType': 'RANGE'}
             ],
             AttributeDefinitions=[
-                {"AttributeName": 'sequence', "AttributeType": "S"},
-                {"AttributeName": 'created', "AttributeType": "S"}
+                {"AttributeName": 'document', "AttributeType": "S"},
+                {'AttributeName': 'version', 'AttributeType': 'S'}
             ],
             ProvisionedThroughput={    # TODO: make this configurable.
                 'ReadCapacityUnits': 5,
@@ -56,8 +57,8 @@ class ExtractionEventSession(object):
         waiter = table.meta.client.get_waiter('table_exists')
         waiter.wait(TableName=self.table_name)
 
-    def create(self, sequence_id: int, state: str=REQUESTED,
-               document_id: str=None, **extra) -> None:
+    def update_or_create(self, sequence_id: int, state: str=REQUESTED,
+                         document_id: str=None, **extra) -> None:
         """
         Create a new extraction event entry.
 
@@ -74,15 +75,27 @@ class ExtractionEventSession(object):
         if state not in ExtractionEventSession.STATES:
             raise ValueError('Invalid state: %s' % state)
 
-        entry = dict(extra)
-        entry.update({
-            'sequence': str(sequence_id),
-            'created': datetime.now().isoformat(),
-            'document': document_id,
-            'state': state,
+        _attributeValues = dict(extra)
+        _attributeValues.update({
+            ':seq': str(sequence_id),
+            ':updated': datetime.now().isoformat(),
+            ':state': state,
         })
+        _attributeNames = {
+            '#seq': 'sequence',
+            '#upd': 'updated',
+            '#st': 'state'
+        }
+        _key = {'document': document_id, 'version': self.version}
+        _updateExpression = ', '.join(['SET #seq=:seq',
+                                       '#upd=:updated',
+                                       '#st=:state'])
+
         try:
-            self.table.put_item(Item=entry)
+            self.table.update_item(Key=_key,
+                                   UpdateExpression=_updateExpression,
+                                   ExpressionAttributeNames=_attributeNames,
+                                   ExpressionAttributeValues=_attributeValues)
         except ClientError as e:
             raise IOError('Failed to create: %s' % e) from e
 
@@ -121,6 +134,7 @@ class ExtractionEvents(object):
         app.config.setdefault('AWS_ACCESS_KEY_ID', 'asdf1234')
         app.config.setdefault('AWS_SECRET_ACCESS_KEY', 'fdsa5678')
         app.config.setdefault('FULLTEXT_AWS_REGION', 'us-east-1')
+        app.config.setdefault('VERSION', 'none')
 
     def get_session(self) -> None:
         try:
@@ -128,13 +142,15 @@ class ExtractionEvents(object):
             aws_access_key = self.app.config['AWS_ACCESS_KEY_ID']
             aws_secret_key = self.app.config['AWS_SECRET_ACCESS_KEY']
             region_name = self.app.config['FULLTEXT_AWS_REGION']
+            version = self.app.config['VERSION']
         except (RuntimeError, AttributeError) as e:    # No app context.
             endpoint_url = os.environ.get('FULLTEXT_DYNAMODB_ENDPOINT', None)
             aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID', 'asdf')
             aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', 'fdsa')
             region_name = os.environ.get('FULLTEXT_AWS_REGION', 'us-east-1')
+            version = os.environ.get('VERSION', 'none')
         return ExtractionEventSession(endpoint_url, aws_access_key,
-                                      aws_secret_key, region_name)
+                                      aws_secret_key, region_name, version)
 
     @property
     def session(self):

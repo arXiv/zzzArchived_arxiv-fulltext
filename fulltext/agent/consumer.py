@@ -113,8 +113,8 @@ class RecordProcessor(processor.RecordProcessorBase):
 
         document_id = deserialized.get('document_id')
         try:
-            self.events.session.create(sequence_number,
-                                       document_id=document_id)
+            self.events.session.update_or_create(sequence_number,
+                                                 document_id=document_id)
         except IOError as e:
             # If we can't connect, there is no reason to proceed. Make noise.
             msg = "Could not connect to extraction events database: %s" % e

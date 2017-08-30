@@ -87,11 +87,12 @@ def extract_fulltext(document_id: str, sequence_number: int) -> None:
 
 def create_failed_event(document_id: str, sequence_id: int, *args) -> dict:
     """Commemorate extraction failure."""
+    eventSession = events.session
     metrics.session.report('ProcessingSucceeded', 0.)
     try:
-        event_data = events.session.create(sequence_id,
-                                           state=events.session.FAILED,
-                                           document_id=document_id)
+        event_data = eventSession.update_or_create(sequence_id,
+                                                   state=eventSession.FAILED,
+                                                   document_id=document_id)
     except IOError as e:
         msg = 'Failed to store failed state for %s: %s' % (document_id, e)
         logger.error(msg)
@@ -101,13 +102,14 @@ def create_failed_event(document_id: str, sequence_id: int, *args) -> dict:
 
 def create_success_event(document_id: str, sequence_id: int=-1) -> dict:
     """Commemorate extraction success."""
+    eventSession = events.session
     metrics.session.report('ProcessingSucceeded', 1.)
     if sequence_id == -1:   # Legacy message.
         return
     try:
-        data = events.session.create(sequence_id,
-                                     state=events.session.COMPLETED,
-                                     document_id=document_id)
+        data = eventSession.update_or_create(sequence_id,
+                                             state=eventSession.COMPLETED,
+                                             document_id=document_id)
     except IOError as e:
         msg = 'Failed to store success state for %s: %s' % (document_id, e)
         logger.error(msg)
