@@ -3,5 +3,5 @@ source /opt/fulltext/venv/bin/activate
 source /opt/fulltext/secrets
 export PATH="/opt/fulltext/arxiv-fulltext:$PATH"
 cd /opt/fulltext/arxiv-fulltext
-/opt/fulltext/venv/bin/celery worker -A fulltext --loglevel=INFO -E -P solo >> /var/log/fulltext-worker.log 2>&1&
+/opt/fulltext/venv/bin/celery worker -A fulltext --loglevel=INFO -E --concurrency=10 >> /var/log/fulltext-worker.log 2>&1&
 echo $!
