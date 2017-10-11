@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  test-redis:
+    image: redis
+    container_name: test-redis
+    networks:
+      - test
+  test-localstack:
+    image: atlassianlabs/localstack
+    container_name: test-localstack
+    networks:
+      - test
+    environment:
+      USE_SSL: 'false'
+      DEBUG: 'true'
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile-worker
+    environment:
+      REDIS_ENDPOINT: "test-redis:6379"
+      AWS_ACCESS_KEY_ID: "foo"
+      AWS_SECRET_ACCESS_KEY: "bar"
+      CLOUDWATCH_ENDPOINT: "http://test-localstack:4582"
+      DYNAMODB_ENDPOINT: "http://test-localstack:4569"
+      DYNAMODB_VERIFY: "false"
+      CLOUDWATCH_VERIFY: "false"
+      FULLTEXT_DOCKER_IMAGE: "fulltext:test"
+      LOGLEVEL: 10
+    networks:
+      - test
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/pdfs:/tmp/pdfs
+    depends_on:
+      - test-redis
+      - test-localstack
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile-api
+    environment:
+      REDIS_ENDPOINT: "test-redis:6379"
+      AWS_ACCESS_KEY_ID: "foo"
+      AWS_SECRET_ACCESS_KEY: "bar"
+      CLOUDWATCH_ENDPOINT: "http://test-localstack:4582"
+      DYNAMODB_ENDPOINT: "http://test-localstack:4569"
+      DYNAMODB_VERIFY: "false"
+      CLOUDWATCH_VERIFY: "false"
+      LOGLEVEL: 10
+    ports:
+      - "8000:8000"
+    networks:
+      - test
+    depends_on:
+      - test-redis
+      - test-localstack
+      - worker
+
+
+networks:
+  test:

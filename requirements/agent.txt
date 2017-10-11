@@ -1,0 +1,6 @@
+simplejson==3.11.1
+boto3==1.4.4
+jsonschema==2.6.0
+amazon-kclpy==1.4.4
+localstack==0.8.0
+requests==2.18.4

@@ -10,12 +10,16 @@ class MetricsSession(object):
 
     namespace = 'arXiv/FullText'
 
-    def __init__(self, endpoint_url: str, aws_access_key: str,
-                 aws_secret_key: str, region_name: str) -> None:
+    def __init__(self, endpoint_url: str=None, aws_access_key: str=None,
+                 aws_secret_key: str=None, aws_session_token: str=None,
+                 region_name: str=None, verify: bool=True) -> None:
+        """Initialize with AWS configuration."""
         self.cloudwatch = boto3.client('cloudwatch', region_name=region_name,
                                        endpoint_url=endpoint_url,
                                        aws_access_key_id=aws_access_key,
-                                       aws_secret_access_key=aws_secret_key)
+                                       aws_secret_access_key=aws_secret_key,
+                                       aws_session_token=aws_session_token,
+                                       verify=verify)
 
     def report(self, metric, value, units=None, dimensions=None):
         """Put data for a metric."""
@@ -35,7 +39,6 @@ class MetricsSession(object):
                                         MetricData=[metric_data])
 
 
-
 class Metrics(object):
     """Provides metric reporting service."""
 
@@ -45,24 +48,30 @@ class Metrics(object):
             self.init_app(app)
 
     def init_app(self, app) -> None:
-        app.config.setdefault('FULLTEXT_CLOUDWATCH_ENDPOINT', None)
-        app.config.setdefault('AWS_ACCESS_KEY_ID', 'asdf1234')
-        app.config.setdefault('AWS_SECRET_ACCESS_KEY', 'fdsa5678')
-        app.config.setdefault('FULLTEXT_AWS_REGION', 'us-east-1')
+        app.config.setdefault('CLOUDWATCH_ENDPOINT', None)
+        app.config.setdefault('AWS_ACCESS_KEY_ID', None)
+        app.config.setdefault('AWS_SECRET_ACCESS_KEY', None)
+        app.config.setdefault('AWS_REGION', 'us-east-1')
+        app.config.setdefault('CLOUDWATCH_VERIFY', 'true')
+        app.config.setdefault('AWS_SESSION_TOKEN', None)
 
     def get_session(self) -> None:
         try:
-            endpoint_url = self.app.config['FULLTEXT_CLOUDWATCH_ENDPOINT']
+            endpoint_url = self.app.config['CLOUDWATCH_ENDPOINT']
+            verify = self.app.config['CLOUDWATCH_VERIFY']
             aws_access_key = self.app.config['AWS_ACCESS_KEY_ID']
             aws_secret_key = self.app.config['AWS_SECRET_ACCESS_KEY']
-            region_name = self.app.config['FULLTEXT_AWS_REGION']
+            region_name = self.app.config['AWS_REGION']
+            aws_session_token = self.app.config['AWS_SESSION_TOKEN']
         except (RuntimeError, AttributeError) as e:    # No app context.
-            endpoint_url = os.environ.get('FULLTEXT_CLOUDWATCH_ENDPOINT', None)
-            aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID', 'asdf')
-            aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', 'fdsa')
-            region_name = os.environ.get('FULLTEXT_AWS_REGION', 'us-east-1')
+            endpoint_url = os.environ.get('CLOUDWATCH_ENDPOINT', None)
+            aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID', None)
+            aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+            region_name = os.environ.get('AWS_REGION', 'us-east-1')
+            aws_session_token = os.environ.get('AWS_SESSION_TOKEN', None)
+            verify = os.environ.get('CLOUDWATCH_VERIFY', 'true') == 'true'
         return MetricsSession(endpoint_url, aws_access_key, aws_secret_key,
-                              region_name)
+                              aws_session_token, region_name, verify=verify)
 
     @property
     def session(self):

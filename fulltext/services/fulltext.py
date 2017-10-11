@@ -33,7 +33,7 @@ class FullTextSession(object):
 
     def extract_fulltext(self, filename: str, cleanup: bool=False):
         """
-        Extract references from the PDF represented by ``filehandle``.
+        Extract fulltext from the PDF represented by ``filehandle``.
 
         Parameters
         ----------
@@ -48,16 +48,19 @@ class FullTextSession(object):
         stub, ext = os.path.splitext(os.path.basename(filename))
         tmpdir = tempfile.mkdtemp()
 
-        tmppdf = os.path.join(tmpdir, name)
-        shutil.copyfile(filename, tmppdf)
+        # tmppdf = os.path.join(tmpdir, name)
+        pdfpath = os.path.join('/tmp/pdfs', name)
+        shutil.copyfile(filename, pdfpath)
+        logger.info('Copied %s to %s' % (filename, pdfpath))
+        logger.info(str(os.listdir('/tmp/pdfs')))
 
         try:
-            run_docker(self.image, [[tmpdir, '/pdfs']],
-                       args='/scripts/extract.sh /pdfs/%s' % name)
+            run_docker(self.image, [['/tmp/pdfs', '/tmp/pdfs']],
+                       args='/scripts/extract.sh /tmp/pdfs/%s' % name)
         except subprocess.CalledProcessError as e:
             raise RuntimeError('Fulltext failed: %s' % filename) from e
 
-        out = os.path.join(tmpdir, '{}.txt'.format(stub))
+        out = os.path.join('/tmp/pdfs', '{}.txt'.format(stub))
         if not os.path.exists(out):
             raise FileNotFoundError('%s not found, expected output' % out)
         return out

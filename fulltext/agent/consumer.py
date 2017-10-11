@@ -15,10 +15,9 @@ import amazon_kclpy
 from amazon_kclpy import kcl
 from amazon_kclpy.v2 import processor
 from amazon_kclpy.messages import ProcessRecordsInput, ShutdownInput
-from fulltext.process import tasks
-from celery.exceptions import TaskError
 from fulltext.services.events import events
 
+ARXIV_HOME = 'https://arxiv.org'
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +91,17 @@ class RecordProcessor(processor.RecordProcessorBase):
                                  " error was %s" % e)
             time.sleep(self._SLEEP_SECONDS)
 
+    def request_extraction(self, document_id: str) -> None:
+        """Request fulltext extraction via the extraction service API."""
+        try:
+            pdf_url = '%s/pdf/%s' % (ARXIV_HOME, document_id)
+            self.extractor.extract_fulltext(document_id, pdf_url)
+        except Exception as e:
+            msg = '%s: failed to extract fulltext: %s' % (document_id, e)
+            logger.error(msg)
+            raise RuntimeError(msg) from e
+        logger.info('%s: successfully extracted fulltext' % document_id)
+
     def process_record(self, data: bytes, partition_key: bytes,
                        sequence_number: int, sub_sequence_number: int) -> None:
         """
@@ -122,8 +132,8 @@ class RecordProcessor(processor.RecordProcessorBase):
             raise RuntimeError(msg) from e
 
         try:
-            tasks.extract_fulltext.delay(document_id, sequence_number)
-        except (RuntimeError, TaskError) as e:
+            self.request_extraction(document_id)
+        except Exception as e:
             logger.error("Error while processing document: %s" % e)
             logger.error("Data payload: %s" % data)
 

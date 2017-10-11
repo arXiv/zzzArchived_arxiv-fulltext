@@ -1,0 +1,49 @@
+# arxiv/fulltext-worker
+
+FROM ubuntu:zesty
+
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    wget \
+    curl \
+    gcc \
+    g++ \
+    libpython3.6 \
+    python3.6 \
+    python3.6-dev \
+    python3.6-venv \
+ && rm -rf /var/lib/apt/lists/*
+
+#RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+#RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" && apt-get update && apt-cache policy docker-ce && apt-get install -y docker-ce
+RUN curl https://get.docker.com/ > getdocker.sh
+RUN /bin/sh getdocker.sh
+
+
+# Install Python 3.6 and friends.
+RUN wget https://bootstrap.pypa.io/get-pip.py
+RUN python3.6 get-pip.py
+
+# Add Python consumer and configuration.
+ADD requirements/worker.txt /opt/arxiv/requirements.txt
+ADD wsgi.py /opt/arxiv/
+RUN pip install -U pip && pip install -r /opt/arxiv/requirements.txt
+
+ENV PATH "/opt/arxiv:${PATH}"
+VOLUME ["/tmp/pdfs"]
+
+# Runtime configuration.
+ENV AWS_ACCESS_KEY_ID ""
+ENV AWS_SECRET_ACCESS_KEY ""
+ENV REDIS_ENDPOINT ""
+
+# If not set, secrets will not be retrieved.
+ENV SECRETS_BUCKET_NAME ""
+ENV ARXIV_HOME "https://arxiv.org"
+
+ADD fulltext /opt/arxiv/fulltext/
+
+WORKDIR /opt/arxiv
+ENTRYPOINT ["celery", "worker"]
+CMD ["-A", "fulltext.celery", "--loglevel=DEBUG", "-E", "--concurrency=4"]
