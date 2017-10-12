@@ -214,3 +214,5 @@ DYNAMODB_VERIFY = os.environ.get('DYNAMODB_VERIFY', 'true')
 
 SOURCE_WHITELIST = os.environ.get('SOURCE_WHITELIST',
                                   'arxiv.org,export.arxiv.org')
+
+INSTANCE_CREDENTIALS = os.environ.get('INSTANCE_CREDENTIALS', 'true') == 'true'

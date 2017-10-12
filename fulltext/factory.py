@@ -24,8 +24,7 @@ def create_web_app():
     # logging.getLogger('boto').setLevel(logging.DEBUG)
     # logging.getLogger('boto3').setLevel(logging.DEBUG)
     # logging.getLogger('botocore').setLevel(logging.DEBUG)
-    if not app.config.get('AWS_ACCESS_KEY_ID') or \
-            not app.config.get('AWS_SECRET_ACCESS_KEY'):
+    if app.config.get('INSTANCE_CREDENTIALS'):
         credentials.init_app(app)
         credentials.session.get_credentials()
 
@@ -58,8 +57,7 @@ def create_worker_app():
     app.config_from_object(celeryconfig)
     app.config.update(flask_app.config)
 
-    if not app.config.get('AWS_ACCESS_KEY_ID') or \
-            not app.config.get('AWS_SECRET_ACCESS_KEY'):
+    if app.config.get('INSTANCE_CREDENTIALS'):
         credentials.init_app(app)
         credentials.session.get_credentials()
 

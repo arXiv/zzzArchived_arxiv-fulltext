@@ -26,7 +26,7 @@ class RequestExtractionSession(object):
 
     def extract(self, document_id: str, pdf_url: str) -> dict:
         """
-        Request reference extraction.
+        Request fulltext extraction.
 
         Parameters
         ----------
@@ -49,7 +49,7 @@ class RequestExtractionSession(object):
         failed = 0
         start = datetime.now()    # If this runs too long, we'll abort.
         while not response.url.startswith(target_url):
-            if failed > 2:    # TODO: make this configurable?
+            if failed > 8:    # TODO: make this configurable?
                 msg = '%s: cannot get extraction state: %s, %s' % \
                       (document_id, response.status_code, response.content)
                 logger.error(msg)
@@ -63,11 +63,13 @@ class RequestExtractionSession(object):
 
             time.sleep(2 + failed * 2)    # Back off.
             try:
-                response = requests.get(response.url)
+                # Might be a 200-series response with Location header.
+                target = response.headers.get('Location', response.url)
+                response = requests.get(target)
             except Exception as e:
                 msg = '%s: cannot get extraction state: %s' % (document_id, e)
                 logger.error(msg)
-                raise IOError(msg) from e
+                failed += 1
 
             if not response.ok:
                 failed += 1

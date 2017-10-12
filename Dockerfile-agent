@@ -22,12 +22,15 @@ RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python3.6 get-pip.py
 
 # Add Python consumer and configuration.
+ADD requirements/agent.txt /opt/arxiv/requirements.txt
+RUN pip install -U pip && pip install -r /opt/arxiv/requirements.txt
+
 ADD agent.properties /opt/arxiv/
 ADD test.properties /opt/arxiv/
-ADD requirements/agent.txt /opt/arxiv/requirements.txt
 ADD bin/run_consumer.py /opt/arxiv/
 ADD bin/start_agent.sh /opt/arxiv/
-RUN pip install -U pip && pip install -r /opt/arxiv/requirements.txt
+ADD bin/start_agent.py /opt/arxiv/
+
 
 ENV PATH "/opt/arxiv:/opt/arxiv/jars:${PATH}"
 

@@ -17,7 +17,7 @@ class FullTextStoreSession(object):
     def __init__(self, endpoint_url: str, aws_access_key: str,
                  aws_secret_key: str, aws_session_token: str,
                  region_name: str, verify: bool=True,
-                 version: str="0.0") -> None:
+                 version: float=0.0) -> None:
         logger.debug('New session with dynamodb at %s' % endpoint_url)
         self.version = version
         self.dynamodb = boto3.resource('dynamodb', verify=verify,
@@ -49,8 +49,8 @@ class FullTextStoreSession(object):
                 {"AttributeName": 'created', "AttributeType": "S"}
             ],
             ProvisionedThroughput={    # TODO: make this configurable.
-                'ReadCapacityUnits': 500,
-                'WriteCapacityUnits': 500
+                'ReadCapacityUnits': 20,
+                'WriteCapacityUnits': 20
             }
         )
         waiter = table.meta.client.get_waiter('table_exists')
@@ -112,11 +112,10 @@ class FullTextStoreSession(object):
         item = response['Items'][0]
         return {
             'document': item['document'],
-            'version': item.get('version'),
+            'version': float(item.get('version')),
             'created': item['created'],
             'content': gzip.decompress(item['content'].value).decode('utf-8')
         }
-
 
 
 class FullTextStore(object):
@@ -130,7 +129,7 @@ class FullTextStore(object):
     def init_app(self, app) -> None:
         app.config.setdefault('DYNAMODB_ENDPOINT', None)
         app.config.setdefault('AWS_REGION', 'us-east-1')
-        app.config.setdefault('VERSION', 'none')
+        app.config.setdefault('VERSION', "0.0")
         app.config.setdefault('DYNAMODB_VERIFY', 'true')
 
     def get_session(self) -> None:
@@ -147,7 +146,7 @@ class FullTextStore(object):
             aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID', 'asdf')
             aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', 'fdsa')
             region_name = os.environ.get('AWS_REGION', 'us-east-1')
-            version = os.environ.get('VERSION', '0.0')
+            version = os.environ.get('VERSION', "0.0")
             aws_session_token = os.environ.get('AWS_SESSION_TOKEN', None)
             verify = os.environ.get('DYNAMODB_VERIFY', 'true') == 'true'
         return FullTextStoreSession(endpoint_url, aws_access_key,

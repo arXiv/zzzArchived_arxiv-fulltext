@@ -9,13 +9,12 @@ import time
 from fulltext import logging
 import json
 
-from fulltext.factory import create_process_app
-
 import amazon_kclpy
 from amazon_kclpy import kcl
 from amazon_kclpy.v2 import processor
 from amazon_kclpy.messages import ProcessRecordsInput, ShutdownInput
-from fulltext.services.events import events
+from fulltext.services.extractor import requestExtraction
+# from fulltext.services.events import events
 
 ARXIV_HOME = 'https://arxiv.org'
 
@@ -44,10 +43,8 @@ class RecordProcessor(processor.RecordProcessorBase):
         self._largest_seq = (None, None)
         self._largest_sub_seq = None
         self._last_checkpoint_time = None
-        self.proc = create_process_app()
-        self.events = events
-        self.events.init_app(self.proc)
-        logger.info('%s' % self.proc.conf)
+        #self.events = events
+        self.extractor = requestExtraction.session
 
     def initialize(self, initialize_input):
         """Called once by a KCLProcess before any calls to process_records."""
@@ -95,7 +92,7 @@ class RecordProcessor(processor.RecordProcessorBase):
         """Request fulltext extraction via the extraction service API."""
         try:
             pdf_url = '%s/pdf/%s' % (ARXIV_HOME, document_id)
-            self.extractor.extract_fulltext(document_id, pdf_url)
+            self.extractor.extract(document_id, pdf_url)
         except Exception as e:
             msg = '%s: failed to extract fulltext: %s' % (document_id, e)
             logger.error(msg)
@@ -122,14 +119,14 @@ class RecordProcessor(processor.RecordProcessorBase):
             return   # Don't bring down the whole batch.
 
         document_id = deserialized.get('document_id')
-        try:
-            self.events.session.update_or_create(sequence_number,
-                                                 document_id=document_id)
-        except IOError as e:
-            # If we can't connect, there is no reason to proceed. Make noise.
-            msg = "Could not connect to extraction events database: %s" % e
-            logger.error(msg)
-            raise RuntimeError(msg) from e
+        # try:
+        #     self.events.session.update_or_create(sequence_number,
+        #                                          document_id=document_id)
+        # except IOError as e:
+        #     # If we can't connect, there is no reason to proceed. Make noise.
+        #     msg = "Could not connect to extraction events database: %s" % e
+        #     logger.error(msg)
+        #     raise RuntimeError(msg) from e
 
         try:
             self.request_extraction(document_id)

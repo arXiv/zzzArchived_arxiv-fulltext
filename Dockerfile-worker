@@ -42,6 +42,8 @@ ENV REDIS_ENDPOINT ""
 ENV SECRETS_BUCKET_NAME ""
 ENV ARXIV_HOME "https://arxiv.org"
 
+RUN pip install awscli --upgrade
+
 ADD fulltext /opt/arxiv/fulltext/
 
 WORKDIR /opt/arxiv

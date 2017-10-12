@@ -56,7 +56,8 @@ class FullTextSession(object):
 
         try:
             run_docker(self.image, [['/tmp/pdfs', '/tmp/pdfs']],
-                       args='/scripts/extract.sh /tmp/pdfs/%s' % name)
+                       args='/scripts/extract.sh /tmp/pdfs/%s' % name,
+                       aws_login=".amazonaws.com" in self.image)
         except subprocess.CalledProcessError as e:
             raise RuntimeError('Fulltext failed: %s' % filename) from e
 
@@ -100,7 +101,8 @@ class FullText(object):
 
 
 def run_docker(image: str, volumes: list = [], ports: list = [],
-               args: str = '', daemon: bool = False) -> (str, str):
+               args: str = '', daemon: bool = False,
+               aws_login: bool=True) -> (str, str):
     """
     Run a generic docker image.
 
@@ -130,16 +132,12 @@ def run_docker(image: str, volumes: list = [], ports: list = [],
     cmd = 'docker run --rm {} {} {} {} {}'.format(
         opt_user, opt_ports, opt_volumes, image, args
     )
-    cmd = shlex.split(cmd)
+    if aws_login:
+        login = "$(aws ecr get-login --no-include-email --region us-east-1)"
+        cmd = "%s && %s" % (login, cmd)
 
-    if daemon:
-        return subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-
-    result = subprocess.run(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    result = subprocess.run(cmd, stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, shell=True)
     if result.returncode:
         logger.error(
             "Docker image call '{}' returned error {}".format(
