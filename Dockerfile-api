@@ -1,0 +1,45 @@
+# arxiv/fulltext-api
+
+FROM ubuntu:zesty
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    wget \
+    gcc \
+    g++ \
+    libpython3.6 \
+    python3.6 \
+    python3.6-dev \
+    python3.6-venv \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN wget https://bootstrap.pypa.io/get-pip.py
+RUN python3.6 get-pip.py
+
+RUN pip install uwsgi
+
+# Add Python consumer and configuration.
+ADD requirements/web.txt /opt/arxiv/requirements.txt
+ADD wsgi.py /opt/arxiv/
+ADD bin/start_web.sh /opt/arxiv/
+RUN pip install -U pip
+RUN pip install -r /opt/arxiv/requirements.txt
+
+ADD fulltext /opt/arxiv/fulltext/
+
+ENV PATH "/opt/arxiv:${PATH}"
+
+# Runtime configuration.
+ENV AWS_ACCESS_KEY_ID ""
+ENV AWS_SECRET_ACCESS_KEY ""
+
+# If not set, secrets will not be retrieved.
+ENV SECRETS_BUCKET_NAME ""
+ENV ARXIV_HOME "https://arxiv.org"
+ENV REFEXTRACT_ENDPOINT ""
+
+EXPOSE 8000
+
+RUN chmod +x /opt/arxiv/start_web.sh
+
+CMD ["/bin/bash", "/opt/arxiv/start_web.sh"]

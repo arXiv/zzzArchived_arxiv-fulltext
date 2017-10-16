@@ -130,24 +130,24 @@ class ExtractionEvents(object):
             self.init_app(app)
 
     def init_app(self, app) -> None:
-        app.config.setdefault('FULLTEXT_DYNAMODB_ENDPOINT', None)
+        app.config.setdefault('DYNAMODB_ENDPOINT', None)
         app.config.setdefault('AWS_ACCESS_KEY_ID', 'asdf1234')
         app.config.setdefault('AWS_SECRET_ACCESS_KEY', 'fdsa5678')
-        app.config.setdefault('FULLTEXT_AWS_REGION', 'us-east-1')
+        app.config.setdefault('AWS_REGION', 'us-east-1')
         app.config.setdefault('VERSION', 'none')
 
     def get_session(self) -> None:
         try:
-            endpoint_url = self.app.config['FULLTEXT_DYNAMODB_ENDPOINT']
+            endpoint_url = self.app.config['DYNAMODB_ENDPOINT']
             aws_access_key = self.app.config['AWS_ACCESS_KEY_ID']
             aws_secret_key = self.app.config['AWS_SECRET_ACCESS_KEY']
-            region_name = self.app.config['FULLTEXT_AWS_REGION']
+            region_name = self.app.config['AWS_REGION']
             version = self.app.config['VERSION']
         except (RuntimeError, AttributeError) as e:    # No app context.
-            endpoint_url = os.environ.get('FULLTEXT_DYNAMODB_ENDPOINT', None)
+            endpoint_url = os.environ.get('DYNAMODB_ENDPOINT', None)
             aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID', 'asdf')
             aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY', 'fdsa')
-            region_name = os.environ.get('FULLTEXT_AWS_REGION', 'us-east-1')
+            region_name = os.environ.get('AWS_REGION', 'us-east-1')
             version = os.environ.get('VERSION', 'none')
         return ExtractionEventSession(endpoint_url, aws_access_key,
                                       aws_secret_key, region_name, version)

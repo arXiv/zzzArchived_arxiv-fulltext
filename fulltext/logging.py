@@ -2,8 +2,8 @@ import os
 import logging
 
 default_format = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'
-default_level = os.environ.get('FULLTEXT_LOGLEVEL', logging.INFO)
-LOGFILE = os.environ.get('LOGFILE', None)
+default_level = int(os.environ.get('LOGLEVEL', logging.INFO))
+LOGFILE = os.environ.get('LOGFILE')
 
 
 def getLogger(name: str, fmt: str=default_format,
@@ -25,6 +25,8 @@ def getLogger(name: str, fmt: str=default_format,
     logger = logging.getLogger(name)
     logger.setLevel(level)
     if LOGFILE is not None:
+        logger.handlers = []
         logger.addHandler(logging.FileHandler(LOGFILE))
+        logger.propagate = False
     # logger.propagate = False
     return logger

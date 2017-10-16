@@ -8,7 +8,7 @@ import os
 
 
 VERSION = '0.1'
-"""The application version, used to sign extracted references."""
+"""The application version, used to sign extracted fulltext."""
 
 ON = 'yes'
 OFF = 'no'
@@ -103,7 +103,7 @@ logging in debug mode, 'production' will only log in production and 'never'
 disables it entirely.
 """
 
-SERVER_NAME = os.environ.get('SERVER_NAME', None)
+SERVER_NAME = os.environ.get('FULLTEXT_SERVER_NAME', None)
 """
 the name and port number of the server. Required for subdomain support (e.g.:
 'myapp.dev:5000') Note that localhost does not support subdomains so setting
@@ -203,3 +203,16 @@ to be loaded.
 """
 
 # SUBMISSION_DATABASE_URL = os.environ.get('SUBMISSION_DATABASE_URL')
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', 'nope')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', 'nope')
+AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+
+DYNAMODB_ENDPOINT = os.environ.get('DYNAMODB_ENDPOINT', None)
+"""For testing only."""
+DYNAMODB_VERIFY = os.environ.get('DYNAMODB_VERIFY', 'true')
+"""For testing only."""
+
+SOURCE_WHITELIST = os.environ.get('SOURCE_WHITELIST',
+                                  'arxiv.org,export.arxiv.org')
+
+INSTANCE_CREDENTIALS = os.environ.get('INSTANCE_CREDENTIALS', 'true') == 'true'

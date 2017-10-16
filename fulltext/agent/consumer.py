@@ -9,16 +9,14 @@ import time
 from fulltext import logging
 import json
 
-from fulltext.factory import create_process_app
-
 import amazon_kclpy
 from amazon_kclpy import kcl
 from amazon_kclpy.v2 import processor
 from amazon_kclpy.messages import ProcessRecordsInput, ShutdownInput
-from fulltext.process import tasks
-from celery.exceptions import TaskError
-from fulltext.services.events import events
+from fulltext.services.extractor import requestExtraction
+# from fulltext.services.events import events
 
+ARXIV_HOME = 'https://arxiv.org'
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +43,8 @@ class RecordProcessor(processor.RecordProcessorBase):
         self._largest_seq = (None, None)
         self._largest_sub_seq = None
         self._last_checkpoint_time = None
-        self.proc = create_process_app()
-        self.events = events
-        self.events.init_app(self.proc)
-        logger.info('%s' % self.proc.conf)
+        #self.events = events
+        self.extractor = requestExtraction.session
 
     def initialize(self, initialize_input):
         """Called once by a KCLProcess before any calls to process_records."""
@@ -92,6 +88,17 @@ class RecordProcessor(processor.RecordProcessorBase):
                                  " error was %s" % e)
             time.sleep(self._SLEEP_SECONDS)
 
+    def request_extraction(self, document_id: str) -> None:
+        """Request fulltext extraction via the extraction service API."""
+        try:
+            pdf_url = '%s/pdf/%s' % (ARXIV_HOME, document_id)
+            self.extractor.extract(document_id, pdf_url)
+        except Exception as e:
+            msg = '%s: failed to extract fulltext: %s' % (document_id, e)
+            logger.error(msg)
+            raise RuntimeError(msg) from e
+        logger.info('%s: successfully extracted fulltext' % document_id)
+
     def process_record(self, data: bytes, partition_key: bytes,
                        sequence_number: int, sub_sequence_number: int) -> None:
         """
@@ -112,18 +119,18 @@ class RecordProcessor(processor.RecordProcessorBase):
             return   # Don't bring down the whole batch.
 
         document_id = deserialized.get('document_id')
-        try:
-            self.events.session.update_or_create(sequence_number,
-                                                 document_id=document_id)
-        except IOError as e:
-            # If we can't connect, there is no reason to proceed. Make noise.
-            msg = "Could not connect to extraction events database: %s" % e
-            logger.error(msg)
-            raise RuntimeError(msg) from e
+        # try:
+        #     self.events.session.update_or_create(sequence_number,
+        #                                          document_id=document_id)
+        # except IOError as e:
+        #     # If we can't connect, there is no reason to proceed. Make noise.
+        #     msg = "Could not connect to extraction events database: %s" % e
+        #     logger.error(msg)
+        #     raise RuntimeError(msg) from e
 
         try:
-            tasks.extract_fulltext.delay(document_id, sequence_number)
-        except (RuntimeError, TaskError) as e:
+            self.request_extraction(document_id)
+        except Exception as e:
             logger.error("Error while processing document: %s" % e)
             logger.error("Data payload: %s" % data)
 
