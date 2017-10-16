@@ -8,12 +8,13 @@ https://github.com/awslabs/amazon-kinesis-client-python/blob/master/samples/samp
 import time
 from fulltext import logging
 import json
-
+import os
 import amazon_kclpy
 from amazon_kclpy import kcl
 from amazon_kclpy.v2 import processor
 from amazon_kclpy.messages import ProcessRecordsInput, ShutdownInput
 from fulltext.services.extractor import requestExtraction
+from fulltext.services.credentials import credentials
 # from fulltext.services.events import events
 
 ARXIV_HOME = 'https://arxiv.org'
@@ -43,8 +44,10 @@ class RecordProcessor(processor.RecordProcessorBase):
         self._largest_seq = (None, None)
         self._largest_sub_seq = None
         self._last_checkpoint_time = None
-        #self.events = events
         self.extractor = requestExtraction.session
+        self.credentials = credentials
+        if os.environ.get('INSTANCE_CREDENTIALS', 'true') == 'true':
+            self.credentials.session.get_credentials()
 
     def initialize(self, initialize_input):
         """Called once by a KCLProcess before any calls to process_records."""
