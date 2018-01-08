@@ -31,12 +31,11 @@ ADD wsgi.py /opt/arxiv/
 RUN pip install -U pip && pip install -r /opt/arxiv/requirements.txt
 
 ENV PATH "/opt/arxiv:${PATH}"
-VOLUME ["/tmp/pdfs"]
+VOLUME ["/pdfs"]
 
 # Runtime configuration.
 ENV AWS_ACCESS_KEY_ID ""
 ENV AWS_SECRET_ACCESS_KEY ""
-ENV REDIS_ENDPOINT ""
 
 # If not set, secrets will not be retrieved.
 ENV SECRETS_BUCKET_NAME ""
@@ -48,4 +47,4 @@ ADD fulltext /opt/arxiv/fulltext/
 
 WORKDIR /opt/arxiv
 ENTRYPOINT ["celery", "worker"]
-CMD ["-A", "fulltext.celery", "--loglevel=DEBUG", "-E", "--concurrency=4"]
+CMD ["-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=4"]

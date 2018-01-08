@@ -4,10 +4,7 @@ from celery import shared_task
 import os
 from datetime import datetime
 from fulltext import logging
-from fulltext.services.fulltext import extractor
-from fulltext.services.store import store
-from fulltext.services.metrics import metrics
-from fulltext.services.retrieve import retrievePDF
+from fulltext.services import store, retrieve, fulltext, metrics
 from celery.result import AsyncResult
 from celery import current_app
 from celery.signals import after_task_publish
@@ -21,30 +18,25 @@ def extract_fulltext(document_id: str, pdf_url: str) -> None:
     start_time = datetime.now()
     try:
         # Retrieve PDF from arXiv central document store.
-        pdf_path = retrievePDF.session.retrieve(pdf_url, document_id)
+        pdf_path = retrieve.retrieve(pdf_url, document_id)
         if pdf_path is None:
-            metrics.session.report('PDFIsAvailable', 0.)
+            metrics.report('PDFIsAvailable', 0.)
             msg = '%s: no PDF available' % document_id
             logger.info(msg)
             raise RuntimeError(msg)
-        metrics.session.report('PDFIsAvailable', 1.)
+        metrics.report('PDFIsAvailable', 1.)
         logger.info('%s: retrieved PDF' % document_id)
 
         logger.info('Attempting text extraction for %s' % document_id)
-        txt_path = extractor.session.extract_fulltext(pdf_path)
-        logger.info('Text extraction for %s succeeded with %s' %
-                    (document_id, txt_path))
+        content = fulltext.extract_fulltext(pdf_path)
+        logger.info('Text extraction for %s succeeded with %i chars' %
+                    (document_id, len(content)))
 
         os.remove(pdf_path)    # Cleanup.
-        with open(txt_path, encoding='utf-8') as f:
-            content = f.read()
-            store.session.create(document_id, content)
-
-        os.remove(txt_path)    # Cleanup.
-        end_time = datetime.now()
-        metrics.session.report('ProcessingDuration',
-                               (start_time - end_time).microseconds,
-                               units='Microseconds')
+        store.create(document_id, content)
+        duration = (start_time - datetime.now()).microseconds
+        metrics.report('ProcessingDuration', duration, units='Microseconds')
+        logger.debug('Finished processing in %i microseconds', duration)
 
     except Exception as e:
         logger.error('Failed to process %s: %s' % (document_id, e))
@@ -55,7 +47,6 @@ def extract_fulltext(document_id: str, pdf_url: str) -> None:
 
 
 extract_fulltext.async_result = AsyncResult
-
 
 
 @after_task_publish.connect

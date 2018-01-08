@@ -4,8 +4,7 @@ import requests
 import os
 from fulltext import logging
 from urllib.parse import urlparse
-# See http://flask.pocoo.org/docs/0.12/extensiondev/
-from flask import _app_ctx_stack as stack
+from fulltext.context import get_application_config, get_application_global
 import tempfile
 
 logger = logging.getLogger(__name__)
@@ -76,40 +75,34 @@ class RetrievePDFSession(object):
         return pdf_path
 
 
-class RetrievePDF(object):
-    """PDF retrieval from central document store."""
-
-    def __init__(self, app=None):
-        """Set and configure application, if provided."""
-        self.app = app
-        if app is not None:
-            self.init_app(app)
-
-    def init_app(self, app) -> None:
-        """Configure an application instance."""
-        app.config.set_default('SOURCE_WHITELIST',
-                               'arxiv.org,export.arxiv.org')
-
-    def get_session(self) -> None:
-        """Create a new :class:`.RetrievePDFSession`."""
-        try:
-            # endpoint = self.app.config['PDF_ENDPOINT']
-            whitelist = self.app.config['SOURCE_WHITELIST'].split(',')
-        except (RuntimeError, AttributeError) as e:   # No application context.
-            # endpoint = os.environ.get('PDF_ENDPOINT')
-            whitelist = os.environ.get('SOURCE_WHITELIST',
-                                       'arxiv.org,export.arxiv.org').split(',')
-        return RetrievePDFSession(whitelist)
-
-    @property
-    def session(self):
-        """Get or create a :class:`.RetrievePDFSession` for this context."""
-        ctx = stack.top
-        if ctx is not None:
-            if not hasattr(ctx, 'retrieve'):
-                ctx.retrieve = self.get_session()
-            return ctx.retrieve
-        return self.get_session()     # No application context.
+def init_app(app: object=None) -> None:
+    """Configure an application instance."""
+    config = get_application_config(app)
+    config.setdefault('SOURCE_WHITELIST', 'arxiv.org,export.arxiv.org')
 
 
-retrievePDF = RetrievePDF()
+def get_session(app: object=None) -> RetrievePDFSession:
+    """Create a new :class:`.RetrievePDFSession`."""
+    config = get_application_config()
+    whitelist = config.get('SOURCE_WHITELIST', 'arxiv.org,export.arxiv.org')
+    return RetrievePDFSession(whitelist.split(','))
+
+
+def current_session():
+    """Get/create :class:`.RetrievePDFSession` for this context."""
+    g = get_application_global()
+    if g is None:
+        return get_session()
+    if 'retrieve' not in g:
+        g.retrieve = get_session()
+    return g.retrieve
+
+
+def is_valid_url(url: str) -> bool:
+    """Evaluate whether or not a URL is acceptible for retrieval."""
+    return current_session().is_valid_url(url)
+
+
+def retrieve(target: str, document_id: str) -> str:
+    """Retrieve a PDF of a paper from the core arXiv document store."""
+    return current_session().retrieve(target, document_id)

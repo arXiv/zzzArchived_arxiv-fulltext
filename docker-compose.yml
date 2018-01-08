@@ -1,69 +1,69 @@
 version: '3'
 
 services:
-  test-redis:
+  fulltext-test-redis:
     image: redis
-    container_name: test-redis
+    container_name: fulltext-test-redis
     networks:
-      - test
-  test-localstack:
+      - fulltext-test
+  fulltext-test-localstack:
     image: atlassianlabs/localstack
-    container_name: test-localstack
+    container_name: fulltext-test-localstack
     networks:
-      - test
+      - fulltext-test
     ports:
       - "4568:4568"
       - "4569:4569"
     environment:
       USE_SSL: 'true'
       DEBUG: 'true'
-  worker:
+  fulltext-worker:
     build:
       context: .
       dockerfile: Dockerfile-worker
     environment:
-      REDIS_ENDPOINT: "test-redis:6379"
+      REDIS_ENDPOINT: "fulltext-test-redis:6379"
       AWS_ACCESS_KEY_ID: "foo"
       AWS_SECRET_ACCESS_KEY: "bar"
-      CLOUDWATCH_ENDPOINT: "https://test-localstack:4582"
-      DYNAMODB_ENDPOINT: "https://test-localstack:4569"
-      DYNAMODB_VERIFY: "false"
-      CLOUDWATCH_VERIFY: "false"
+      CLOUDWATCH_ENDPOINT: "https://fulltext-test-localstack:4582"
+      DYNAMODB_ENDPOINT: "https://fulltext-test-localstack:4569"
+      DYNAMODB_VERIFY: ""
+      CLOUDWATCH_VERIFY: ""
       FULLTEXT_DOCKER_IMAGE: "fulltext:test"
-      INSTANCE_CREDENTIALS: "false"
+      INSTANCE_CREDENTIALS: ""
       LOGLEVEL: 10
     networks:
-      - test
+      - fulltext-test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp/pdfs:/tmp/pdfs
+      - /pdfs:/pdfs
     depends_on:
-      - test-redis
-      - test-localstack
-  api:
+      - fulltext-test-redis
+      - fulltext-test-localstack
+  fulltext-api:
     build:
       context: .
       dockerfile: Dockerfile-api
-    container_name: api
+    container_name: fulltext-api
     environment:
-      REDIS_ENDPOINT: "test-redis:6379"
+      REDIS_ENDPOINT: "fulltext-test-redis:6379"
       AWS_ACCESS_KEY_ID: "foo"
       AWS_SECRET_ACCESS_KEY: "bar"
-      CLOUDWATCH_ENDPOINT: "https://test-localstack:4582"
-      DYNAMODB_ENDPOINT: "https://test-localstack:4569"
-      DYNAMODB_VERIFY: "false"
-      CLOUDWATCH_VERIFY: "false"
-      INSTANCE_CREDENTIALS: "false"
+      CLOUDWATCH_ENDPOINT: "https://fulltext-test-localstack:4582"
+      DYNAMODB_ENDPOINT: "https://fulltext-test-localstack:4569"
+      DYNAMODB_VERIFY: ""
+      CLOUDWATCH_VERIFY: ""
+      INSTANCE_CREDENTIALS: ""
       LOGLEVEL: 10
     ports:
-      - "8000:8000"
+      - "8002:8000"
     networks:
-      - test
+      - fulltext-test
     depends_on:
-      - test-redis
-      - test-localstack
-      - worker
-  agent:
+      - fulltext-test-redis
+      - fulltext-test-localstack
+      - fulltext-worker
+  fulltext-agent:
     build:
       context: .
       dockerfile: Dockerfile-agent
@@ -73,22 +73,22 @@ services:
       CLOUDWATCH_ENDPOINT: "https://test-localstack:4582"
       DYNAMODB_ENDPOINT: "https://test-localstack:4569"
       KINESIS_ENDPOINT: "https://test-localstack:4568"
-      KINESIS_VERIFY: "false"
-      DYNAMODB_VERIFY: "false"
-      CLOUDWATCH_VERIFY: "false"
+      KINESIS_VERIFY: ""
+      DYNAMODB_VERIFY: ""
+      CLOUDWATCH_VERIFY: ""
       EXTRACTION_ENDPOINT: "http://api:8000"
       LOGLEVEL: 10
       LOGFILE: "/var/log/fulltext-agent-processor.log"
       MODE: "test"
       JAVA_FLAGS: "-Dcom.amazonaws.sdk.disableCertChecking"
       AWS_CBOR_DISABLE: "true"
-      INSTANCE_CREDENTIALS: "false"
+      INSTANCE_CREDENTIALS: ""
     networks:
-      - test
+      - fulltext-test
     depends_on:
-      - test-localstack
-      - worker
-      - api
+      - fulltext-test-localstack
+      - fulltext-worker
+      - fulltext-api
 
 networks:
-  test:
+  fulltext-test:
