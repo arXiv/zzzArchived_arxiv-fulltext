@@ -36,10 +36,8 @@ ENV AWS_SECRET_ACCESS_KEY ""
 # If not set, secrets will not be retrieved.
 ENV SECRETS_BUCKET_NAME ""
 ENV ARXIV_HOME "https://arxiv.org"
-ENV REFEXTRACT_ENDPOINT ""
 
 EXPOSE 8000
 
-RUN chmod +x /opt/arxiv/start_web.sh
-
-CMD ["/bin/bash", "/opt/arxiv/start_web.sh"]
+WORKDIR /opt/arxiv/
+CMD uwsgi --http-socket :8000 -w wsgi -t 3000 --processes 8 --threads 1 -M --async 100 --ugreen --manage-script-name

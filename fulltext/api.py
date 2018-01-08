@@ -2,10 +2,9 @@
 
 from flask import request, Blueprint, Response
 from flask.json import jsonify
-from fulltext.api.controllers import Extraction, Retrieval
-from fulltext import status
+from fulltext import controllers, status
 
-blueprint = Blueprint('fulltext', __name__, url_prefix='')
+blueprint = Blueprint('fulltext', __name__, url_prefix='/fulltext')
 
 
 def best_match(available, default):
@@ -21,19 +20,19 @@ def ok() -> tuple:
     return jsonify({'iam': 'ok'}), status.HTTP_200_OK
 
 
-@blueprint.route('/fulltext', methods=['POST'])
+@blueprint.route('', methods=['POST'])
 def extract_fulltext() -> tuple:
     """Handle requests for reference extraction."""
-    data, status, headers = Extraction().extract(request.get_json(force=True))
+    data, status, headers = controllers.extract(request.get_json(force=True))
     return jsonify(data), status, headers
 
 
-@blueprint.route('/fulltext/<string:doc_id>', methods=['GET'])
+@blueprint.route('/<string:doc_id>', methods=['GET'])
 def retrieve(doc_id):
     """Retrieve full-text content for an arXiv paper."""
     available = ['application/json', 'text/plain']
     content_type = best_match(available, 'application/json')
-    data, status_code = Retrieval().retrieve(doc_id)
+    data, status_code = controllers.retrieve(doc_id)
     # TODO: this should be generalized if we need it in other places.
     if content_type == 'text/plain':
         response_data = Response(data['content'], content_type='text/plain')
@@ -49,5 +48,5 @@ def retrieve(doc_id):
 @blueprint.route('/status/<string:task_id>', methods=['GET'])
 def task_status(task_id: str) -> tuple:
     """Get the status of a reference extraction task."""
-    data, status, headers = Extraction().status(task_id)
+    data, status, headers = controllers.status(task_id)
     return jsonify(data), status, headers

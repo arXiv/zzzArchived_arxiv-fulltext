@@ -5,10 +5,9 @@ import os
 import time
 from datetime import datetime, timedelta
 import json
-from fulltext import logging
-# See http://flask.pocoo.org/docs/0.12/extensiondev/
-from flask import _app_ctx_stack as stack
 from urllib.parse import urljoin
+from fulltext import logging
+from fulltext.context import get_application_config, get_application_global
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +18,20 @@ class RequestExtractionSession(object):
     def __init__(self, endpoint: str) -> None:
         """Set the endpoint for Refextract service."""
         self.endpoint = endpoint
-        response = requests.get(urljoin(self.endpoint, '/status'))
+        self._session = requests.Session()
+        self._adapter = requests.adapters.HTTPAdapter(max_retries=2)
+        self._session.mount('http://', self._adapter)
+
+    def status(self):
+        """Get the status of the extraction service."""
+        try:
+            response = self._session.get(urljoin(self.endpoint,
+                                                 '/fulltext/status'))
+        except IOError:
+            return False
         if not response.ok:
-            raise IOError('Extraction endpoint not available: %s' %
-                          response.content)
+            return False
+        return True
 
     def extract(self, document_id: str, pdf_url: str) -> dict:
         """
@@ -38,13 +47,19 @@ class RequestExtractionSession(object):
         dict
         """
         payload = {'document_id': document_id, 'url': pdf_url}
-        response = requests.post(urljoin(self.endpoint, '/fulltext'),
-                                 data=json.dumps(payload))
+        response = self._session.post(urljoin(self.endpoint, '/fulltext'),
+                                      data=json.dumps(payload))
         if not response.ok:
             raise IOError('Extraction request failed with status %i: %s' %
                           (response.status_code, response.content))
 
         target_url = urljoin(self.endpoint, '/fulltext/%s' % document_id)
+        try:
+            status_url = response.headers['Location']
+        except KeyError:
+            status_url = response.url
+        if status_url == target_url:    # Extraction already performed.
+            return response.json()
 
         failed = 0
         start = datetime.now()    # If this runs too long, we'll abort.
@@ -65,7 +80,7 @@ class RequestExtractionSession(object):
             try:
                 # Might be a 200-series response with Location header.
                 target = response.headers.get('Location', response.url)
-                response = requests.get(target)
+                response = self._session.get(target)
             except Exception as e:
                 msg = '%s: cannot get extraction state: %s' % (document_id, e)
                 logger.error(msg)
@@ -77,36 +92,24 @@ class RequestExtractionSession(object):
         return response.json()
 
 
-class RequestExtraction(object):
-    """Extraction service integration."""
-
-    def __init__(self, app=None):
-        """Set and configure application, if provided."""
-        self.app = app
-        if app is not None:
-            self.init_app(app)
-
-    def init_app(self, app) -> None:
-        """Configure an application instance."""
-        pass
-
-    def get_session(self) -> None:
-        """Create a new :class:`.RequestExtractionSession`."""
-        try:
-            endpoint = self.app.config['EXTRACTION_ENDPOINT']
-        except (RuntimeError, AttributeError) as e:   # No application context.
-            endpoint = os.environ.get('EXTRACTION_ENDPOINT')
-        return RequestExtractionSession(endpoint)
-
-    @property
-    def session(self):
-        """Get/create :class:`.RequestExtractionSession` for this context."""
-        ctx = stack.top
-        if ctx is not None:
-            if not hasattr(ctx, 'extract'):
-                ctx.retrieve = self.get_session()
-            return ctx.retrieve
-        return self.get_session()     # No application context.
+def get_session(app: object = None) -> RequestExtractionSession:
+    """Get a new extraction session."""
+    endpoint = get_application_config(app).get('EXTRACTION_ENDPOINT')
+    if not endpoint:
+        raise RuntimeError('EXTRACTION_ENDPOINT not set')
+    return RequestExtractionSession(endpoint)
 
 
-requestExtraction = RequestExtraction()
+def current_session():
+    """Get/create :class:`.RequestExtractionSession` for this context."""
+    g = get_application_global()
+    if g is None:
+        return get_session()
+    if 'extract' not in g:
+        g.extract = get_session()
+    return g.extract
+
+
+def extract(document_id: str, pdf_url: str) -> dict:
+    """Extract text using the current session."""
+    return current_session().extract(document_id, pdf_url)

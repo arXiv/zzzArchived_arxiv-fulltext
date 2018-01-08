@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import shlex
 import tempfile
-from flask import _app_ctx_stack as stack
+from fulltext.context import get_application_config, get_application_global
 
 from fulltext import logging
 
@@ -46,58 +46,27 @@ class FullTextSession(object):
         """
         fldr, name = os.path.split(filename)
         stub, ext = os.path.splitext(os.path.basename(filename))
-        tmpdir = tempfile.mkdtemp()
-
-        # tmppdf = os.path.join(tmpdir, name)
-        pdfpath = os.path.join('/tmp/pdfs', name)
+        pdfpath = os.path.join('/pdfs', name)
         shutil.copyfile(filename, pdfpath)
         logger.info('Copied %s to %s' % (filename, pdfpath))
-        logger.info(str(os.listdir('/tmp/pdfs')))
+        logger.info(str(os.listdir('/pdfs')))
 
         try:
-            run_docker(self.image, [['/tmp/pdfs', '/tmp/pdfs']],
-                       args='/scripts/extract.sh /tmp/pdfs/%s' % name,
+            run_docker(self.image, [['/pdfs', '/pdfs']],
+                       args='/scripts/extract.sh /pdfs/%s' % name,
                        aws_login=".amazonaws.com" in self.image)
         except subprocess.CalledProcessError as e:
             raise RuntimeError('Fulltext failed: %s' % filename) from e
 
-        out = os.path.join('/tmp/pdfs', '{}.txt'.format(stub))
+        out = os.path.join('/pdfs', '{}.txt'.format(stub))
+        os.remove(pdfpath)
         if not os.path.exists(out):
             raise FileNotFoundError('%s not found, expected output' % out)
-        return out
-
-
-class FullText(object):
-    """FullText integration from fulltext worker application."""
-
-    def __init__(self, app=None):
-        """Set and configure the current application instance, if provided."""
-        self.app = app
-        if app is not None:
-            self.init_app(app)
-
-    def init_app(self, app) -> None:
-        """Configure an application instance."""
-        app.config.setdefault('FULLTEXT_DOCKER_IMAGE', 'arxiv/fulltext')
-
-    def get_session(self) -> FullTextSession:
-        """Generate a new configured :class:`.FullTextSession`."""
-        try:
-            image = self.app.config['FULLTEXT_DOCKER_IMAGE']
-        except (RuntimeError, AttributeError) as e:   # No application context.
-            image = os.environ.get('FULLTEXT_DOCKER_IMAGE',
-                                   'arxiv/fulltext')
-        return FullTextSession(image)
-
-    @property
-    def session(self):
-        """Get or creates a :class:`.FullTextSession` for the current app."""
-        ctx = stack.top
-        if ctx is not None:
-            if not hasattr(ctx, 'fulltext_extractor'):
-                ctx.fulltext_extractor = self.get_session()
-            return ctx.fulltext_extractor
-        return self.get_session()     # No application context.
+        with open(out, encoding='utf-8') as f:
+            content = f.read()
+        os.remove(out.replace('.txt', '.pdf2txt'))
+        os.remove(out)    # Cleanup.
+        return content
 
 
 def run_docker(image: str, volumes: list = [], ports: list = [],
@@ -152,4 +121,29 @@ def run_docker(image: str, volumes: list = [], ports: list = [],
     return result
 
 
-extractor = FullText()
+def init_app(app) -> None:
+    """Configure an application instance."""
+    config = get_application_config(app)
+    config.setdefault('FULLTEXT_DOCKER_IMAGE', 'arxiv/fulltext')
+
+
+def get_session(app: object=None) -> FullTextSession:
+    """Generate a new configured :class:`.FullTextSession`."""
+    config = get_application_config(app)
+    image = config.get('FULLTEXT_DOCKER_IMAGE', 'arxiv/fulltext')
+    return FullTextSession(image)
+
+
+def current_session():
+    """Get/create :class:`.FullTextSession` for this context."""
+    g = get_application_global()
+    if g is None:
+        return get_session()
+    if 'fulltext_extractor' not in g:
+        g.fulltext_extractor = get_session()
+    return g.fulltext_extractor
+
+
+def extract_fulltext(filename: str, cleanup: bool=False):
+    """Extract fulltext from the PDF represented by ``filehandle``."""
+    return current_session().extract_fulltext(filename, cleanup)

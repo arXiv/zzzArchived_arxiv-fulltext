@@ -215,4 +215,14 @@ DYNAMODB_VERIFY = os.environ.get('DYNAMODB_VERIFY', 'true')
 SOURCE_WHITELIST = os.environ.get('SOURCE_WHITELIST',
                                   'arxiv.org,export.arxiv.org')
 
-INSTANCE_CREDENTIALS = os.environ.get('INSTANCE_CREDENTIALS', 'true') == 'true'
+INSTANCE_CREDENTIALS = os.environ.get('INSTANCE_CREDENTIALS', '')
+
+EXTRACTION_ENDPOINT = os.environ.get('EXTRACTION_ENDPOINT', 'http://localhost')
+
+CLOUDWATCH_ENDPOINT = os.environ.get('CLOUDWATCH_ENDPOINT', None)
+CLOUDWATCH_VERIFY = os.environ.get('CLOUDWATCH_VERIFY', 'true')
+
+KINESIS_ENDPOINT = os.environ.get('KINESIS_ENDPOINT', None)
+KINESIS_VERIFY = os.environ.get('KINESIS_VERIFY', 'true')
+
+FULLTEXT_DOCKER_IMAGE = os.environ.get('FULLTEXT_DOCKER_IMAGE', 'arxiv/fulltext')
