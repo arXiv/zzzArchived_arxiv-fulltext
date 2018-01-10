@@ -11,8 +11,8 @@ if __name__ == '__main__':
         sys.exit('No file path specified')
     path = sys.argv[1].strip()
     try:
-        sys.stdout.write('Path: %s\n' % path)
-        sys.stdout.write('Path exists: %s\n' % str(os.path.exists(path)))
+        log.info('Path: %s\n' % path)
+        log.info('Path exists: %s\n' % str(os.path.exists(path)))
         textpath = convert(path)
     except Exception as e:
         sys.exit(str(e))
