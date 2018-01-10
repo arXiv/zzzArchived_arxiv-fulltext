@@ -14,10 +14,9 @@ RUN apt update &&\
 
 RUN pip3 install --no-cache-dir pdfminer3k==1.3.1
 
-RUN mkdir -p /pdfs
 RUN mkdir -p /scripts
 ADD fulltext /scripts
 
-VOLUME ["/pdfs/"]
+VOLUME ["/pdfs"]
 
-CMD ["python3", "/scripts/launch.py", "/pdfs"]
+CMD /bin/bash /scripts/extract.sh

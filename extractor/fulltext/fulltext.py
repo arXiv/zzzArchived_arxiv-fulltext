@@ -177,6 +177,40 @@ def fulltext(pdffile: str, timelimit: int=TIMELIMIT):
 
     return output
 
+
+def sorted_files(globber: str):
+    """
+    Give a globbing expression of files to find. They will be sorted upon
+    return.  This function is most useful when sorting does not provide
+    numerical order,
+
+    e.g.:
+        9 -> 12 returned as 10 11 12 9 by string sort
+
+    In this case use num_sort=True, and it will be sorted by numbers in the
+    string, then by the string itself.
+
+    Parameters
+    ----------
+    globber : str
+        Expression on which to search for files (bash glob expression)
+
+
+    """
+    files = glob.glob(globber)
+    files.sort()
+
+    allfiles = []
+
+    for fn in files:
+        nums = re.findall(r'\d+', fn)
+        data = [int(n) for n in nums] + [fn]
+        allfiles.append(data)
+
+    allfiles = sorted(allfiles)
+    return [f[-1] for f in allfiles]
+
+
 def convert_directory(path):
     """
     Convert all pdfs in a given `path` to full plain text. For each pdf, a file
@@ -191,13 +225,17 @@ def convert_directory(path):
     Returns
     -------
     output : list of str
-        List of converted files 
+        List of converted files
     """
     outlist = []
 
-    log.info(os.path.join(path, '*.pdf'))
-    log.info(glob.glob(os.path.join(path, '*.pdf')))
-    for pdffile in glob.glob(os.path.join(path, '*.pdf')):
+    globber = os.path.join(path, '*.pdf')
+    pdffiles = sorted_files(globber)
+
+    log.info('Searching "{}"...'.format(globber))
+    log.info('Found: {}'.format(pdffiles))
+
+    for pdffile in pdffiles:
         txtfile = reextension(pdffile, 'txt')
 
         if os.path.exists(txtfile):
@@ -216,3 +254,31 @@ def convert_directory(path):
 
         outlist.append(pdffile)
     return outlist
+
+
+def convert(path: str) -> str:
+    """
+    Convert a single PDF to text.
+
+    Parameters
+    ----------
+    path : str
+        Location of a PDF file.
+
+    Returns
+    -------
+    str
+        Location of text file.
+    """
+    if not os.path.exists(path):
+        raise RuntimeError('No such path: %s' % path)
+    outpath = reextension(path, 'txt')
+    try:
+        content = fulltext(path)
+        with open(outpath, 'w') as f:
+            f.write(content)
+    except Exception as e:
+        msg = "Conversion failed for '%s'" % path
+        log.error(msg)
+        raise RuntimeError(msg) from e
+    return outpath

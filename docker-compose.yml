@@ -1,0 +1,94 @@
+version: '3'
+
+services:
+  fulltext-test-redis:
+    image: redis
+    container_name: fulltext-test-redis
+    networks:
+      - fulltext-test
+  fulltext-test-localstack:
+    image: atlassianlabs/localstack
+    container_name: fulltext-test-localstack
+    networks:
+      - fulltext-test
+    ports:
+      - "4568:4568"
+      - "4569:4569"
+    environment:
+      USE_SSL: 'true'
+      DEBUG: 'true'
+  fulltext-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile-worker
+    environment:
+      REDIS_ENDPOINT: "fulltext-test-redis:6379"
+      AWS_ACCESS_KEY_ID: "foo"
+      AWS_SECRET_ACCESS_KEY: "bar"
+      CLOUDWATCH_ENDPOINT: "https://fulltext-test-localstack:4582"
+      DYNAMODB_ENDPOINT: "https://fulltext-test-localstack:4569"
+      DYNAMODB_VERIFY: ""
+      CLOUDWATCH_VERIFY: ""
+      FULLTEXT_DOCKER_IMAGE: "fulltext:test"
+      INSTANCE_CREDENTIALS: ""
+      LOGLEVEL: 10
+    networks:
+      - fulltext-test
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /pdfs:/pdfs
+    depends_on:
+      - fulltext-test-redis
+      - fulltext-test-localstack
+  fulltext-api:
+    build:
+      context: .
+      dockerfile: Dockerfile-api
+    container_name: fulltext-api
+    environment:
+      REDIS_ENDPOINT: "fulltext-test-redis:6379"
+      AWS_ACCESS_KEY_ID: "foo"
+      AWS_SECRET_ACCESS_KEY: "bar"
+      CLOUDWATCH_ENDPOINT: "https://fulltext-test-localstack:4582"
+      DYNAMODB_ENDPOINT: "https://fulltext-test-localstack:4569"
+      DYNAMODB_VERIFY: ""
+      CLOUDWATCH_VERIFY: ""
+      INSTANCE_CREDENTIALS: ""
+      LOGLEVEL: 10
+    ports:
+      - "8002:8000"
+    networks:
+      - fulltext-test
+    depends_on:
+      - fulltext-test-redis
+      - fulltext-test-localstack
+      - fulltext-worker
+  fulltext-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile-agent
+    environment:
+      AWS_ACCESS_KEY_ID: "foo"
+      AWS_SECRET_ACCESS_KEY: "bar"
+      CLOUDWATCH_ENDPOINT: "https://test-localstack:4582"
+      DYNAMODB_ENDPOINT: "https://test-localstack:4569"
+      KINESIS_ENDPOINT: "https://test-localstack:4568"
+      KINESIS_VERIFY: ""
+      DYNAMODB_VERIFY: ""
+      CLOUDWATCH_VERIFY: ""
+      EXTRACTION_ENDPOINT: "http://api:8000"
+      LOGLEVEL: 10
+      LOGFILE: "/var/log/fulltext-agent-processor.log"
+      MODE: "test"
+      JAVA_FLAGS: "-Dcom.amazonaws.sdk.disableCertChecking"
+      AWS_CBOR_DISABLE: "true"
+      INSTANCE_CREDENTIALS: ""
+    networks:
+      - fulltext-test
+    depends_on:
+      - fulltext-test-localstack
+      - fulltext-worker
+      - fulltext-api
+
+networks:
+  fulltext-test:
