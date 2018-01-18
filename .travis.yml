@@ -8,7 +8,9 @@ os:
 python:
   - "3.6"
 script:
-  - $(aws ecr get-login --no-include-email --region us-east-1)
+  - pip install --user awscli
+  - export PATH=$PATH:$HOME/.local/bin
+  - eval $(aws ecr get-login --no-include-email --region us-east-1)
   - pip install -r requirements/test.txt
   - nose2 -s extractor
   - nose2
