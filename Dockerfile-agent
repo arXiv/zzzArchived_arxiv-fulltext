@@ -1,25 +1,6 @@
 # arxiv/fulltext-agent
 
-FROM ubuntu:zesty
-
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    wget \
-    default-jdk \
-    build-essential \
-    autoconf \
-    libtool \
-    pkg-config \
-    gcc \
-    g++ \
-    libpython3.6 \
-    python3.6 \
-    python3.6-dev \
-    python3.6-venv \
- && rm -rf /var/lib/apt/lists/*
-
-RUN wget https://bootstrap.pypa.io/get-pip.py
-RUN python3.6 get-pip.py
+FROM arxiv/flask:latest
 
 # Add Python consumer and configuration.
 ADD requirements/agent.txt /opt/arxiv/requirements.txt
