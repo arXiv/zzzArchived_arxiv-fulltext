@@ -29,8 +29,11 @@ class TestExtractorE2E(TestCase):
             "docker build %s -f %s/Dockerfile -t arxiv/fulltext" % (runpath, runpath),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
-        self.assertEqual(build_result.returncode, 0,
-                         "Extractor builds successfully")
+        self.assertEqual(
+            build_result.returncode,
+            0,
+            "%s\n\n%s" % (build_result.stdout, build_result.stderr)
+        )
 
         extract_result = subprocess.run(
             "docker run -it -v %s:/pdfs arxiv/fulltext /scripts/extract.sh /pdfs/%s" % (pdf_path, pdf_filename),
