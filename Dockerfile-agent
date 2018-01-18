@@ -1,6 +1,6 @@
 # arxiv/fulltext-agent
 
-FROM arxiv/flask:latest
+FROM arxiv/base:latest
 
 # Add Python consumer and configuration.
 ADD requirements/agent.txt /opt/arxiv/requirements.txt

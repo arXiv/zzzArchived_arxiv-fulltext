@@ -1,4 +1,4 @@
-FROM arxiv/flask:latest
+FROM arxiv/base:latest
 
 LABEL maintainer "mkb72@cornell.edu"
 

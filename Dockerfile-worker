@@ -1,6 +1,6 @@
 # arxiv/fulltext-worker
 
-FROM arxiv/flask:latest
+FROM arxiv/base:latest
 
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh

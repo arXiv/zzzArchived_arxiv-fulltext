@@ -6,6 +6,8 @@ import os
 import tempfile
 import shutil
 
+DOCKER_REGISTRY = os.environ.get('DOCKER_REGISTRY', '')
+
 
 class TestExtractorE2E(TestCase):
     """Ensure that the extractor can be built, and performs as expected."""
@@ -17,6 +19,11 @@ class TestExtractorE2E(TestCase):
         shutil.copyfile(os.path.join(basepath, 'pdfs', pdf_filename),
                         os.path.join(pdf_path, pdf_filename))
         runpath, _ = os.path.split(basepath)
+
+        subprocess.run(
+            "docker pull %s/arxiv/base:latest" % DOCKER_REGISTRY,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        )
 
         build_result = subprocess.run(
             "docker build %s -f %s/Dockerfile -t arxiv/fulltext" % (runpath, runpath),

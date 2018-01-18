@@ -1,6 +1,6 @@
 # arxiv/fulltext-api
 
-FROM arxiv/flask:latest
+FROM arxiv/base:latest
 
 RUN pip install uwsgi
 
