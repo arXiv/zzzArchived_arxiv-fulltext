@@ -1,29 +1,9 @@
 # arxiv/fulltext-worker
 
-FROM ubuntu:zesty
+FROM 626657773168.dkr.ecr.us-east-1.amazonaws.com/arxiv/base:latest
 
-
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    wget \
-    curl \
-    gcc \
-    g++ \
-    libpython3.6 \
-    python3.6 \
-    python3.6-dev \
-    python3.6-venv \
- && rm -rf /var/lib/apt/lists/*
-
-#RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-#RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" && apt-get update && apt-cache policy docker-ce && apt-get install -y docker-ce
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh
-
-
-# Install Python 3.6 and friends.
-RUN wget https://bootstrap.pypa.io/get-pip.py
-RUN python3.6 get-pip.py
 
 # Add Python consumer and configuration.
 ADD requirements/worker.txt /opt/arxiv/requirements.txt

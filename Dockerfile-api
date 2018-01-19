@@ -1,20 +1,6 @@
 # arxiv/fulltext-api
 
-FROM ubuntu:zesty
-
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    wget \
-    gcc \
-    g++ \
-    libpython3.6 \
-    python3.6 \
-    python3.6-dev \
-    python3.6-venv \
- && rm -rf /var/lib/apt/lists/*
-
-RUN wget https://bootstrap.pypa.io/get-pip.py
-RUN python3.6 get-pip.py
+FROM 626657773168.dkr.ecr.us-east-1.amazonaws.com/arxiv/base:latest
 
 RUN pip install uwsgi
 
