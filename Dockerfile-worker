@@ -1,6 +1,6 @@
 # arxiv/fulltext-worker
 
-FROM arxiv/base:latest
+FROM 626657773168.dkr.ecr.us-east-1.amazonaws.com/arxiv/base:latest
 
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh

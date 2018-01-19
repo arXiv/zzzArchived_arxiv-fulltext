@@ -1,4 +1,4 @@
-FROM arxiv/base
+FROM 626657773168.dkr.ecr.us-east-1.amazonaws.com/arxiv/base
 
 LABEL maintainer "mkb72@cornell.edu"
 
