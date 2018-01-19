@@ -1,4 +1,4 @@
-FROM arxiv/base:latest
+FROM arxiv/base
 
 LABEL maintainer "mkb72@cornell.edu"
 
