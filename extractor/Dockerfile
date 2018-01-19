@@ -1,10 +1,18 @@
-FROM 626657773168.dkr.ecr.us-east-1.amazonaws.com/arxiv/base
+FROM python:3
 
 LABEL maintainer "mkb72@cornell.edu"
 
-RUN yum -y install poppler-utils
+# install the various packages necessary for python, pdftotext, pdf2txt
+RUN apt update &&\
+    apt install -f -y poppler-utils
+    #apt install -f -y python3 &&\
+    #apt install -f -y python3-pip &&\
+    #apt autoclean -y &&\
+    #apt clean &&\
+    #rm -rf /tmp/* /var/tmp/* &&\
+    #rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir pdfminer3k==1.3.1
+RUN pip3 install --no-cache-dir pdfminer3k==1.3.1
 
 RUN mkdir -p /scripts
 ADD fulltext /scripts

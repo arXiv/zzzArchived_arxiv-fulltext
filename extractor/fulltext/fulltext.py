@@ -275,10 +275,10 @@ def convert(path: str) -> str:
     outpath = reextension(path, 'txt')
     try:
         content = fulltext(path)
-        with open(outpath, 'w') as f:
+        with open(outpath, 'wb') as f:
             f.write(content)
     except Exception as e:
-        msg = "Conversion failed for '%s'" % path
-        log.error(msg)
-        raise RuntimeError(msg) from e
+        msg = "Conversion failed for '%s': %s"
+        log.error(msg, path, e)
+        raise RuntimeError(msg % (path, e)) from e
     return outpath
