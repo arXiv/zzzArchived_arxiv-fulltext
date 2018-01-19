@@ -1,2 +1,2 @@
 #!/bin/bash
-python /scripts/launch_single.py $1
+python36 /scripts/launch_single.py $1
