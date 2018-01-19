@@ -20,13 +20,8 @@ class TestExtractorE2E(TestCase):
                         os.path.join(pdf_path, pdf_filename))
         runpath, _ = os.path.split(basepath)
 
-        subprocess.run(
-            "docker pull %s/arxiv/base:latest" % DOCKER_REGISTRY,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-        )
-
         build_result = subprocess.run(
-            "docker build %s -f %s/Dockerfile -t arxiv/fulltext" % (runpath, runpath),
+            "docker pull %s/arxiv/base:latest && docker build %s -f %s/Dockerfile -t arxiv/fulltext" % (DOCKER_REGISTRY, runpath, runpath),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         self.assertEqual(
@@ -39,8 +34,11 @@ class TestExtractorE2E(TestCase):
             "docker run -it -v %s:/pdfs arxiv/fulltext /scripts/extract.sh /pdfs/%s" % (pdf_path, pdf_filename),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
-        self.assertEqual(extract_result.returncode, 0,
-                         "Extractor runs successfully")
+        self.assertEqual(
+            extract_result.returncode,
+            0,
+            "%s\n\n%s" % (extract_result.stdout, extract_result.stderr)
+        )
 
         txt_path = os.path.join(pdf_path, pdf_filename.replace('.pdf', '.txt'))
         self.assertTrue(os.path.exists(txt_path))
