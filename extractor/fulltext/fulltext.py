@@ -275,7 +275,7 @@ def convert(path: str) -> str:
     outpath = reextension(path, 'txt')
     try:
         content = fulltext(path)
-        with open(outpath, 'wb') as f:
+        with open(outpath, 'w') as f:
             f.write(content)
     except Exception as e:
         msg = "Conversion failed for '%s': %s"
