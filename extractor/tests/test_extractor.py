@@ -20,8 +20,13 @@ class TestExtractorE2E(TestCase):
                         os.path.join(pdf_path, pdf_filename))
         runpath, _ = os.path.split(basepath)
 
+        subprocess.run(
+            "docker pull %s/arxiv/base:latest" % DOCKER_REGISTRY,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        )
+
         build_result = subprocess.run(
-            "docker pull %s/arxiv/base:latest && docker build %s -f %s/Dockerfile -t arxiv/fulltext" % (DOCKER_REGISTRY, runpath, runpath),
+            "(docker images | grep arxiv) && docker build %s -f %s/Dockerfile -t arxiv/fulltext" % (runpath, runpath),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         self.assertEqual(
