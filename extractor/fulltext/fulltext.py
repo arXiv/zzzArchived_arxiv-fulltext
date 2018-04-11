@@ -7,6 +7,7 @@ from subprocess import check_output, CalledProcessError, TimeoutExpired
 
 import logger
 import fixunicode
+import stamp
 
 log = logger.getLogger('fulltext')
 TIMELIMIT = 10*60
@@ -14,7 +15,6 @@ TIMELIMIT = 10*60
 PDF2TXT = 'pdf2txt.py'
 PDFTOTEXT = 'pdftotext'
 
-RE_STAMP = r'(arXiv:.{20,60}\s\d{1,2}\s[A-Z][a-z]{2}\s\d{4})'
 RE_REPEATS = r'(\(cid:\d+\)|lllll|\.\.\.\.\.|\*\*\*\*\*)'
 
 
@@ -161,6 +161,7 @@ def fulltext(pdffile: str, timelimit: int=TIMELIMIT):
         output = run_pdftotext(pdffile, timelimit=None)
 
     output = fixunicode.fix_unicode(output)
+    output = stamp.remove_stamp(output)
     wordlength = average_word_length(output)
 
     if wordlength <= 45:
@@ -168,6 +169,7 @@ def fulltext(pdffile: str, timelimit: int=TIMELIMIT):
 
     output = run_pdf2txt_A(pdffile, timelimit=timelimit)
     output = fixunicode.fix_unicode(output)
+    output = stamp.remove_stamp(output)
     wordlength = average_word_length(output)
 
     if wordlength > 45:
