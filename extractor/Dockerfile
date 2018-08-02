@@ -18,4 +18,4 @@ ADD fulltext /scripts
 
 VOLUME ["/pdfs"]
 
-ENTRYPOINT ["/bin/bash", "/scripts/extract.sh"]
+ENTRYPOINT ["python3.6", "/scripts/launch_single.py"]
