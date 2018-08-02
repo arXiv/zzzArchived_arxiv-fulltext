@@ -26,7 +26,7 @@ class TestConvertToPSV(TestCase):
 
     def test_tidy_text(self):
         """All of the cleanup procedures are applied."""
-        text = PAULI.replace('\n',' \n').split('\n')
+        text = PAULI.replace('\n', ' \n').split('\n')
         expected = [
             'pauli virtanen is scipy benevolent dictator for life bdfl',
             'he says',
