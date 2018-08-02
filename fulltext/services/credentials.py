@@ -7,7 +7,7 @@ import requests
 import werkzeug
 
 from arxiv.base import logging
-from fulltext.context import get_application_config, get_application_global
+from arxiv.base.globals import get_application_config, get_application_global
 
 logger = logging.getLogger(__name__)
 

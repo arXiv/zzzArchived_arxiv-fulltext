@@ -6,7 +6,7 @@ import boto3
 from flask import _app_ctx_stack as stack
 
 from typing import Callable
-from fulltext.context import get_application_config, get_application_global
+from arxiv.base.globals import get_application_config, get_application_global
 from arxiv.base import logging
 from fulltext.services import credentials
 

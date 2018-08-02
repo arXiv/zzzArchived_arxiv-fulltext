@@ -4,7 +4,7 @@ import requests
 import os
 from arxiv.base import logging
 from urllib.parse import urlparse
-from fulltext.context import get_application_config, get_application_global
+from arxiv.base.globals import get_application_config, get_application_global
 import tempfile
 
 logger = logging.getLogger(__name__)
