@@ -2,10 +2,12 @@ import os
 import sys
 sys.path.append(".")#/scripts")
 
-import logger
 import fulltext
+from arxiv.base import logging
 
-log = logger.getLogger('fulltext')
+
+log = logging.getLogger('fulltext')
+
 
 if __name__ == '__main__':
     path = '/pdfs' if len(sys.argv) <= 1 else sys.argv[1]

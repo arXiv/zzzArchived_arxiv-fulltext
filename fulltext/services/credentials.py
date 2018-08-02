@@ -6,7 +6,7 @@ from typing import Tuple
 import requests
 import werkzeug
 
-from fulltext import logging
+from arxiv.base import logging
 from fulltext.context import get_application_config, get_application_global
 
 logger = logging.getLogger(__name__)

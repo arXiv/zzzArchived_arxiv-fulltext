@@ -2,7 +2,7 @@
 
 import requests
 import os
-from fulltext import logging
+from arxiv.base import logging
 from urllib.parse import urlparse
 from fulltext.context import get_application_config, get_application_global
 import tempfile

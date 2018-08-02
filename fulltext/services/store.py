@@ -1,6 +1,6 @@
 """The request table tracks work on arXiv documents."""
 
-from fulltext import logging
+from arxiv.base import logging
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
