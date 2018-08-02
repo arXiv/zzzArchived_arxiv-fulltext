@@ -1,7 +1,7 @@
 import os
 import sys
 # sys.path.append(".")
-from arxiv.base import logging
+import logging
 from fulltext import convert
 
 log = logging.getLogger('fulltext')

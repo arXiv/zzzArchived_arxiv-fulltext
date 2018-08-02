@@ -3,7 +3,7 @@ import sys
 sys.path.append(".")#/scripts")
 
 import fulltext
-from arxiv.base import logging
+import logging
 
 
 log = logging.getLogger('fulltext')

@@ -5,7 +5,7 @@ import shlex
 
 from subprocess import check_output, CalledProcessError, TimeoutExpired
 
-from arxiv.base import logging
+import logging
 import fixunicode
 
 log = logging.getLogger('fulltext')
