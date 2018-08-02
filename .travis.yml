@@ -10,6 +10,7 @@ python:
 script:
   - pip install -U pip pipenv
   - pipenv install
+  - pipenv install nose2
   - pipenv run nose2 -s extractor
   - pipenv run nose2
 after_success:
