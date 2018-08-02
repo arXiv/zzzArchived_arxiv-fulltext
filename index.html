@@ -33,16 +33,33 @@
             
   <div class="section" id="arxiv-fulltext-extraction-service">
 <span id="index"></span><h1>arXiv Fulltext Extraction Service<a class="headerlink" href="#arxiv-fulltext-extraction-service" title="Permalink to this headline">¶</a></h1>
+<p>The arXiv fulltext extraction service provides plain text of arXiv submissions
+and announced papers, for use in QA/QC workflows and to support research.</p>
+<div class="section" id="objectives-requirements">
+<h2>Objectives &amp; Requirements<a class="headerlink" href="#objectives-requirements" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Must be able to extract full text content from any well-formed submission,
+and for all announced arXiv e-prints.</li>
+<li>The public API must only allow access to full text from announced papers.</li>
+<li>A request for full text should return an extraction with the most recent
+version of the application, since our extraction process will improve over
+time.</li>
+<li>Must provide both the raw plain text content and a PSV-tokenized format.</li>
+<li>It must be possible to (re-)extract plain text content for the entire
+corpus.</li>
+<li>Plain text extraction should occur automatically whenever a new e-print is
+announced.</li>
+</ol>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="architecture.html#objectives-requirements">Objectives &amp; Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="architecture.html#context">Context</a></li>
 <li class="toctree-l2"><a class="reference internal" href="architecture.html#containers">Containers</a></li>
 </ul>
 </li>
 </ul>
+</div>
 </div>
 </div>
 <div class="section" id="indices-and-tables">
