@@ -8,8 +8,8 @@ os:
 python:
   - "3.6"
 script:
-  - pip install -r requirements/test.txt
-  - nose2 -s extractor
-  - nose2
+  - pipenv install
+  - pipenv run nose2 -s extractor
+  - pipenv run nose2
 after_success:
   - coveralls
