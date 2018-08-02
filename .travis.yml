@@ -8,6 +8,7 @@ os:
 python:
   - "3.6"
 script:
+  - pip install -U pip pipenv
   - pipenv install
   - pipenv run nose2 -s extractor
   - pipenv run nose2
