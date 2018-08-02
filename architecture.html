@@ -1,0 +1,167 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Architecture &#8212; arXiv AuthN/Z 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="arXiv Fulltext Extraction Service" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="architecture">
+<h1>Architecture<a class="headerlink" href="#architecture" title="Permalink to this headline">¶</a></h1>
+<p>The arXiv fulltext extraction service provides plain text of arXiv submissions
+and announced papers, for use in QA/QC workflows and to support research.</p>
+<div class="section" id="objectives-requirements">
+<h2>Objectives &amp; Requirements<a class="headerlink" href="#objectives-requirements" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Must be able to extract full text content from any well-formed submission,
+and for all announced arXiv e-prints.</li>
+<li>The public API must only allow access to full text from announced papers.</li>
+<li>A request for full text should return an extraction with the most recent
+version of the application, since our extraction process will improve over
+time.</li>
+<li>Must provide both the raw plain text content and a PSV-tokenized format.</li>
+<li>It must be possible to (re-)extract plain text content for the entire
+corpus.</li>
+<li>Plain text extraction should occur automatically whenever a new e-print is
+announced.</li>
+</ol>
+</div>
+<div class="section" id="context">
+<h2>Context<a class="headerlink" href="#context" title="Permalink to this headline">¶</a></h2>
+<p>The fulltext extraction service is used during the submission process as part
+of QA/QC workflows, and after announcement to support indexing and other
+downstream applications.</p>
+<div class="figure" id="id1">
+<span id="figure-context"></span><a class="reference internal image-reference" href="_images/fulltext-service-context.png"><img alt="_images/fulltext-service-context.png" src="_images/fulltext-service-context.png" style="width: 600px;" /></a>
+<p class="caption"><span class="caption-text">System context for the fulltext extraction service.</span></p>
+</div>
+<p>The submission worker process will request fulltext content for submissions by
+making a GET request to the fulltext service. If an extraction for the
+submission using the latest version of the extractor does not exist, the
+service will retrieve the compiled PDF for the submission from the compilation
+service and perform the extraction. The submission worker may force
+re-extraction (e.g. if the submission content changes) by making a POST
+request.</p>
+<p>When a new e-print is announced, the publication process generates a
+notification on a Kinesis stream that is consumed by the extraction service.
+The extraction service retrieves the PDF for the e-print, performs the
+extraction, and makes the result available via its API.</p>
+<p>Clients (including both arXiv services and external API clients) may request
+the latest extraction by making a GET request. If an extraction does not exist
+for the paper using the most recent version of the extraction process, the
+service retrieves the paper and performs the extraction.</p>
+</div>
+<div class="section" id="containers">
+<h2>Containers<a class="headerlink" href="#containers" title="Permalink to this headline">¶</a></h2>
+<p>A web application implemented in Flask handles HTTP requests for
+extractions. When the application cannot find a suitable extraction to fulfill
+the request, or if re-extraction is forced via a POST request, it creates a
+task for a worker process on a Redis queue (using Celery).</p>
+<p>The worker process monitors the Redis queue, and does the work of retrieving
+PDFs, performing extractions, and storing the results.</p>
+<p>A lightweight relational database is used to track the extraction state of
+submissions and announced e-prints. This helps to prevent duplicate extraction
+tasks, and provides a high-level view of what extractions are available or
+in progress. This is also leveraged to perform bulk re-extraction when
+necessary.</p>
+<p>Extractions are stored in a private S3 bucket, and organized by submission or
+e-print ID and extractor version.</p>
+<div class="figure" id="id2">
+<span id="figure-containers"></span><a class="reference internal image-reference" href="_images/fulltext-service-containers.png"><img alt="_images/fulltext-service-containers.png" src="_images/fulltext-service-containers.png" style="width: 600px;" /></a>
+<p class="caption"><span class="caption-text">Container-level view of the fulltext extraction service.</span></p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">arXiv AuthN/Z</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#objectives-requirements">Objectives &amp; Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#context">Context</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#containers">Containers</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">arXiv Fulltext Extraction Service</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv.org.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/architecture.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

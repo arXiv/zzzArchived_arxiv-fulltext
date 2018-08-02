@@ -1,0 +1,278 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Threat model &#8212; arXiv AuthN/Z 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="threat-model">
+<h1>Threat model<a class="headerlink" href="#threat-model" title="Permalink to this headline">¶</a></h1>
+<p>This document gives an overview of the security considerations for arXiv user
+and client sessions, and the services that support authentication and
+authorization. It should be updated as our understanding of relevant threats
+evolves.</p>
+<div class="section" id="environment">
+<h2>Environment<a class="headerlink" href="#environment" title="Permalink to this headline">¶</a></h2>
+<p>End users interact with the arXiv platform primarily via a web browser, on
+either a desktop or a mobile device. During the arXiv-NG project, users may
+interact with components deployed in on-premises infrastructure, or in our
+Kubernetes cluster running in AWS.</p>
+<div class="figure" id="id1">
+<span id="figure-auth-overview"></span><img alt="_static/diagrams/auth-overview.png" src="_static/diagrams/auth-overview.png" />
+<p class="caption"><span class="caption-text">Overview of the authentication and authorization infrastructure during the
+transition from legacy to NG system.</span></p>
+</div>
+<p>For the purposes of this analysis, we assume that:</p>
+<ol class="arabic simple">
+<li>TLS between the client and the on-premises web server, and between the
+client and the load balancer that proxies services in Kubernetes, is secure.</li>
+<li>The user has a baseline level of trust in their own web browser. This
+includes trusting that the web browser properly implements TLS protocols,
+will enforce cookie security, and will enforce common security policies
+such as preventing cross-origin requests.</li>
+<li>Infrastructure both on-premises and in AWS are properly configured for
+security, making direct access to protected resources (e.g. databases,
+session store) from the public internet impossible.</li>
+</ol>
+</div>
+<div class="section" id="protected-data">
+<h2>Protected data<a class="headerlink" href="#protected-data" title="Permalink to this headline">¶</a></h2>
+<p>Here are some of the kinds of data that we must protect from unauthorized
+access and/or manipulation:</p>
+<ol class="arabic simple">
+<li>Account usernames and passwords.</li>
+<li>Information about the user that they have not chosen to share publicly. For
+example, their e-mail address.</li>
+<li>Submission metadata and files.</li>
+</ol>
+</div>
+<div class="section" id="threats-risks">
+<h2>Threats/risks<a class="headerlink" href="#threats-risks" title="Permalink to this headline">¶</a></h2>
+<p>Potential attack vectors and failure scenarios include:</p>
+<ol class="arabic simple">
+<li><strong>Click-jacking.</strong> For example, a malicious site or application might
+attempt to display sensitive pages on the arXiv site in an iframe, and
+record or manipulate UI events to intercept information or perform
+unauthorized actions.</li>
+<li><strong>Cross-site scripting (XSS).*</strong> This encompasses a broad array of attacks
+that involve injection and execution of malicious code in another user’s
+browser. Of particular interest in form-based views is a reflected XSS
+attack, in which malicious code is passed as input that is then reflected
+without sanitization on an error page or other message.</li>
+<li><strong>Replay attacks.</strong> A malicious site or application might trick users into
+issuing a fraudulent request to the arXiv site. For example, a malicious
+site might provide a fraudulent login form that generates POST requests
+to the arXiv login page, but also records the user’s login credentials.
+Another example is an attack that causes a user to issue a request that
+results in deletion or corruption of content, such as submission content.</li>
+<li><strong>Direct impersonation via a session cookie.</strong> An attacker might get access
+to a cookie containing a key for an authenticated session, and attempt to
+impersonate a user by sending the cookie in their own requests.</li>
+<li><strong>Direct impersonation via a permanent login token.</strong> Users have the option
+of  being issued a permanent login token, which is stored in a cookie. That
+token can be used to automatically log the user in on subsequent visits to
+the arXiv site. If an attacker were to gain access to that token, they might
+be able to impersonate the victim by including the token in their own
+requests.</li>
+<li><strong>Leakage in access or application logs.</strong> Access to logs is heavily
+restricted. Nevertheless, access and/or application logs are at a higher
+risk of being  leaked into insecure contexts than other sensitive data. For
+example, a  developer might post an un-sanitized log sample to a message
+board, or send it via a messaging system, while attempting to troubleshoot a
+problem.  For this reason, sensitive data should be prevented from entering
+access and application logs wherever possible.</li>
+<li><strong>Code execution (e.g. SQL injection).</strong> Attackers may attempt to cause
+arXiv software to execute code, such as SQL commands, resulting in
+corruption or exfiltration of sensitive data.</li>
+<li><strong>Brute force login attacks.</strong> An attacker may attempt to gain access to
+another user’s account by simply trying a large volume of username/password
+combinations.</li>
+<li><strong>Programmatic account creation.</strong> It is important that a human user take
+overt and specific action to create an account for themselves. A malicious
+actor may attempt to generate accounts programmatically, which would
+undermine that policy.</li>
+</ol>
+</div>
+<div class="section" id="prevention-design-considerations">
+<h2>Prevention &amp; design considerations<a class="headerlink" href="#prevention-design-considerations" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="same-origin-policy-protections">
+<h3>Same-origin policy protections<a class="headerlink" href="#same-origin-policy-protections" title="Permalink to this headline">¶</a></h3>
+<p>All arXiv applications and services should prevent click-jacking attacks by
+setting the <code class="docutils literal notranslate"><span class="pre">Content-Security-Policy</span></code> and <code class="docutils literal notranslate"><span class="pre">X-Frame-Options</span></code> headers on all
+responses. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Content-Security-Policy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;frame-ancestors &#39;none&#39;&quot;</span>
+<span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Frame-Options&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;SAMEORIGIN&quot;</span>
+</pre></div>
+</div>
+<p>This prevents arXiv pages from being displayed on other sites (e.g. via an
+iframe).</p>
+</div>
+<div class="section" id="cross-site-request-forgery-protection">
+<h3>Cross-Site Request Forgery protection<a class="headerlink" href="#cross-site-request-forgery-protection" title="Permalink to this headline">¶</a></h3>
+<p>The risk of replay attacks or other attacks that involve generating fraudulent
+requests can be mitigated through CSRF protection. This usually involves
+issuing a token to the client that must be included in a subsequent request
+(e.g. when POSTing form data). The <code class="xref py py-mod docutils literal notranslate"><span class="pre">wtforms</span></code> package provides <a class="reference external" href="http://wtforms.readthedocs.io/en/latest/csrf.html#module-wtforms.csrf">tools for
+CSRF protection</a>,
+including an API for implementing a CSRF protection mechanism.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Document CSRF implementation in <code class="xref py py-mod docutils literal notranslate"><span class="pre">arxiv.base</span></code>.</p>
+</div>
+</div>
+<div class="section" id="input-sanitization">
+<h3>Input sanitization<a class="headerlink" href="#input-sanitization" title="Permalink to this headline">¶</a></h3>
+<p>We use <code class="xref py py-mod docutils literal notranslate"><span class="pre">wtforms</span></code> for all form-handling in arXiv-NG applications. By
+default, WTForms uses <a class="reference external" href="https://github.com/pallets/markupsafe">MarkupSafe</a> to
+escape unsafe HTML in all form input. This means that form data accessed in
+templates and other locations should be safe for display without risk of
+reflection XSS attacks.</p>
+<p>We use <code class="xref py py-mod docutils literal notranslate"><span class="pre">sqlalchemy</span></code> to interact with the legacy database and other
+relational databases. We can minimize the risk of SQL injection attacks by
+never writing raw SQL statements, and instead using the SQLAlchemy ORM/DSL
+to build queries.</p>
+</div>
+<div class="section" id="cookie-security">
+<h3>Cookie security<a class="headerlink" href="#cookie-security" title="Permalink to this headline">¶</a></h3>
+<p>Session keys and permanent login tokens that are stored in cookies should be
+set with the following attributes:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">HttpOnly</span></code>: prevents access to the cookie by client-side scripts.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Secure</span></code>: the cookie should only be transmitted via HTTPS.</li>
+<li><code class="docutils literal notranslate"><span class="pre">SameSite</span></code>: prevents sending the cookie with cross-site requests.</li>
+</ul>
+<p>Enforcement of these cookie policies is up to the user’s browser.</p>
+<p>These attributes can be set when using the <code class="xref py py-meth docutils literal notranslate"><span class="pre">flask.Response.set_cookie()</span></code>
+API. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">response</span><span class="o">.</span><span class="n">set_cookie</span><span class="p">(</span><span class="s1">&#39;foocookie&#39;</span><span class="p">,</span> <span class="s1">&#39;secret value&#39;</span><span class="p">,</span> <span class="n">secure</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                    <span class="n">httponly</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">samesite</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In addition, both legacy and NG session cookies are signed with a secret hash.</p>
+<p>In the former case, the cookie is verified by generating a digest from its
+contents along with a salt and comparing it to the digest transmitted in the
+cookie itself.</p>
+<p>In the latter case, the cookie is an encrypted JWT that must be decrypted
+successfully using a secret key. In addition, a <strong>pseudo-random nonce</strong> created
+at the start of the authenticated session is stored in both the session store
+and in the token payload for comparison. This means that a compromised token
+cannot be used to generate a new valid token.</p>
+<p>In both cases, the <strong>IP address</strong> of the client that initiated the
+authenticated  session is stored in the session data. Requests using a valid
+session token  from a different IP address should be considered potentially
+malicious, and  the session invalidated.</p>
+</div>
+<div class="section" id="short-lived-sessions">
+<h3>Short-lived sessions<a class="headerlink" href="#short-lived-sessions" title="Permalink to this headline">¶</a></h3>
+<p>Authenticated sessions should be limited in duration to N hours. In the
+unlikely event that a malicious actor gains access to a secure session cookie,
+this limits the potential for impersonation.</p>
+</div>
+<div class="section" id="discontinue-use-of-permanent-login-tokens">
+<h3>Discontinue use of permanent login tokens<a class="headerlink" href="#discontinue-use-of-permanent-login-tokens" title="Permalink to this headline">¶</a></h3>
+<p>The legacy system supports a “remember me” token that is stored as a secure
+cookie on the user’s browser. This permanent login token bypasses password
+authentication, and is valid at any IP address. The permanent login token will
+be discontinued in arXiv-NG.</p>
+</div>
+<div class="section" id="captcha">
+<h3>Captcha<a class="headerlink" href="#captcha" title="Permalink to this headline">¶</a></h3>
+<p>In parts of the system where we want to prevent programmatic access (e.g.
+account creation, e-mail harvesting), some kind of robot-deterence should be
+used. While not a perfect solution, an image-based Captcha does provide a
+baseline level of confidence that a request has originated from a human
+user.</p>
+</div>
+<div class="section" id="log-sanitization">
+<h3>Log sanitization<a class="headerlink" href="#log-sanitization" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">arXiv AuthN/Z</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv.org.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/threats.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
