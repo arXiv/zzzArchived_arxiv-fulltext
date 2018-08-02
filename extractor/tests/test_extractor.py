@@ -31,7 +31,7 @@ class TestExtractorE2E(TestCase):
         )
 
         extract_result = subprocess.run(
-            "docker run -it -v %s:/pdfs arxiv/fulltext /scripts/extract.sh /pdfs/%s" % (pdf_path, pdf_filename),
+            "docker run -it -v %s:/pdfs arxiv/fulltext /pdfs/%s" % (pdf_path, pdf_filename),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         self.assertEqual(
