@@ -10,7 +10,7 @@ downstream applications.
 .. _figure-context:
 
 .. figure:: _static/diagrams/fulltext-service-context.png
-   :width: 600px
+   :width: 450px
 
    System context for the fulltext extraction service.
 
@@ -54,6 +54,6 @@ e-print ID and extractor version.
 .. _figure-containers:
 
 .. figure:: _static/diagrams/fulltext-service-containers.png
-   :width: 600px
+   :width: 450px
 
    Container-level view of the fulltext extraction service.
