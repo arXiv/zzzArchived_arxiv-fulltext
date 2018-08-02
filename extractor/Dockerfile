@@ -18,4 +18,4 @@ ADD fulltext /scripts
 
 VOLUME ["/pdfs"]
 
-ENTRYPOINT ["python3.6", "/scripts/launch_single.py"]
+ENTRYPOINT ["python", "/scripts/launch_single.py"]
