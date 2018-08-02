@@ -1,6 +1,6 @@
 # arxiv/fulltext-agent
 
-FROM 626657773168.dkr.ecr.us-east-1.amazonaws.com/arxiv/base:latest
+FROM arxiv/base:latest
 
 # Add Python consumer and configuration.
 ADD requirements/agent.txt /opt/arxiv/requirements.txt
