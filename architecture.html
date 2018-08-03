@@ -67,13 +67,10 @@ the request, or if re-extraction is forced via a POST request, it creates a
 task for a worker process on a Redis queue (using Celery).</p>
 <p>The worker process monitors the Redis queue, and does the work of retrieving
 PDFs, performing extractions, and storing the results.</p>
-<p>A lightweight relational database is used to track the extraction state of
-submissions and announced e-prints. This helps to prevent duplicate extraction
-tasks, and provides a high-level view of what extractions are available or
-in progress. This is also leveraged to perform bulk re-extraction when
-necessary.</p>
 <p>Extractions are stored in a private S3 bucket, and organized by submission or
-e-print ID and extractor version.</p>
+e-print ID and extractor version. When an extraction task is created, a
+placeholder file with the task ID is stored where the content will eventually
+be. This helps to prevent duplicate extraction tasks.</p>
 <div class="figure" id="id2">
 <span id="figure-containers"></span><a class="reference internal image-reference" href="_images/fulltext-service-containers.png"><img alt="_images/fulltext-service-containers.png" src="_images/fulltext-service-containers.png" style="width: 450px;" /></a>
 <p class="caption"><span class="caption-text">Container-level view of the fulltext extraction service.</span></p>
