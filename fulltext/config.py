@@ -225,4 +225,26 @@ CLOUDWATCH_VERIFY = os.environ.get('CLOUDWATCH_VERIFY', 'true')
 KINESIS_ENDPOINT = os.environ.get('KINESIS_ENDPOINT', None)
 KINESIS_VERIFY = os.environ.get('KINESIS_VERIFY', 'true')
 
-FULLTEXT_DOCKER_IMAGE = os.environ.get('FULLTEXT_DOCKER_IMAGE', 'arxiv/fulltext')
+FULLTEXT_DOCKER_IMAGE = os.environ.get('FULLTEXT_DOCKER_IMAGE',
+                                       'arxiv/fulltext')
+
+# Settings for the indexing agent.
+KINESIS_ENDPOINT = os.environ.get('KINESIS_ENDPOINT')
+"""Can be used to set an alternate endpoint, e.g. for testing."""
+
+KINESIS_VERIFY = os.environ.get('KINESIS_VERIFY', "true")
+"""Indicates whether SSL certificate verification should be enforced."""
+
+KINESIS_STREAM = os.environ.get('KINESIS_STREAM', 'PDFIsAvailable')
+"""Name of the stream to which the indexing agent subscribes."""
+
+KINESIS_SHARD_ID = os.environ.get('KINESIS_SHARD_ID', '0')
+
+KINESIS_CHECKPOINT_VOLUME = os.environ.get('KINESIS_CHECKPOINT_VOLUME',
+                                           '/tmp')
+
+KINESIS_START_TYPE = os.environ.get('KINESIS_START_TYPE', 'AT_TIMESTAMP')
+KINESIS_START_AT = os.environ.get('KINESIS_START_AT')
+
+KINESIS_SLEEP = os.environ.get('KINESIS_SLEEP', '0.1')
+"""Amount of time to wait before moving on to the next record."""
