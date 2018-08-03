@@ -3,7 +3,7 @@
 from celery import shared_task
 import os
 from datetime import datetime
-from fulltext import logging
+from arxiv.base import logging
 from fulltext.services import store, retrieve, fulltext, metrics
 from celery.result import AsyncResult
 from celery import current_app

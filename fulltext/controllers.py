@@ -1,4 +1,4 @@
-from fulltext import logging
+from arxiv.base import logging
 from fulltext.services import store
 from fulltext.services import retrieve as retrievePDF
 from fulltext.extract import extract_fulltext, AsyncResult

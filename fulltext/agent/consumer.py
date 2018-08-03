@@ -6,7 +6,7 @@ https://github.com/awslabs/amazon-kinesis-client-python/blob/master/samples/samp
 """
 
 import time
-from fulltext import logging
+from arxiv.base import logging
 import json
 import os
 import amazon_kclpy

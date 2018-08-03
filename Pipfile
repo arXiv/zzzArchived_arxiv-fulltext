@@ -1,0 +1,33 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+boto = "*"
+"boto3" = "*"
+botocore = "*"
+celery = "*"
+chardet = "*"
+click = "*"
+jsonschema = "*"
+python-dateutil = "*"
+pytz = "*"
+redis = "*"
+requests = "*"
+simplejson = "*"
+"urllib3" = "*"
+amazon_kclpy = "*"
+Flask = "*"
+"Jinja2" = "*"
+Werkzeug = "*"
+arxiv-base = "*"
+
+[dev-packages]
+nose2 = "*"
+mypy = "*"
+pydocstyle = "*"
+pylint = "*"
+
+[requires]
+python_version = "3.6"

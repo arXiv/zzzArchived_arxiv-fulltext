@@ -1,6 +1,6 @@
 """Application factory for fulltext service components."""
 
-import logging
+from arxiv.base import logging
 from flask import Flask
 from celery import Celery
 from fulltext import celeryconfig

@@ -1,12 +1,12 @@
 """The request table tracks work on arXiv documents."""
 
-from fulltext import logging
+from arxiv.base import logging
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from datetime import datetime
 import os
-from fulltext.context import get_application_config, get_application_global
+from arxiv.base.globals import get_application_config, get_application_global
 from fulltext.services import credentials
 import gzip
 logger = logging.getLogger(__name__)

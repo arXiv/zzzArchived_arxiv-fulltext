@@ -6,8 +6,8 @@ import time
 from datetime import datetime, timedelta
 import json
 from urllib.parse import urljoin
-from fulltext import logging
-from fulltext.context import get_application_config, get_application_global
+from arxiv.base import logging
+from arxiv.base.globals import get_application_config, get_application_global
 
 logger = logging.getLogger(__name__)
 

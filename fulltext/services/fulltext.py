@@ -5,9 +5,9 @@ import shutil
 import subprocess
 import shlex
 import tempfile
-from fulltext.context import get_application_config, get_application_global
+from arxiv.base.globals import get_application_config, get_application_global
 
-from fulltext import logging
+from arxiv.base import logging
 
 logger = logging.getLogger(__name__)
 
