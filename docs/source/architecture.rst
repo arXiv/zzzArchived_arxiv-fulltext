@@ -68,8 +68,8 @@ in :doc:`arxitecture:crosscutting/services`.
 
    Component-level view of the fulltext extraction service.
 
-Two service modules, :mod:`fulltext.service.pdf` and
-:mod:`fulltext.service.store`, provide integration with arXiv PDF content
+Two service modules, :mod:`fulltext.services.pdf` and
+:mod:`fulltext.services.store`, provide integration with arXiv PDF content
 and S3, respectively.
 
 :mod:`fulltext.routes` defines the HTTP API exposed by the
