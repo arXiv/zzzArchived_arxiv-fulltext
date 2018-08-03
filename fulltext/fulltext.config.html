@@ -1,0 +1,356 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>fulltext.config module &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="fulltext.controllers module" href="fulltext.controllers.html" />
+    <link rel="prev" title="fulltext.celeryconfig module" href="fulltext.celeryconfig.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-fulltext.config">
+<span id="fulltext-config-module"></span><h1>fulltext.config module<a class="headerlink" href="#module-fulltext.config" title="Permalink to this headline">¶</a></h1>
+<p>Flask configuration.</p>
+<p>Docstrings are from the <a class="reference external" href="http://flask.pocoo.org/docs/0.12/config/">Flask configuration documentation</a>.</p>
+<dl class="data">
+<dt id="fulltext.config.APPLICATION_ROOT">
+<code class="descclassname">fulltext.config.</code><code class="descname">APPLICATION_ROOT</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.APPLICATION_ROOT" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the application does not occupy a whole domain or subdomain this can be set
+to the path where the application is configured to live. This is for session
+cookie as path value. If domains are used, this should be None.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.DEBUG">
+<code class="descclassname">fulltext.config.</code><code class="descname">DEBUG</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.DEBUG" title="Permalink to this definition">¶</a></dt>
+<dd><p>enable/disable debug mode</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.EXPLAIN_TEMPLATE_LOADING">
+<code class="descclassname">fulltext.config.</code><code class="descname">EXPLAIN_TEMPLATE_LOADING</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.EXPLAIN_TEMPLATE_LOADING" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this is enabled then every attempt to load a template will write an info
+message to the logger explaining the attempts to locate the template. This can
+be useful to figure out why templates cannot be found or wrong templates appear
+to be loaded.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.JSONIFY_MIMETYPE">
+<code class="descclassname">fulltext.config.</code><code class="descname">JSONIFY_MIMETYPE</code><em class="property"> = 'application/json'</em><a class="headerlink" href="#fulltext.config.JSONIFY_MIMETYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>MIME type used for jsonify responses.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.JSONIFY_PRETTYPRINT_REGULAR">
+<code class="descclassname">fulltext.config.</code><code class="descname">JSONIFY_PRETTYPRINT_REGULAR</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.config.JSONIFY_PRETTYPRINT_REGULAR" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this is set to True (the default) jsonify responses will be pretty printed
+if they are not requested by an XMLHttpRequest object (controlled by the
+X-Requested-With header).</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.JSON_AS_ASCII">
+<code class="descclassname">fulltext.config.</code><code class="descname">JSON_AS_ASCII</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.JSON_AS_ASCII" title="Permalink to this definition">¶</a></dt>
+<dd><p>By default Flask serialize object to ascii-encoded JSON. If this is set to
+False Flask will not encode to ASCII and output strings as-is and return
+unicode strings. jsonify will automatically encode it in utf-8 then for
+transport for instance.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.JSON_SORT_KEYS">
+<code class="descclassname">fulltext.config.</code><code class="descname">JSON_SORT_KEYS</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.config.JSON_SORT_KEYS" title="Permalink to this definition">¶</a></dt>
+<dd><p>By default Flask will serialize JSON objects in a way that the keys are ordered.
+This is done in order to ensure that independent of the hash seed of the
+dictionary the return value will be consistent to not trash external HTTP
+caches. You can override the default behavior by changing this variable.
+This is not recommended but might give you a performance improvement on the
+cost of cacheability.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.KINESIS_ENDPOINT">
+<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_ENDPOINT</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.KINESIS_ENDPOINT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Can be used to set an alternate endpoint, e.g. for testing.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.KINESIS_SLEEP">
+<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_SLEEP</code><em class="property"> = '0.1'</em><a class="headerlink" href="#fulltext.config.KINESIS_SLEEP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Amount of time to wait before moving on to the next record.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.KINESIS_STREAM">
+<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_STREAM</code><em class="property"> = 'PDFIsAvailable'</em><a class="headerlink" href="#fulltext.config.KINESIS_STREAM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the stream to which the indexing agent subscribes.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.KINESIS_VERIFY">
+<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_VERIFY</code><em class="property"> = 'true'</em><a class="headerlink" href="#fulltext.config.KINESIS_VERIFY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates whether SSL certificate verification should be enforced.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.LOGGER_HANDLER_POLICY">
+<code class="descclassname">fulltext.config.</code><code class="descname">LOGGER_HANDLER_POLICY</code><em class="property"> = 'always'</em><a class="headerlink" href="#fulltext.config.LOGGER_HANDLER_POLICY" title="Permalink to this definition">¶</a></dt>
+<dd><p>the policy of the default logging handler. The default is ‘always’ which means
+that the default logging handler is always active. ‘debug’ will only activate
+logging in debug mode, ‘production’ will only log in production and ‘never’
+disables it entirely.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.LOGGER_NAME">
+<code class="descclassname">fulltext.config.</code><code class="descname">LOGGER_NAME</code><em class="property"> = 'fulltext'</em><a class="headerlink" href="#fulltext.config.LOGGER_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>the name of the logger</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.MAX_CONTENT_LENGTH">
+<code class="descclassname">fulltext.config.</code><code class="descname">MAX_CONTENT_LENGTH</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.MAX_CONTENT_LENGTH" title="Permalink to this definition">¶</a></dt>
+<dd><p>If set to a value in bytes, Flask will reject incoming requests with a content
+length greater than this by returning a 413 status code.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.PERMANENT_SESSION_LIFETIME">
+<code class="descclassname">fulltext.config.</code><code class="descname">PERMANENT_SESSION_LIFETIME</code><em class="property"> = 3600</em><a class="headerlink" href="#fulltext.config.PERMANENT_SESSION_LIFETIME" title="Permalink to this definition">¶</a></dt>
+<dd><p>the lifetime of a permanent session as datetime.timedelta object. Starting with
+Flask 0.8 this can also be an integer representing seconds.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.PREFERRED_URL_SCHEME">
+<code class="descclassname">fulltext.config.</code><code class="descname">PREFERRED_URL_SCHEME</code><em class="property"> = 'http'</em><a class="headerlink" href="#fulltext.config.PREFERRED_URL_SCHEME" title="Permalink to this definition">¶</a></dt>
+<dd><p>The URL scheme that should be used for URL generation if no URL scheme is
+available. This defaults to http.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.PRESERVE_CONTEXT_ON_EXCEPTION">
+<code class="descclassname">fulltext.config.</code><code class="descname">PRESERVE_CONTEXT_ON_EXCEPTION</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.PRESERVE_CONTEXT_ON_EXCEPTION" title="Permalink to this definition">¶</a></dt>
+<dd><p>By default if the application is in debug mode the request context is not
+popped on exceptions to enable debuggers to introspect the data. This can be
+disabled by this key. You can also use this setting to force-enable it for non
+debug execution which might be useful to debug production applications (but
+also very risky).</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.PROPAGATE_EXCEPTIONS">
+<code class="descclassname">fulltext.config.</code><code class="descname">PROPAGATE_EXCEPTIONS</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.PROPAGATE_EXCEPTIONS" title="Permalink to this definition">¶</a></dt>
+<dd><p>explicitly enable or disable the propagation of exceptions. If not set or
+explicitly set to None this is implicitly true if either TESTING or DEBUG is
+true.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.SECRET_KEY">
+<code class="descclassname">fulltext.config.</code><code class="descname">SECRET_KEY</code><em class="property"> = 'asdf1234'</em><a class="headerlink" href="#fulltext.config.SECRET_KEY" title="Permalink to this definition">¶</a></dt>
+<dd><p>the secret key</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.SEND_FILE_MAX_AGE_DEFAULT">
+<code class="descclassname">fulltext.config.</code><code class="descname">SEND_FILE_MAX_AGE_DEFAULT</code><em class="property"> = 43200</em><a class="headerlink" href="#fulltext.config.SEND_FILE_MAX_AGE_DEFAULT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default cache control max age to use with send_static_file() (the default
+static file handler) and send_file(), as datetime.timedelta or as seconds.
+Override this value on a per-file basis using the get_send_file_max_age() hook
+on Flask or Blueprint, respectively. Defaults to 43200 (12 hours).</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.SERVER_NAME">
+<code class="descclassname">fulltext.config.</code><code class="descname">SERVER_NAME</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.SERVER_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p><a href="#id1"><span class="problematic" id="id2">**</span></a>the name and port number of the server. Required for subdomain support (e.g.* – ‘myapp.dev* – 5000’) Note that localhost does not support subdomains so setting
+this to “localhost” does not help. Setting a SERVER_NAME also by default
+enables URL generation without a request context but with an application
+context.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.SESSION_COOKIE_DOMAIN">
+<code class="descclassname">fulltext.config.</code><code class="descname">SESSION_COOKIE_DOMAIN</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.SESSION_COOKIE_DOMAIN" title="Permalink to this definition">¶</a></dt>
+<dd><p>the domain for the session cookie. If this is not set, the cookie will be valid
+for all subdomains of SERVER_NAME.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.SESSION_COOKIE_HTTPONLY">
+<code class="descclassname">fulltext.config.</code><code class="descname">SESSION_COOKIE_HTTPONLY</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.config.SESSION_COOKIE_HTTPONLY" title="Permalink to this definition">¶</a></dt>
+<dd><p>controls if the cookie should be set with the httponly flag. Defaults to True.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.SESSION_COOKIE_NAME">
+<code class="descclassname">fulltext.config.</code><code class="descname">SESSION_COOKIE_NAME</code><em class="property"> = 'fulltext'</em><a class="headerlink" href="#fulltext.config.SESSION_COOKIE_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>the name of the session cookie</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.SESSION_COOKIE_PATH">
+<code class="descclassname">fulltext.config.</code><code class="descname">SESSION_COOKIE_PATH</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.SESSION_COOKIE_PATH" title="Permalink to this definition">¶</a></dt>
+<dd><p>the path for the session cookie. If this is not set the cookie will be valid
+for all of APPLICATION_ROOT or if that is not set for ‘/’.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.SESSION_COOKIE_SECURE">
+<code class="descclassname">fulltext.config.</code><code class="descname">SESSION_COOKIE_SECURE</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.SESSION_COOKIE_SECURE" title="Permalink to this definition">¶</a></dt>
+<dd><p>controls if the cookie should be set with the secure flag. Defaults to False.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.SESSION_REFRESH_EACH_REQUEST">
+<code class="descclassname">fulltext.config.</code><code class="descname">SESSION_REFRESH_EACH_REQUEST</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.config.SESSION_REFRESH_EACH_REQUEST" title="Permalink to this definition">¶</a></dt>
+<dd><p>this flag controls how permanent sessions are refreshed. If set to True (which
+is the default) then the cookie is refreshed each request which automatically
+bumps the lifetime. If set to False a set-cookie header is only sent if the
+session is modified. Non permanent sessions are not affected by this.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.TEMPLATES_AUTO_RELOAD">
+<code class="descclassname">fulltext.config.</code><code class="descname">TEMPLATES_AUTO_RELOAD</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.TEMPLATES_AUTO_RELOAD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to check for modifications of the template source and reload it
+automatically. By default the value is None which means that Flask checks
+original file only in debug mode.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.TESTING">
+<code class="descclassname">fulltext.config.</code><code class="descname">TESTING</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.TESTING" title="Permalink to this definition">¶</a></dt>
+<dd><p>enable/disable testing mode</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.TRAP_BAD_REQUEST_ERRORS">
+<code class="descclassname">fulltext.config.</code><code class="descname">TRAP_BAD_REQUEST_ERRORS</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.TRAP_BAD_REQUEST_ERRORS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Werkzeug’s internal data structures that deal with request specific data will
+raise special key errors that are also bad request exceptions. Likewise many
+operations can implicitly fail with a BadRequest exception for consistency.
+Since it’s nice for debugging to know why exactly it failed this flag can be
+used to debug those situations. If this config is set to True you will get a
+regular traceback instead.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.TRAP_HTTP_EXCEPTIONS">
+<code class="descclassname">fulltext.config.</code><code class="descname">TRAP_HTTP_EXCEPTIONS</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.TRAP_HTTP_EXCEPTIONS" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this is set to True Flask will not execute the error handlers of HTTP
+exceptions but instead treat the exception like any other and bubble it through
+the exception stack. This is helpful for hairy debugging situations where you
+have to find out where an HTTP exception is coming from.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.USE_X_SENDFILE">
+<code class="descclassname">fulltext.config.</code><code class="descname">USE_X_SENDFILE</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.USE_X_SENDFILE" title="Permalink to this definition">¶</a></dt>
+<dd><p>enable/disable x-sendfile</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.VERSION">
+<code class="descclassname">fulltext.config.</code><code class="descname">VERSION</code><em class="property"> = '0.1'</em><a class="headerlink" href="#fulltext.config.VERSION" title="Permalink to this definition">¶</a></dt>
+<dd><p>The application version, used to sign extracted fulltext.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv Fulltext Extraction Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="fulltext.html">fulltext package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="fulltext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="fulltext.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="fulltext.html">fulltext package</a><ul>
+      <li>Previous: <a href="fulltext.celeryconfig.html" title="previous chapter">fulltext.celeryconfig module</a></li>
+      <li>Next: <a href="fulltext.controllers.html" title="next chapter">fulltext.controllers module</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv.org.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="../_sources/fulltext/fulltext.config.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

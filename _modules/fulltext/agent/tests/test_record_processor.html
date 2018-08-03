@@ -1,0 +1,129 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>fulltext.agent.tests.test_record_processor &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for fulltext.agent.tests.test_record_processor</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Unit tests for :mod:`search.agent`.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">unittest</span> <span class="k">import</span> <span class="n">TestCase</span><span class="p">,</span> <span class="n">mock</span>
+
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">consumer</span>
+
+<span class="c1"># type: ignore</span>
+
+
+<div class="viewcode-block" id="TestIndexPaper"><a class="viewcode-back" href="../../../../fulltext/fulltext.agent.tests.test_record_processor.html#fulltext.agent.tests.test_record_processor.TestIndexPaper">[docs]</a><span class="k">class</span> <span class="nc">TestIndexPaper</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Re-index all versions of an arXiv paper.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestIndexPaper.setUp"><a class="viewcode-back" href="../../../../fulltext/fulltext.agent.tests.test_record_processor.html#fulltext.agent.tests.test_record_processor.TestIndexPaper.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a :class:`.MetadataRecordProcessor`.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">checkpointer</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;a1b2c3d4&#39;</span><span class="p">,</span> <span class="s1">&#39;qwertyuiop&#39;</span><span class="p">,</span> <span class="s1">&#39;us-east-1&#39;</span><span class="p">,</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">checkpointer</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestIndexPaper.test_notify"><a class="viewcode-back" href="../../../../fulltext/fulltext.agent.tests.test_record_processor.html#fulltext.agent.tests.test_record_processor.TestIndexPaper.test_notify">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="s1">&#39;boto3.client&#39;</span><span class="p">)</span>
+    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{consumer.__name__}</span><span class="s1">.url_for&#39;</span><span class="p">)</span>
+    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{consumer.__name__}</span><span class="s1">.extract_fulltext&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_notify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mock_task</span><span class="p">,</span> <span class="n">mock_url_for</span><span class="p">,</span> <span class="n">mock_client_factory</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The arXiv paper has only one version.&quot;&quot;&quot;</span>
+        <span class="n">mock_client</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="n">mock_waiter</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">()</span>
+        <span class="n">mock_client</span><span class="o">.</span><span class="n">get_waiter</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock_waiter</span>
+        <span class="n">mock_client_factory</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock_client</span>
+        <span class="n">paper_id</span> <span class="o">=</span> <span class="s1">&#39;1602.00123v4&#39;</span>
+        <span class="n">mock_url_for</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;http://foo/</span><span class="si">{paper_id}</span><span class="s1">&#39;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;document_id&#39;</span><span class="p">:</span> <span class="n">paper_id</span><span class="p">})</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;SequenceNumber&#39;</span><span class="p">:</span> <span class="s1">&#39;foo123&#39;</span><span class="p">,</span> <span class="s1">&#39;Data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">}</span>
+        <span class="n">processor</span> <span class="o">=</span> <span class="n">consumer</span><span class="o">.</span><span class="n">FulltextRecordProcessor</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">processor</span><span class="o">.</span><span class="n">process_record</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">mock_task</span><span class="o">.</span><span class="n">delay</span><span class="o">.</span><span class="n">called_with</span><span class="p">(</span><span class="n">paper_id</span><span class="p">,</span> <span class="s1">&#39;http://foo&#39;</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv Fulltext Extraction Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../fulltext/fulltext.html">fulltext package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv.org.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
