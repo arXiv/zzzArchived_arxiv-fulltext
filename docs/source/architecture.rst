@@ -42,14 +42,11 @@ task for a worker process on a Redis queue (using Celery).
 The worker process monitors the Redis queue, and does the work of retrieving
 PDFs, performing extractions, and storing the results.
 
-A lightweight relational database is used to track the extraction state of
-submissions and announced e-prints. This helps to prevent duplicate extraction
-tasks, and provides a high-level view of what extractions are available or
-in progress. This is also leveraged to perform bulk re-extraction when
-necessary.
-
 Extractions are stored in a private S3 bucket, and organized by submission or
-e-print ID and extractor version.
+e-print ID and extractor version. When an extraction task is created, a
+placeholder file with the task ID is stored where the content will eventually
+be. This helps to prevent duplicate extraction tasks.
+
 
 .. _figure-containers:
 
@@ -57,3 +54,32 @@ e-print ID and extractor version.
    :width: 450px
 
    Container-level view of the fulltext extraction service.
+
+
+Components
+----------
+The fulltext extraction service implements the general architecture described
+in :doc:`arxitecture:crosscutting/services`.
+
+.. _figure-components:
+
+.. figure:: _static/diagrams/fulltext-service-components.png
+   :width: 600px
+
+   Component-level view of the fulltext extraction service.
+
+Two service modules, :mod:`fulltext.service.pdf` and
+:mod:`fulltext.service.store`, provide integration with arXiv PDF content
+and S3, respectively.
+
+:mod:`fulltext.routes` defines the HTTP API exposed by the
+:mod:`fulltext.factory` application entry-point. Request handling is
+performed by :mod:`fulltext.controllers`, which orchestrates loading of
+fulltext content and generates extraction tasks via :mod:`fulltext.extract`.
+
+The :mod:`fulltext.worker` module provides an entry-point for the extraction
+worker process, which listens for tasks defined in :mod:`fulltext.extract`.
+
+The extraction task itself (in :mod:`fulltext.extract`) uses a Docker image
+(``extractor``) to perform the actual extraction. This is defined separately
+from the main application.

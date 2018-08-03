@@ -30,6 +30,8 @@ pydocstyle = "*"
 pylint = "*"
 coverage = "*"
 coveralls = "*"
+sphinx = "*"
+sphinx-autodoc-typehints = "*"
 
 [requires]
 python_version = "3.6"
