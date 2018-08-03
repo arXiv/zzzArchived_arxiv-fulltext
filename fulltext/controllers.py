@@ -63,10 +63,23 @@ def retrieve(paper_id: str, content_type: str = 'application/json',
             raise NotFound('No such document')
         result = extract_fulltext.delay(paper_id, pdf_url, id_type=id_type)
         logger.info('extract: started processing as %s' % result.task_id)
+        placeholder = {'task_id': result.task_id}
+        store.store(paper_id, placeholder, bucket=id_type, is_placeholder=True)
         location = url_for('fulltext.task_status', task_id=result.task_id)
         return ACCEPTED, status.HTTP_303_SEE_OTHER, {'Location': location}
     except Exception as e:
         raise InternalServerError(f'Unhandled exception: {e}') from e
+
+    # Extraction has already been requested.
+    if 'placeholder' in content_data:
+        if 'task_id' in content_data['task_id']:
+            task_id = content_data['placeholder']['task_id']
+            location = url_for('fulltext.task_status', task_id=task_id)
+            return ACCEPTED, status.HTTP_303_SEE_OTHER, {'Location': location}
+        # It is possible that the extraction failed, in which case we simply
+        # want to return whatever was stored at the end of the attempt.
+        return content_data['placeholder'], status.HTTP_200_OK, {}
+
     if content_type == 'text/plain':
         return content_data['content'], status.HTTP_200_OK, {}
     if content_type != 'application/json':

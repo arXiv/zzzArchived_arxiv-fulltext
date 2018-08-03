@@ -3,8 +3,8 @@ Content store for extracted full text.
 
 Uses S3 as the underlying storage facility.
 """
-
-from typing import Tuple, Optional, Dict
+import json
+from typing import Tuple, Optional, Dict, Union
 from functools import wraps
 from hashlib import md5
 import boto3
@@ -41,9 +41,18 @@ class S3Session(object):
             region_name=region_name
         )
 
-    def store(self, paper_id: str, content: str,
+    def _create_placeholder(self, data: dict) -> bytes:
+        return f'PLACEHOLDER:::{json.dumps(data)}'.encode('utf-8')
+
+    def _parse_placeholder(self, raw: bytes) -> dict:
+        return json.loads(raw.decode('utf-8').split(':::', 1)[1])
+
+    def _is_placeholder(self, raw: bytes) -> bool:
+        return raw.decode('utf-8').startswith('PLACEHOLDER:::')
+
+    def store(self, paper_id: str, content: Union[str, dict],
               version: Optional[str] = None, content_format: str = 'plain',
-              bucket: str = 'arxiv') -> None:
+              bucket: str = 'arxiv', is_placeholder: bool = False) -> None:
         """
         Store fulltext content.
 
@@ -53,8 +62,8 @@ class S3Session(object):
             The unique identifier for the paper to which this content
             corresponds. This will usually be an arXiv ID, but could also be
             a submission or other ID.
-        content : str
-            The text content to store.
+        content : str or dict
+            The text content to store, or placeholder data.
         version : str or None
             The version of the extractor used to generate this content. If
             ``None``, the current extractor version will be used.
@@ -63,11 +72,16 @@ class S3Session(object):
         bucket : str
             Default is ``'arxiv'``. Used in conjunction with :prop:`.buckets`
             to determine the S3 bucket where this content should be stored.
+        is_placeholder : bool
+            If ``True``, ``content`` should be a JSON-serializable ``dict``.
 
         """
         if version is None:
             version = self.version
-        body = content.encode('utf-8')
+        if is_placeholder:
+            body = self._create_placeholder(content)
+        else:
+            body = content.encode('utf-8')
         try:
             self.client.put_object(
                 Body=body,
@@ -118,8 +132,11 @@ class S3Session(object):
                                    f'extractor version {version} in format '
                                    f'{content_format}') from e
             raise RuntimeError(f'Unhandled exception: {e}') from e
+        content = response['Body'].read()
+        if self._is_placeholder(content):
+            return {'placeholder': self._parse_placeholder(content)}
         return {
-            'content': response['Body'].read().decode('utf-8'),
+            'content': content.decode('utf-8'),
             'version': version,
             'format': content_format,
             'etag': response['ETag'][1:-1],
@@ -131,7 +148,7 @@ class S3Session(object):
     def exists(self, paper_id: str, version: Optional[str] = None,
                content_format: str = 'plain', bucket: str = 'arxiv') -> bool:
         """
-        Check whether fulltext content exists.
+        Check whether fulltext content (or a placeholder) exists.
 
         Parameters
         ----------
@@ -181,11 +198,13 @@ class S3Session(object):
 
 
 @wraps(S3Session.store)
-def store(paper_id: str, content: str, version: Optional[str] = None,
-          content_format: str = 'plain', bucket: str = 'arxiv') -> None:
+def store(paper_id: str, content: Union[str, dict],
+          version: Optional[str] = None, content_format: str = 'plain',
+          bucket: str = 'arxiv', is_placeholder: bool = False) -> None:
     """Store fulltext content using the current S3 session."""
     s = current_session()
-    return s.store(paper_id, content, version, content_format, bucket)
+    return s.store(paper_id, content, version, content_format, bucket,
+                   is_placeholder)
 
 
 @wraps(S3Session.retrieve)

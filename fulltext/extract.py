@@ -57,6 +57,8 @@ def extract_fulltext(document_id: str, pdf_url: str, id_type: str = 'arxiv') \
 
     except Exception as e:
         logger.error('Failed to process %s: %s' % (document_id, e))
+        content = {'exception': str(e), 'content': None}
+        store.store(document_id, content, is_placeholder=True)
         raise e
     return {'paper_id': document_id, 'id_type': id_type}
 
