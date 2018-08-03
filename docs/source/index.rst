@@ -25,6 +25,7 @@ Objectives & Requirements
    :caption: Contents:
 
    architecture.rst
+   fulltext/fulltext.rst
 
 
 Indices and tables

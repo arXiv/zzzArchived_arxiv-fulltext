@@ -70,7 +70,7 @@ class S3Session(object):
         content_format : str
             Should be ``'plain'`` or ``'psv'``.
         bucket : str
-            Default is ``'arxiv'``. Used in conjunction with :prop:`.buckets`
+            Default is ``'arxiv'``. Used in conjunction with :attr:`.buckets`
             to determine the S3 bucket where this content should be stored.
         is_placeholder : bool
             If ``True``, ``content`` should be a JSON-serializable ``dict``.
@@ -110,7 +110,7 @@ class S3Session(object):
         content_format : str
             The format to retrieve. Should be ``'plain'`` or ``'psv'``.
         bucket : str
-            Default is ``'arxiv'``. Used in conjunction with :prop:`.buckets`
+            Default is ``'arxiv'``. Used in conjunction with :attr:`.buckets`
             to determine the S3 bucket from which the content should be
             retrieved
 
@@ -162,7 +162,7 @@ class S3Session(object):
         content_format : str
             The format to retrieve. Should be ``'plain'`` or ``'psv'``.
         bucket : str
-            Default is ``'arxiv'``. Used in conjunction with :prop:`.buckets`
+            Default is ``'arxiv'``. Used in conjunction with :attr:`.buckets`
             to determine the S3 bucket from which the content should be
             retrieved
 

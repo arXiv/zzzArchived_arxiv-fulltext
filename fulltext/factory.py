@@ -9,14 +9,14 @@ from fulltext.services import store, pdf
 
 def create_web_app():
     """Initialize an instance of the web application."""
-    from fulltext import api
+    from fulltext import routes
     app = Flask('fulltext')
     app.config.from_pyfile('config.py')
     # logging.getLogger('boto').setLevel(logging.DEBUG)
     # logging.getLogger('boto3').setLevel(logging.DEBUG)
     # logging.getLogger('botocore').setLevel(logging.DEBUG)
     Base(app)
-    app.register_blueprint(api.blueprint)
+    app.register_blueprint(routes.blueprint)
     store.init_app(app)
     pdf.init_app(app)
 

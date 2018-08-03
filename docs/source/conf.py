@@ -21,8 +21,8 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.append(os.path.abspath('../fulltext'))
-sys.path.append(os.path.abspath('../extractor'))
+sys.path.append(os.path.abspath('..'))
+sys.path.append(os.path.abspath('../..'))
 
 # -- General configuration ------------------------------------------------
 
