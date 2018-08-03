@@ -23,6 +23,8 @@ class BadMessage(RuntimeError):
 class FulltextRecordProcessor(BaseConsumer):
     """Consumes ``PDFIsAvailable`` notifications, creates extraction tasks."""
 
+    sleep = 0.1
+
     def process_record(self, record: dict) -> None:
         """
         Call for each record that is passed to process_records.
