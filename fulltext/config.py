@@ -207,23 +207,9 @@ AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', 'nope')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', 'nope')
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 
-DYNAMODB_ENDPOINT = os.environ.get('DYNAMODB_ENDPOINT', None)
-"""For testing only."""
-DYNAMODB_VERIFY = os.environ.get('DYNAMODB_VERIFY', 'true')
-"""For testing only."""
-
 SOURCE_WHITELIST = os.environ.get('SOURCE_WHITELIST',
                                   'arxiv.org,export.arxiv.org')
 
-INSTANCE_CREDENTIALS = os.environ.get('INSTANCE_CREDENTIALS', '')
-
-EXTRACTION_ENDPOINT = os.environ.get('EXTRACTION_ENDPOINT', 'http://localhost')
-
-CLOUDWATCH_ENDPOINT = os.environ.get('CLOUDWATCH_ENDPOINT', None)
-CLOUDWATCH_VERIFY = os.environ.get('CLOUDWATCH_VERIFY', 'true')
-
-KINESIS_ENDPOINT = os.environ.get('KINESIS_ENDPOINT', None)
-KINESIS_VERIFY = os.environ.get('KINESIS_VERIFY', 'true')
 
 FULLTEXT_DOCKER_IMAGE = os.environ.get('FULLTEXT_DOCKER_IMAGE',
                                        'arxiv/fulltext')
