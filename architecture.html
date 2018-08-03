@@ -82,8 +82,12 @@ be. This helps to prevent duplicate extraction tasks.</p>
 <h2>Components<a class="headerlink" href="#components" title="Permalink to this headline">¶</a></h2>
 <p>The fulltext extraction service implements the general architecture described
 in <a class="reference external" href="https://cul-it.github.io/arxiv-arxitecture/crosscutting/services.html" title="(in arXiv arXitecture v0.8)"><span>Services in arXiv NG</span></a>.</p>
-<p>Two service modules, <code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.service.pdf</span></code> and
-<code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.service.store</span></code>, provide integration with arXiv PDF content
+<div class="figure" id="id3">
+<span id="figure-components"></span><a class="reference internal image-reference" href="_images/fulltext-service-components.png"><img alt="_images/fulltext-service-components.png" src="_images/fulltext-service-components.png" style="width: 600px;" /></a>
+<p class="caption"><span class="caption-text">Component-level view of the fulltext extraction service.</span></p>
+</div>
+<p>Two service modules, <a class="reference internal" href="fulltext/fulltext.services.pdf.html#module-fulltext.services.pdf" title="fulltext.services.pdf"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.services.pdf</span></code></a> and
+<a class="reference internal" href="fulltext/fulltext.services.store.html#module-fulltext.services.store" title="fulltext.services.store"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.services.store</span></code></a>, provide integration with arXiv PDF content
 and S3, respectively.</p>
 <p><a class="reference internal" href="fulltext/fulltext.routes.html#module-fulltext.routes" title="fulltext.routes"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.routes</span></code></a> defines the HTTP API exposed by the
 <a class="reference internal" href="fulltext/fulltext.factory.html#module-fulltext.factory" title="fulltext.factory"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.factory</span></code></a> application entry-point. Request handling is
@@ -94,10 +98,6 @@ worker process, which listens for tasks defined in <a class="reference internal"
 <p>The extraction task itself (in <a class="reference internal" href="fulltext/fulltext.extract.html#module-fulltext.extract" title="fulltext.extract"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.extract</span></code></a>) uses a Docker image
 (<code class="docutils literal notranslate"><span class="pre">extractor</span></code>) to perform the actual extraction. This is defined separately
 from the main application.</p>
-<div class="figure" id="id3">
-<span id="figure-components"></span><a class="reference internal image-reference" href="_images/fulltext-service-components.png"><img alt="_images/fulltext-service-components.png" src="_images/fulltext-service-components.png" style="width: 600px;" /></a>
-<p class="caption"><span class="caption-text">Component-level view of the fulltext extraction service.</span></p>
-</div>
 </div>
 </div>
 

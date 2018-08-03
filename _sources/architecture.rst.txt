@@ -61,8 +61,15 @@ Components
 The fulltext extraction service implements the general architecture described
 in :doc:`arxitecture:crosscutting/services`.
 
-Two service modules, :mod:`fulltext.service.pdf` and
-:mod:`fulltext.service.store`, provide integration with arXiv PDF content
+.. _figure-components:
+
+.. figure:: _static/diagrams/fulltext-service-components.png
+   :width: 600px
+
+   Component-level view of the fulltext extraction service.
+
+Two service modules, :mod:`fulltext.services.pdf` and
+:mod:`fulltext.services.store`, provide integration with arXiv PDF content
 and S3, respectively.
 
 :mod:`fulltext.routes` defines the HTTP API exposed by the
@@ -76,11 +83,3 @@ worker process, which listens for tasks defined in :mod:`fulltext.extract`.
 The extraction task itself (in :mod:`fulltext.extract`) uses a Docker image
 (``extractor``) to perform the actual extraction. This is defined separately
 from the main application.
-
-
-.. _figure-components:
-
-.. figure:: _static/diagrams/fulltext-service-components.png
-   :width: 600px
-
-   Component-level view of the fulltext extraction service.
