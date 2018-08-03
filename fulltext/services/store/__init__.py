@@ -1,4 +1,10 @@
-from typing import Tuple, Optional
+"""
+Content store for extracted full text.
+
+Uses S3 as the underlying storage facility.
+"""
+
+from typing import Tuple, Optional, Dict
 from functools import wraps
 from hashlib import md5
 import boto3
@@ -14,13 +20,13 @@ class DoesNotExist(RuntimeError):
 class S3Session(object):
     """Represents a session with S3."""
 
-    def __init__(self, bucket: str, version: str, verify: bool = False,
+    def __init__(self, buckets: str, version: str, verify: bool = False,
                  region_name: Optional[str] = None,
                  endpoint_url: Optional[str] = None,
                  aws_access_key_id: Optional[str] = None,
                  aws_secret_access_key: Optional[str] = None) -> None:
         """Initialize with connection config parameters."""
-        self.bucket = bucket
+        self.buckets = buckets
         self.version = version
         self.region_name = region_name
         self.endpoint_url = endpoint_url
@@ -35,17 +41,38 @@ class S3Session(object):
             region_name=region_name
         )
 
-    def store(self, paper_id: str, content: str, version: Optional[str] = None,
-              content_format: str = 'plain') -> None:
-        """Store fulltext content."""
+    def store(self, paper_id: str, content: str,
+              version: Optional[str] = None, content_format: str = 'plain',
+              bucket: str = 'arxiv') -> None:
+        """
+        Store fulltext content.
+
+        Parameters
+        ----------
+        paper_id : str
+            The unique identifier for the paper to which this content
+            corresponds. This will usually be an arXiv ID, but could also be
+            a submission or other ID.
+        content : str
+            The text content to store.
+        version : str or None
+            The version of the extractor used to generate this content. If
+            ``None``, the current extractor version will be used.
+        content_format : str
+            Should be ``'plain'`` or ``'psv'``.
+        bucket : str
+            Default is ``'arxiv'``. Used in conjunction with :prop:`.buckets`
+            to determine the S3 bucket where this content should be stored.
+
+        """
         if version is None:
             version = self.version
         body = content.encode('utf-8')
         try:
             self.client.put_object(
                 Body=body,
-                Bucket=self.bucket,
-                ContentHash=md5(body).hexdigest(),
+                Bucket=self._get_bucket(bucket),
+                ContentMD5=md5(body).hexdigest(),
                 ContentType='text/plain',
                 Key=f'{paper_id}/{version}/{content_format}',
             )
@@ -53,31 +80,85 @@ class S3Session(object):
             raise RuntimeError(f'Unhandled exception: {e}') from e
 
     def retrieve(self, paper_id: str, version: Optional[str] = None,
-                 content_format: str = 'plain') -> None:
-        """Retrieve fulltext content."""
+                 content_format: str = 'plain', bucket: str = 'arxiv') -> Dict:
+        """
+        Retrieve fulltext content.
+
+        Parameters
+        ----------
+        paper_id : str
+            The unique identifier for the paper to which this content
+            corresponds. This will usually be an arXiv ID, but could also be
+            a submission or other ID.
+        version : str or None
+            The version of the extractor for which content should be retrieved.
+            If ``None``, the current extractor version will be used.
+        content_format : str
+            The format to retrieve. Should be ``'plain'`` or ``'psv'``.
+        bucket : str
+            Default is ``'arxiv'``. Used in conjunction with :prop:`.buckets`
+            to determine the S3 bucket from which the content should be
+            retrieved
+
+        Returns
+        -------
+        dict
+
+        """
         if version is None:
             version = self.version
         try:
             response = self.client.get_object(
-                Bucket=self.bucket,
+                Bucket=self._get_bucket(bucket),
                 Key=f'{paper_id}/{version}/{content_format}'
             )
         except botocore.exceptions.ClientError as e:
-            if e.response['Error']['Code'] == "404":
+            if e.response['Error']['Code'] == "NoSuchKey":
                 raise DoesNotExist(f'No fulltext content for {paper_id} with '
                                    f'extractor version {version} in format '
                                    f'{content_format}') from e
             raise RuntimeError(f'Unhandled exception: {e}') from e
-        return response['Body'].decode('utf-8')
+        return {
+            'content': response['Body'].read().decode('utf-8'),
+            'version': version,
+            'format': content_format,
+            'etag': response['ETag'][1:-1],
+            'created': response['LastModified']
+        }
 
+    # TODO: consider returning metadata from the HEAD request, instead of just
+    # a bool. If it's useful?
     def exists(self, paper_id: str, version: Optional[str] = None,
-               content_format: str = 'plain') -> None:
-        """Check whether fulltext content exists."""
+               content_format: str = 'plain', bucket: str = 'arxiv') -> bool:
+        """
+        Check whether fulltext content exists.
+
+        Parameters
+        ----------
+        paper_id : str
+            The unique identifier for the paper to which this content
+            corresponds. This will usually be an arXiv ID, but could also be
+            a submission or other ID.
+        version : str or None
+            The version of the extractor for which content should be retrieved.
+            If ``None``, the current extractor version will be used.
+        content_format : str
+            The format to retrieve. Should be ``'plain'`` or ``'psv'``.
+        bucket : str
+            Default is ``'arxiv'``. Used in conjunction with :prop:`.buckets`
+            to determine the S3 bucket from which the content should be
+            retrieved
+
+        Returns
+        -------
+        bool
+        """
         if version is None:
             version = self.version
+
         try:
             self.client.head_object(
-                Bucket=self.bucket,
+                Bucket=self._get_bucket(bucket),
                 Key=f'{paper_id}/{version}/{content_format}'
             )
         except botocore.exceptions.ClientError as e:
@@ -86,26 +167,41 @@ class S3Session(object):
             raise RuntimeError(f'Unhandled exception: {e}') from e
         return True
 
+    def create_bucket(self):
+        """Create S3 buckets. This is just for testing."""
+        for key, bucket in self.buckets:
+            self.client.create_bucket(Bucket=bucket)
+
+    def _get_bucket(self, bucket: str) -> str:
+        try:
+            name: str = dict(self.buckets)[bucket]
+        except KeyError as e:
+            raise RuntimeError(f'No such bucket: {bucket}') from e
+        return name
+
 
 @wraps(S3Session.store)
 def store(paper_id: str, content: str, version: Optional[str] = None,
-          content_format: str = 'plain') -> None:
+          content_format: str = 'plain', bucket: str = 'arxiv') -> None:
     """Store fulltext content using the current S3 session."""
-    return current_session().store(paper_id, content, version, content_format)
+    s = current_session()
+    return s.store(paper_id, content, version, content_format, bucket)
 
 
 @wraps(S3Session.retrieve)
 def retrieve(paper_id: str, version: Optional[str] = None,
-             content_format: str = 'plain') -> None:
+             content_format: str = 'plain', bucket: str = 'arxiv') -> None:
     """Retrieve fulltext content using the current S3 session."""
-    return current_session().retrieve(paper_id, version, content_format)
+    s = current_session()
+    return s.retrieve(paper_id, version, content_format, bucket)
 
 
 @wraps(S3Session.exists)
 def exists(paper_id: str, version: Optional[str] = None,
-           content_format: str = 'plain') -> None:
+           content_format: str = 'plain', bucket: str = 'arxiv') -> None:
     """Check if fulltext content exists using the current S3 session."""
-    return current_session().exists(paper_id, version, content_format)
+    s = current_session()
+    return s.exists(paper_id, version, content_format, bucket)
 
 
 def init_app(app: Flask) -> None:
@@ -115,7 +211,7 @@ def init_app(app: Flask) -> None:
     app.config.setdefault('AWS_SECRET_ACCESS_KEY', None)
     app.config.setdefault('S3_ENDPOINT', None)
     app.config.setdefault('S3_VERIFY', True)
-    app.config.setdefault('S3_BUCKET', 'arxiv-fulltext')
+    app.config.setdefault('S3_BUCKET', [])
     app.config.setdefault('VERSION', "0.0")
 
 
@@ -127,9 +223,9 @@ def get_session() -> S3Session:
     endpoint = config.get('S3_ENDPOINT')
     verify = config.get('S3_VERIFY')
     region = config.get('AWS_REGION')
-    bucket = config.get('S3_BUCKET')
+    buckets = config.get('S3_BUCKETS')
     version = config.get('VERSION')
-    return S3Session(bucket, version, verify, region,
+    return S3Session(buckets, version, verify, region,
                      endpoint, access_key, secret_key)
 
 

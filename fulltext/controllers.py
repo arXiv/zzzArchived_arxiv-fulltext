@@ -1,97 +1,127 @@
+from typing import Optional, Tuple, Dict, Any
+from werkzeug.exceptions import NotFound, InternalServerError, BadRequest, \
+    NotAcceptable
 from arxiv.base import logging
-from fulltext.services import store
-from fulltext.services import retrieve as retrievePDF
+from arxiv import status
+from fulltext.services import store, pdf
 from fulltext.extract import extract_fulltext, AsyncResult
 from flask import url_for
+from celery import current_app
+
 
 logger = logging.getLogger(__name__)
 
-DOCUMENT_ID_MISSING = {'reason': 'document_id missing in request'}
-FILE_MISSING_OR_INVALID = {'reason': 'file not found or invalid'}
 ACCEPTED = {'reason': 'fulltext extraction in process'}
 ALREADY_EXISTS = {'reason': 'extraction already exists'}
-TASK_DOES_NOT_EXIST = {'reason': 'task not found'}
 TASK_IN_PROGRESS = {'status': 'in progress'}
 TASK_FAILED = {'status': 'failed'}
 TASK_COMPLETE = {'status': 'complete'}
-HTTP_200_OK = 200
 HTTP_202_ACCEPTED = 202
 HTTP_303_SEE_OTHER = 303
 HTTP_400_BAD_REQUEST = 400
 HTTP_404_NOT_FOUND = 404
 HTTP_500_INTERNAL_SERVER_ERROR = 500
 
+Response = Tuple[Dict[str, Any], int, Dict[str, Any]]
 
-def retrieve(document_id: str) -> tuple:
+
+def retrieve(paper_id: str, content_type: str = 'application/json',
+             id_type: str = 'arxiv', version: Optional[str] = None,
+             content_format: str = 'plain') -> Response:
     """
     Handle request for full-text content for an arXiv paper.
 
     Parameters
     ----------
-    document_id : str
+    paper_id : str
 
     Returns
     -------
     tuple
     """
     try:
-        content_data = store.retrieve(document_id)
+        content_data = store.retrieve(paper_id, version=version,
+                                      content_format=content_format,
+                                      bucket=id_type)
     except IOError as e:
-        logger.error(str(e))
-        return {
-            'explanation': 'Could not connect to data source'
-        }, HTTP_500_INTERNAL_SERVER_ERROR
+        raise InternalServerError('Could not connect to backend') from e
+    except store.DoesNotExist as e:
+        # If the client has requested a specific version, it may be the case
+        # that they are simply asking for a non-existant version. We only
+        # want to trigger extraction if there is no content for the current
+        # version.
+        if version and store.exists(paper_id):
+            raise NotFound('No such version')
+        logger.info('Extraction does not exist')
+        if id_type == 'arxiv':
+            pdf_url = url_for('pdf', paper_id=paper_id)
+        elif id_type == 'submission':
+            pdf_url = url_for('submission_pdf', submission_id=paper_id)
+        else:
+            raise NotFound('Invalid identifier')
+        if not pdf.exists(pdf_url):
+            raise NotFound('No such document')
+        result = extract_fulltext.delay(paper_id, pdf_url, id_type=id_type)
+        logger.info('extract: started processing as %s' % result.task_id)
+        location = url_for('fulltext.task_status', task_id=result.task_id)
+        return ACCEPTED, status.HTTP_303_SEE_OTHER, {'Location': location}
     except Exception as e:
-        return {'explanation': str(e)}, HTTP_500_INTERNAL_SERVER_ERROR
-    if content_data is None:
-        return {
-            'explanation': 'fulltext not available for %s' % document_id
-        }, HTTP_404_NOT_FOUND
-    return content_data, HTTP_200_OK
+        raise InternalServerError(f'Unhandled exception: {e}') from e
+    if content_type == 'text/plain':
+        return content_data['content'], status.HTTP_200_OK, {}
+    if content_type != 'application/json':
+        raise NotAcceptable('unsupported content type')
+    return content_data, status.HTTP_200_OK, {}
 
 
-def extract(payload: str) -> tuple:
-    """Handle a request for reference extraction."""
-    document_id = payload.get('document_id')
-    if document_id is None or not isinstance(document_id, str):
-        return DOCUMENT_ID_MISSING, HTTP_400_BAD_REQUEST, {}
-    logger.info('extract: got document_id: %s' % document_id)
-
-    pdf_url = payload.get('url')
-    if pdf_url is None or not retrievePDF.is_valid_url(pdf_url):
-        return FILE_MISSING_OR_INVALID, HTTP_400_BAD_REQUEST, {}
-    logger.info('extract: got url: %s' % pdf_url)
-
-    result = extract_fulltext.delay(document_id, pdf_url)
+def extract(paper_id: str, id_type: str = 'arxiv') -> Response:
+    """Handle a request to force text extraction."""
+    if paper_id is None:
+        raise BadRequest('paper_id missing in request')
+    logger.info('extract: got paper_id: %s' % paper_id)
+    if id_type == 'arxiv':
+        pdf_url = url_for('pdf', paper_id=paper_id)
+    elif id_type == 'submission':
+        pdf_url = url_for('submission_pdf', submission_id=paper_id)
+    else:
+        raise NotFound('Invalid identifier')
+    if not pdf.exists(pdf_url):
+        raise NotFound('No such document')
+    result = extract_fulltext.delay(paper_id, pdf_url, id_type=id_type)
     logger.info('extract: started processing as %s' % result.task_id)
-    headers = {'Location': url_for('fulltext.task_status',
-                                   task_id=result.task_id)}
-    return ACCEPTED, HTTP_202_ACCEPTED, headers
+    location = url_for('fulltext.task_status', task_id=result.task_id)
+    return ACCEPTED, status.HTTP_202_ACCEPTED, {'Location': location}
 
 
-def status(task_id: str) -> tuple:
+def get_task_status(task_id: str) -> Response:
     """Check the status of an extraction request."""
     logger.debug('%s: Get status for task' % task_id)
     if not isinstance(task_id, str):
         logger.debug('%s: Failed, invalid task id' % task_id)
         raise ValueError('task_id must be string, not %s' % type(task_id))
-    result = AsyncResult(task_id)
+    result = extract_fulltext.AsyncResult(task_id)
     logger.debug('%s: got result: %s' % (task_id, result.status))
     if result.status == 'PENDING':
-        return TASK_DOES_NOT_EXIST, HTTP_404_NOT_FOUND, {}
+        raise NotFound('task not found')
     elif result.status in ['SENT', 'STARTED', 'RETRY']:
-        return TASK_IN_PROGRESS, HTTP_200_OK, {}
+        return TASK_IN_PROGRESS, status.HTTP_200_OK, {}
     elif result.status == 'FAILURE':
         logger.error('%s: failed task: %s' % (task_id, result.result))
         reason = TASK_FAILED
         reason.update({'reason': str(result.result)})
-        return reason, HTTP_200_OK, {}
+        return reason, status.HTTP_200_OK, {}
     elif result.status == 'SUCCESS':
         task_result = result.result
-        document_id = task_result.get('document_id')
-        logger.debug('Retrieved result successfully, document_id: %s' %
-                     document_id)
-        headers = {'Location': url_for('fulltext.retrieve',
-                                       doc_id=document_id)}
-        return TASK_COMPLETE, HTTP_303_SEE_OTHER, headers
-    return TASK_DOES_NOT_EXIST, HTTP_404_NOT_FOUND, {}
+        paper_id = task_result.get('paper_id')
+        id_type = task_result.get('id_type')
+        logger.debug('Retrieved result successfully, paper_id: %s' %
+                     paper_id)
+        if id_type == 'arxiv':
+            target = url_for('fulltext.retrieve', paper_id=paper_id)
+        elif id_type == 'submission':
+            target = url_for('fulltext.retrieve_submission', paper_id=paper_id)
+        else:
+            raise NotFound('No such identifier')
+        headers = {'Location': target}
+        return TASK_COMPLETE, status.HTTP_303_SEE_OTHER, headers
+    raise NotFound('task not found')

@@ -1,11 +1,12 @@
 """Provides the blueprint for the fulltext API."""
 
+from typing import Optional
 from flask import request, Blueprint, Response
 from flask.json import jsonify
 from arxiv import status
 from fulltext import controllers
 
-blueprint = Blueprint('fulltext', __name__, url_prefix='/fulltext')
+blueprint = Blueprint('fulltext', __name__, url_prefix='')
 
 
 def best_match(available, default):
@@ -21,33 +22,52 @@ def ok() -> tuple:
     return jsonify({'iam': 'ok'}), status.HTTP_200_OK
 
 
-@blueprint.route('', methods=['POST'])
-def extract_fulltext() -> tuple:
-    """Handle requests for reference extraction."""
-    data, code, headers = controllers.extract(request.get_json(force=True))
+@blueprint.route('/status/<task_id>', methods=['GET'])
+def task_status(task_id: str) -> tuple:
+    """Get the status of a reference extraction task."""
+    data, code, headers = controllers.get_task_status(task_id)
     return jsonify(data), code, headers
 
 
-@blueprint.route('/<string:doc_id>', methods=['GET'])
-def retrieve(doc_id):
+@blueprint.route('/<arxiv:paper_id>', methods=['POST'])
+@blueprint.route('/<id_type>/<paper_id>', methods=['POST'])
+def extract_fulltext(paper_id: str, id_type: str = 'arxiv') -> tuple:
+    """Handle requests for reference extraction."""
+    data, code, headers = controllers.extract(paper_id)
+    return jsonify(data), code, headers
+
+
+@blueprint.route('/<arxiv:paper_id>/version/<version>/format/<content_format>', methods=['GET'])
+@blueprint.route('/<arxiv:paper_id>/version/<version>', methods=['GET'])
+@blueprint.route('/<arxiv:paper_id>/format/<content_format>', methods=['GET'])
+@blueprint.route('/<arxiv:paper_id>', methods=['GET'])
+def retrieve(paper_id: str, version: Optional[str] = None,
+             content_format: str = "plain") -> tuple:
     """Retrieve full-text content for an arXiv paper."""
     available = ['application/json', 'text/plain']
     content_type = best_match(available, 'application/json')
-    data, status_code = controllers.retrieve(doc_id)
-    # TODO: this should be generalized if we need it in other places.
+    data, status_code, headers = controllers.retrieve(paper_id, content_type,
+                                                      id_type='arxiv')
     if content_type == 'text/plain':
-        response_data = Response(data['content'], content_type='text/plain')
+        response_data = Response(data, content_type='text/plain')
     elif content_type == 'application/json':
         response_data = jsonify(data)
-    else:
-        return jsonify({'explanation': 'unsupported content type'}), \
-            status.HTTP_406_NOT_ACCEPTABLE
-
-    return response_data, status_code
+    return response_data, status_code, headers
 
 
-@blueprint.route('/status/<string:task_id>', methods=['GET'])
-def task_status(task_id: str) -> tuple:
-    """Get the status of a reference extraction task."""
-    data, code, headers = controllers.status(task_id)
-    return jsonify(data), code, headers
+@blueprint.route('/submission/<paper_id>/version/<version>/format/<content_format>', methods=['GET'])
+@blueprint.route('/submission/<paper_id>/version/<version>', methods=['GET'])
+@blueprint.route('/submission/<paper_id>/format/<content_format>', methods=['GET'])
+@blueprint.route('/submission/<paper_id>', methods=['GET'])
+def retrieve_submission(paper_id: str, version: Optional[str] = None,
+                        content_format: str = "plain") -> tuple:
+    """Retrieve full-text content for an arXiv paper."""
+    available = ['application/json', 'text/plain']
+    content_type = best_match(available, 'application/json')
+    data, status_code, headers = controllers.retrieve(paper_id, content_type,
+                                                      id_type='submission')
+    if content_type == 'text/plain':
+        response_data = Response(data, content_type='text/plain')
+    elif content_type == 'application/json':
+        response_data = jsonify(data)
+    return response_data, status_code, headers

@@ -202,6 +202,13 @@ be useful to figure out why templates cannot be found or wrong templates appear
 to be loaded.
 """
 
+S3_ENDPOINT = os.environ.get('S3_ENDPOINT', None)
+S3_VERIFY = bool(int(os.environ.get('S3_VERIFY', 1)))
+S3_BUCKETS = [
+    ('arxiv', 'arxiv-fulltext'),
+    ('submission', 'arxiv-fulltext-submission')
+]
+
 # SUBMISSION_DATABASE_URL = os.environ.get('SUBMISSION_DATABASE_URL')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', 'nope')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', 'nope')
@@ -234,3 +241,11 @@ KINESIS_START_AT = os.environ.get('KINESIS_START_AT')
 
 KINESIS_SLEEP = os.environ.get('KINESIS_SLEEP', '0.1')
 """Amount of time to wait before moving on to the next record."""
+
+
+REDIS_ENDPOINT = os.environ.get('REDIS_ENDPOINT')
+
+BASE_SERVER = 'arxiv.org'
+URLS = [
+    ('submission_pdf', '/pdf/<submission_id>', BASE_SERVER)
+]

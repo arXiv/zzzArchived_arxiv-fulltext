@@ -9,7 +9,7 @@ info:
     name: MIT
 
 paths:
-  /paper/{paper_id}:
+  /{paper_id}:
     get:
       operationId: getLatestExtraction
       summary: |
@@ -50,7 +50,7 @@ paths:
           description: |
             Forbidden. Client or user is not authorized to force extraction.
 
-  /paper/{paper_id}/format/{format}:
+  /{paper_id}/format/{format}:
     get:
       operationId: getLatestExtractionByFormat
       summary: |
@@ -65,7 +65,7 @@ paths:
         '404':
           description: The requested format does not exist.
 
-  /paper/{paper_id}/version/{extractor_version}:
+  /{paper_id}/version/{extractor_version}:
     get:
       operationId: getExtractionByVersion
       summary: |
@@ -81,7 +81,7 @@ paths:
         '404':
           description: The requested version does not exist.
 
-  /paper/{paper_id}/version/{extractor_version}/format/{format}:
+  /{paper_id}/version/{extractor_version}/format/{format}:
     get:
       operationId: getExtractionByVersionAndFormat
       summary: |

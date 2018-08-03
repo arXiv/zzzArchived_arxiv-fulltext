@@ -1,20 +1,54 @@
-"""Service integration for central arXiv document store."""
+"""Service integration for PDF retrieval."""
 
+from typing import List
+from functools import wraps
 import requests
 import os
-from arxiv.base import logging
-from urllib.parse import urlparse
-from arxiv.base.globals import get_application_config, get_application_global
 import tempfile
+from urllib.parse import urlparse
+
+from requests.packages.urllib3.util.retry import Retry
+
+from arxiv import status
+from arxiv.base import logging
+from arxiv.base.globals import get_application_config, get_application_global
+
 
 logger = logging.getLogger(__name__)
 
 
 class RetrievePDFSession(object):
-    """Provides an interface to get PDF."""
+    """Provides an interface to get PDFs."""
 
-    def __init__(self, whitelist: list) -> None:
-        """Set the endpoint for Refextract service."""
+    def __init__(self, whitelist: List[str], scheme: str = 'https',
+                 verify_cert: bool = True, headers: dict = {}) -> None:
+        """
+        Initialize an HTTP session.
+
+        Parameters
+        ----------
+        endpoint : str
+            Service endpoint for PDF retrieval.
+        scheme : str
+            Default: ``https``.
+        verify_cert : bool
+            Whether or not SSL certificate verification should enforced.
+        headers : dict
+            Headers to be included on all requests.
+
+        """
+        self._session = requests.Session()
+        self._verify_cert = verify_cert
+        self._retry = Retry(  # type: ignore
+            total=10,
+            read=10,
+            connect=10,
+            status=10,
+            backoff_factor=0.5
+        )
+        self._adapter = requests.adapters.HTTPAdapter(max_retries=self._retry)
+        self._session.mount(f'{scheme}://', self._adapter)
+        self._session.headers.update(headers)
         self._whitelist = whitelist
 
     def is_valid_url(self, url: str) -> bool:
@@ -35,6 +69,29 @@ class RetrievePDFSession(object):
             return False
         return True
 
+    def exists(self, target: str) -> str:
+        """
+        Determine whether or not a target URL is available (HEAD request).
+
+        Parameters
+        ----------
+        target : str
+            The full URL for the PDF.
+
+        Returns
+        -------
+        bool
+
+        """
+        if not self.is_valid_url(target):
+            raise ValueError('URL not allowed: %s' % target)
+        r = self._session.head(target, allow_redirects=True)
+        if r.status_code == status.HTTP_200_OK:
+            return True
+        elif r.status_code == status.HTTP_404_NOT_FOUND:
+            return False
+        raise ValueError(f'Unexpected response status code: {r.status_code}')
+
     def retrieve(self, target: str, document_id: str) -> str:
         """
         Retrieve PDFs of published papers from the core arXiv document store.
@@ -42,7 +99,9 @@ class RetrievePDFSession(object):
         Parameters
         ----------
         target : str
+            The full URL for the PDF.
         document_id : str
+            The identifier associated with the PDF.
 
         Returns
         -------
@@ -56,7 +115,6 @@ class RetrievePDFSession(object):
         IOError
             When there is a problem retrieving the resource at ``target``.
         """
-        # target = '%s/pdf/%s.pdf' % (self.endpoint, document_id)
         if not self.is_valid_url(target):
             raise ValueError('URL not allowed: %s' % target)
 
@@ -98,11 +156,19 @@ def current_session():
     return g.retrieve
 
 
+@wraps(RetrievePDFSession.is_valid_url)
 def is_valid_url(url: str) -> bool:
     """Evaluate whether or not a URL is acceptible for retrieval."""
     return current_session().is_valid_url(url)
 
 
+@wraps(RetrievePDFSession.retrieve)
 def retrieve(target: str, document_id: str) -> str:
     """Retrieve a PDF of a paper from the core arXiv document store."""
     return current_session().retrieve(target, document_id)
+
+
+@wraps(RetrievePDFSession.exists)
+def exists(target: str) -> str:
+    """Determine whether or not a target URL is available (HEAD request)."""
+    return current_session().exists(target)

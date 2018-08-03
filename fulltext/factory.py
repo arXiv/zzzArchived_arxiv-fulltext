@@ -1,16 +1,10 @@
 """Application factory for fulltext service components."""
 
-from arxiv.base import logging
+import logging
 from flask import Flask
-from celery import Celery
-from fulltext import celeryconfig
-from fulltext.services import store, retrieve
-
-celery_app = Celery(__name__, results=celeryconfig.result_backend,
-                    broker=celeryconfig.broker_url)
-celery_app.config_from_object(celeryconfig)
-celery_app.autodiscover_tasks(['fulltext'], related_name='extract', force=True)
-celery_app.conf.task_default_queue = 'fulltext-worker'
+from arxiv.base import Base
+from fulltext.celery import celery_app
+from fulltext.services import store, pdf
 
 
 def create_web_app():
@@ -21,21 +15,16 @@ def create_web_app():
     # logging.getLogger('boto').setLevel(logging.DEBUG)
     # logging.getLogger('boto3').setLevel(logging.DEBUG)
     # logging.getLogger('botocore').setLevel(logging.DEBUG)
-
+    Base(app)
     app.register_blueprint(api.blueprint)
     store.init_app(app)
-    retrieve.init_app(app)
+    pdf.init_app(app)
 
-    celery = Celery(app.name, results=celeryconfig.result_backend,
-                    broker=celeryconfig.broker_url)
-    celery.config_from_object(celeryconfig)
-    celery.autodiscover_tasks(['fulltext'], related_name='extract', force=True)
-    celery.conf.task_default_queue = 'fulltext-worker'
     return app
 
 
 def create_worker_app():
-    """Initialize an instance of the processing application."""
+    """Initialize an instance of the worker application."""
     logging.getLogger('boto').setLevel(logging.ERROR)
     logging.getLogger('boto3').setLevel(logging.ERROR)
     logging.getLogger('botocore').setLevel(logging.ERROR)
@@ -43,8 +32,6 @@ def create_worker_app():
     flask_app = Flask('fulltext')
     flask_app.config.from_pyfile('config.py')
 
-    celery_app.conf.update(flask_app.config)
-
     store.init_app(flask_app)
-    retrieve.init_app(flask_app)
+    pdf.init_app(flask_app)
     return flask_app

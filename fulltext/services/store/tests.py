@@ -20,7 +20,7 @@ class TestStore(TestCase):
         bucket = 'arxiv-fulltext'
         mock_get_config.return_value = {
             'AWS_REGION': 'us-east-1',
-            'S3_BUCKET': bucket,
+            'S3_BUCKETS': [('arxiv', bucket)],
             'VERSION': version
         }
         content = 'foocontent'

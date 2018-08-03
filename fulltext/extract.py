@@ -7,29 +7,29 @@ import shutil
 import subprocess
 import shlex
 import tempfile
-
-from celery import shared_task
+from flask import current_app
 from celery.result import AsyncResult
-from celery import current_app
+from fulltext.celery import celery_app
 from celery.signals import after_task_publish
 
 from arxiv.base.globals import get_application_config, get_application_global
 from arxiv.base import logging
 
-from fulltext.services import store, retrieve
+from fulltext.services import store, pdf
 from fulltext.process import psv
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task
-def extract_fulltext(document_id: str, pdf_url: str) -> None:
+@celery_app.task
+def extract_fulltext(document_id: str, pdf_url: str, id_type: str = 'arxiv') \
+        -> None:
     """Perform fulltext extraction for a single arXiv document."""
     logger.info('Retrieving PDF for %s' % document_id)
     start_time = datetime.now()
     try:
         # Retrieve PDF from arXiv central document store.
-        pdf_path = retrieve.retrieve(pdf_url, document_id)
+        pdf_path = pdf.retrieve(pdf_url, document_id)
         if pdf_path is None:
             raise RuntimeError('%s: no PDF available' % document_id)
         logger.info('%s: retrieved PDF' % document_id)
@@ -39,7 +39,7 @@ def extract_fulltext(document_id: str, pdf_url: str) -> None:
         logger.info('Text extraction for %s succeeded with %i chars' %
                     (document_id, len(content)))
         try:
-            store.store(document_id, content)
+            store.store(document_id, content, bucket=id_type)
         except RuntimeError as e:   # TODO: flesh out exception states.
             raise
         duration = (start_time - datetime.now()).microseconds
@@ -47,7 +47,8 @@ def extract_fulltext(document_id: str, pdf_url: str) -> None:
 
         psv_content = psv.normalize_text_psv(content)
         try:
-            store.store(document_id, psv_content, content_format='psv')
+            store.store(document_id, psv_content, content_format='psv',
+                        bucket=id_type)
         except RuntimeError as e:   # TODO: flesh out exception states.
             raise
         logger.info(f'Stored PSV normalized content for {document_id}')
@@ -57,19 +58,14 @@ def extract_fulltext(document_id: str, pdf_url: str) -> None:
     except Exception as e:
         logger.error('Failed to process %s: %s' % (document_id, e))
         raise e
-    return {
-        'document_id': document_id,
-    }
-
-
-extract_fulltext.async_result = AsyncResult
+    return {'paper_id': document_id, 'id_type': id_type}
 
 
 @after_task_publish.connect
 def update_sent_state(sender=None, headers=None, body=None, **kwargs):
     """Set state to SENT, so that we can tell whether a task exists."""
-    task = current_app.tasks.get(sender)
-    backend = task.backend if task else current_app.backend
+    task = celery_app.tasks.get(sender)
+    backend = task.backend if task else celery_app.backend
     backend.store_result(headers['id'], None, "SENT")
 
 
@@ -87,25 +83,26 @@ def do_extraction(filename: str, cleanup: bool = False,
     str
         Raw XML response from FullText.
     """
+    workdir = current_app.config.get('WORKDIR', '/tmp/pdfs')
     fldr, name = os.path.split(filename)
     stub, ext = os.path.splitext(os.path.basename(filename))
-    pdfpath = os.path.join('/pdfs', name)
+    pdfpath = os.path.join(workdir, name)
     shutil.copyfile(filename, pdfpath)
     logger.info('Copied %s to %s' % (filename, pdfpath))
-    logger.info(str(os.listdir('/pdfs')))
+    logger.info(str(os.listdir(workdir)))
 
     try:
-        run_docker(image, [['/pdfs', '/pdfs']],
-                   args='/scripts/extract.sh /pdfs/%s' % name)
+        run_docker(image, [[workdir, '/pdfs']],
+                   args='/pdfs/%s' % name)
     except subprocess.CalledProcessError as e:
         raise RuntimeError('Fulltext failed: %s' % filename) from e
 
-    out = os.path.join('/pdfs', '{}.txt'.format(stub))
+    out = os.path.join(workdir, '{}.txt'.format(stub))
     os.remove(pdfpath)
     if not os.path.exists(out):
         raise FileNotFoundError('%s not found, expected output' % out)
-    with open(out, encoding='utf-8') as f:
-        content = f.read()
+    with open(out, 'rb') as f:
+        content = f.read().decode('utf-8')
     os.remove(out.replace('.txt', '.pdf2txt'))
     os.remove(out)    # Cleanup.
     return content
