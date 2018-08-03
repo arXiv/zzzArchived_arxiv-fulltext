@@ -27,6 +27,8 @@ nose2 = "*"
 mypy = "*"
 pydocstyle = "*"
 pylint = "*"
+coverage = "*"
+coveralls = "*"
 
 [requires]
 python_version = "3.6"
