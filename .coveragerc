@@ -1,0 +1,7 @@
+[run]
+omit =
+    app.py
+    docs/*
+    test*
+    wsgi.py
+    fulltext/config.py

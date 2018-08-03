@@ -10,6 +10,6 @@ python:
 script:
   - pip install -U pip pipenv
   - pipenv install --dev
-  - pipenv run nose2 -s extractor -s ./
+  - pipenv run nose2 -s extractor -s ./ --with-coverage
 after_success:
   - coveralls
