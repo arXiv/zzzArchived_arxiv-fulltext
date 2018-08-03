@@ -54,3 +54,16 @@ be. This helps to prevent duplicate extraction tasks.
    :width: 450px
 
    Container-level view of the fulltext extraction service.
+
+
+Components
+----------
+The fulltext extraction service implements the general architecture described
+in :doc:`arxitecture:crosscutting/services`.
+
+.. _figure-components:
+
+.. figure:: _static/diagrams/fulltext-service-components.png
+   :width: 450px
+
+   Component-level view of the fulltext extraction service.
