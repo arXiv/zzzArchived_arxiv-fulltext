@@ -5,3 +5,4 @@ omit =
     test*
     wsgi.py
     fulltext/config.py
+    fulltext/celeryconfig.py
