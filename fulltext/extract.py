@@ -4,7 +4,8 @@ from celery import shared_task
 import os
 from datetime import datetime
 from arxiv.base import logging
-from fulltext.services import store, retrieve, fulltext, metrics
+from fulltext.services import store, retrieve, fulltext
+from fulltext.process import psv
 from celery.result import AsyncResult
 from celery import current_app
 from celery.signals import after_task_publish
@@ -20,23 +21,28 @@ def extract_fulltext(document_id: str, pdf_url: str) -> None:
         # Retrieve PDF from arXiv central document store.
         pdf_path = retrieve.retrieve(pdf_url, document_id)
         if pdf_path is None:
-            metrics.report('PDFIsAvailable', 0.)
-            msg = '%s: no PDF available' % document_id
-            logger.info(msg)
-            raise RuntimeError(msg)
-        metrics.report('PDFIsAvailable', 1.)
+            raise RuntimeError('%s: no PDF available' % document_id)
         logger.info('%s: retrieved PDF' % document_id)
 
         logger.info('Attempting text extraction for %s' % document_id)
         content = fulltext.extract_fulltext(pdf_path)
         logger.info('Text extraction for %s succeeded with %i chars' %
                     (document_id, len(content)))
+        try:
+            store.store(document_id, content)
+        except RuntimeError as e:   # TODO: flesh out exception states.
+            raise
+        duration = (start_time - datetime.now()).microseconds
+        logger.info(f'Finished extraction for {document_id} in {duration} ms')
+
+        psv_content = psv.normalize_text_psv(content)
+        try:
+            store.store(document_id, psv_content, content_format='psv')
+        except RuntimeError as e:   # TODO: flesh out exception states.
+            raise
+        logger.info(f'Stored PSV normalized content for {document_id}')
 
         os.remove(pdf_path)    # Cleanup.
-        store.create(document_id, content)
-        duration = (start_time - datetime.now()).microseconds
-        metrics.report('ProcessingDuration', duration, units='Microseconds')
-        logger.debug('Finished processing in %i microseconds', duration)
 
     except Exception as e:
         logger.error('Failed to process %s: %s' % (document_id, e))

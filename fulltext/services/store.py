@@ -1,191 +1,143 @@
-"""The request table tracks work on arXiv documents."""
-
-from arxiv.base import logging
+from typing import Tuple, Optional
+from functools import wraps
+from hashlib import md5
 import boto3
-from boto3.dynamodb.conditions import Key
-from botocore.exceptions import ClientError
-from datetime import datetime
-import os
-from arxiv.base.globals import get_application_config, get_application_global
-from fulltext.services import credentials
-import gzip
-logger = logging.getLogger(__name__)
+import botocore
+from flask import Flask
+from arxiv.base.globals import get_application_global, get_application_config
 
 
-class FullTextStoreSession(object):
-    table_name = 'FullText'
+class DoesNotExist(RuntimeError):
+    """The requested fulltext content does not exist."""
 
-    def __init__(self, endpoint_url: str, access_key: str, secret_key: str,
-                 token: str, region_name: str, verify: bool=True,
-                 version: float=0.0) -> None:
-        logger.debug('New session with dynamodb at %s' % endpoint_url)
+
+class S3Session(object):
+    """Represents a session with S3."""
+
+    def __init__(self, bucket: str, version: str, verify: bool = False,
+                 region_name: Optional[str] = None,
+                 endpoint_url: Optional[str] = None,
+                 aws_access_key_id: Optional[str] = None,
+                 aws_secret_access_key: Optional[str] = None) -> None:
+        """Initialize with connection config parameters."""
+        self.bucket = bucket
         self.version = version
-        self.dynamodb = boto3.resource('dynamodb', verify=verify,
-                                       region_name=region_name,
-                                       endpoint_url=endpoint_url,
-                                       aws_access_key_id=access_key,
-                                       aws_secret_access_key=secret_key,
-                                       aws_session_token=token)
-        logger.debug('New dynamodb resource: %s' % str(id(self.dynamodb)))
+        self.region_name = region_name
+        self.endpoint_url = endpoint_url
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
+        self.client = boto3.client(
+            's3',
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            endpoint_url=endpoint_url,
+            verify=verify,
+            region_name=region_name
+        )
 
-        self.table = self.dynamodb.Table(self.table_name)
-        logger.debug('New table object: %s' % str(id(self.table)))
-
-    def create_table(self) -> None:
-        """Set up a new table in DynamoDB. Blocks until table is available."""
+    def store(self, paper_id: str, content: str, version: Optional[str] = None,
+              content_format: str = 'plain') -> None:
+        """Store fulltext content."""
+        if version is None:
+            version = self.version
+        body = content.encode('utf-8')
         try:
-            table = self.dynamodb.create_table(
-                TableName=self.table_name,
-                KeySchema=[
-                    {'AttributeName': 'document', 'KeyType': 'HASH'},
-                    {'AttributeName': 'created', 'KeyType': 'RANGE'}
-                ],
-                AttributeDefinitions=[
-                    {"AttributeName": 'document', "AttributeType": "S"},
-                    {"AttributeName": 'created', "AttributeType": "S"}
-                ],
-                ProvisionedThroughput={    # TODO: make this configurable.
-                    'ReadCapacityUnits': 20,
-                    'WriteCapacityUnits': 20
-                }
+            self.client.put_object(
+                Body=body,
+                Bucket=self.bucket,
+                ContentHash=md5(body).hexdigest(),
+                ContentType='text/plain',
+                Key=f'{paper_id}/{version}/{content_format}',
             )
-            waiter = table.meta.client.get_waiter('table_exists')
-            waiter.wait(TableName=self.table_name)
-            logger.debug('Created table: %s' % self.table_name)
-        except ClientError as e:
-            logger.debug('Table already exists: %s' % self.table_name)
+        except botocore.exceptions.ClientError as e:
+            raise RuntimeError(f'Unhandled exception: {e}') from e
 
-    def create(self, document_id: str, content: str) -> None:
-        """
-        Store fulltext content for a document.
-
-        Parameters
-        ----------
-        sequence_id : int
-        state : str
-        document_id : str
-
-        Raises
-        ------
-        IOError
-        """
-        logger.debug('Store record for %s' % document_id)
-        entry = {
-            'document': document_id,
-            'version': self.version,
-            'created':  datetime.now().isoformat(),
-            'content': gzip.compress(bytes(content, encoding='utf-8'))
-        }
+    def retrieve(self, paper_id: str, version: Optional[str] = None,
+                 content_format: str = 'plain') -> None:
+        """Retrieve fulltext content."""
+        if version is None:
+            version = self.version
         try:
-            self.table.put_item(Item=entry)
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'ResourceNotFoundException':
-                self.create_table()
-                try:
-                    self.table.put_item(Item=entry)
-                    return
-                except ClientError as e:
-                    raise IOError('Failed to create: %s' % e) from e
-            else:
-                raise IOError('Failed to create: %s' % e) from e
-        logger.debug('Store record for %s successful' % document_id)
+            response = self.client.get_object(
+                Bucket=self.bucket,
+                Key=f'{paper_id}/{version}/{content_format}'
+            )
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == "404":
+                raise DoesNotExist(f'No fulltext content for {paper_id} with '
+                                   f'extractor version {version} in format '
+                                   f'{content_format}') from e
+            raise RuntimeError(f'Unhandled exception: {e}') from e
+        return response['Body'].decode('utf-8')
 
-    def latest(self, document_id: str) -> dict:
-        """
-        Retrieve the most recent extraction for a document.
-
-        Parameters
-        ----------
-        document_id : int
-
-        Returns
-        -------
-        dict
-        """
-        logger.debug('Getting latest record for %s' % document_id)
-        query = {
-            'Limit': 1,
-            'ScanIndexForward': False,
-            'KeyConditionExpression': Key('document').eq(document_id)
-        }
+    def exists(self, paper_id: str, version: Optional[str] = None,
+               content_format: str = 'plain') -> None:
+        """Check whether fulltext content exists."""
+        if version is None:
+            version = self.version
         try:
-            response = self.table.query(**query)
-            logger.debug('Got response with %i results' %
-                         len(response['Items']))
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'ResourceNotFoundException':
-                self.create_table()
-                try:
-                    response = self.table.query(**query)
-                except ClientError as e:
-                    raise IOError('Could not connect to store: %s' % e)
-            else:
-                raise IOError('Could not connect to store: %s' % e)
-        if len(response['Items']) == 0:
-            return None
-        item = response['Items'][0]
-        return {
-            'document': item['document'],
-            'version': float(item.get('version')),
-            'created': item['created'],
-            'content': gzip.decompress(item['content'].value).decode('utf-8')
-        }
+            self.client.head_object(
+                Bucket=self.bucket,
+                Key=f'{paper_id}/{version}/{content_format}'
+            )
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == "404":
+                return False
+            raise RuntimeError(f'Unhandled exception: {e}') from e
+        return True
 
 
-def init_app(app) -> None:
-    app.config.setdefault('DYNAMODB_ENDPOINT', None)
+@wraps(S3Session.store)
+def store(paper_id: str, content: str, version: Optional[str] = None,
+          content_format: str = 'plain') -> None:
+    """Store fulltext content using the current S3 session."""
+    return current_session().store(paper_id, content, version, content_format)
+
+
+@wraps(S3Session.retrieve)
+def retrieve(paper_id: str, version: Optional[str] = None,
+             content_format: str = 'plain') -> None:
+    """Retrieve fulltext content using the current S3 session."""
+    return current_session().retrieve(paper_id, version, content_format)
+
+
+@wraps(S3Session.exists)
+def exists(paper_id: str, version: Optional[str] = None,
+           content_format: str = 'plain') -> None:
+    """Check if fulltext content exists using the current S3 session."""
+    return current_session().exists(paper_id, version, content_format)
+
+
+def init_app(app: Flask) -> None:
+    """Set defaults for required configuration parameters."""
     app.config.setdefault('AWS_REGION', 'us-east-1')
+    app.config.setdefault('AWS_ACCESS_KEY_ID', None)
+    app.config.setdefault('AWS_SECRET_ACCESS_KEY', None)
+    app.config.setdefault('S3_ENDPOINT', None)
+    app.config.setdefault('S3_VERIFY', True)
+    app.config.setdefault('S3_BUCKET', 'arxiv-fulltext')
     app.config.setdefault('VERSION', "0.0")
-    app.config.setdefault('DYNAMODB_VERIFY', 'true')
 
 
-def get_session(app: object=None) -> FullTextStoreSession:
-    config = get_application_config(app)
-    creds = credentials.current_session()
-    try:
-        access_key, secret_key, token = creds.get_credentials()
-    except IOError as e:
-        access_key, secret_key, token = None, None, None
-        logger.debug('failed to load instance credentials: %s', str(e))
-    if access_key is None or secret_key is None:
-        access_key = config.get('AWS_ACCESS_KEY_ID', None)
-        secret_key = config.get('AWS_SECRET_ACCESS_KEY', None)
-        token = config.get('AWS_SESSION_TOKEN', None)
-
-    endpoint_url = config.get('DYNAMODB_ENDPOINT', None)
-    region_name = config.get('AWS_REGION', 'us-east-1')
-    version = config.get('VERSION', "0.0")
-    verify = bool(config.get('DYNAMODB_VERIFY', "true"))
-    return FullTextStoreSession(endpoint_url, access_key, secret_key, token,
-                                region_name, verify=verify, version=version)
+def get_session() -> S3Session:
+    """Create a new :class:`botocore.client.S3` session."""
+    config = get_application_config()
+    access_key = config.get('AWS_ACCESS_KEY_ID')
+    secret_key = config.get('AWS_SECRET_ACCESS_KEY')
+    endpoint = config.get('S3_ENDPOINT')
+    verify = config.get('S3_VERIFY')
+    region = config.get('AWS_REGION')
+    bucket = config.get('S3_BUCKET')
+    version = config.get('VERSION')
+    return S3Session(bucket, version, verify, region,
+                     endpoint, access_key, secret_key)
 
 
-def current_session():
-    """Get/create :class:`.FullTextStoreSession` for this context."""
+def current_session() -> S3Session:
+    """Get the current new :class:`botocore.client.S3` for this application."""
     g = get_application_global()
     if g is None:
         return get_session()
-    if 'fulltext_store' not in g:
-        g.fulltext_store = get_session()
-    return g.fulltext_store
-
-
-def create(document_id: str, content: str) -> None:
-    """Store fulltext content for a document."""
-    return current_session().create(document_id, content)
-
-
-def latest(document_id: str) -> dict:
-    """Retrieve the most recent extraction for a document."""
-    return current_session().latest(document_id)
-
-
-def current_version() -> str:
-    """Get the current extraction version."""
-    return current_session().version
-
-
-def init_db():
-    """Create datastore tables."""
-    session = current_session()
-    session.create_table()
+    if 'store' not in g:
+        g.store = get_session()
+    return g.store

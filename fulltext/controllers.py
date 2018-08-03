@@ -35,7 +35,7 @@ def retrieve(document_id: str) -> tuple:
     tuple
     """
     try:
-        content_data = store.latest(document_id)
+        content_data = store.retrieve(document_id)
     except IOError as e:
         logger.error(str(e))
         return {
@@ -56,14 +56,6 @@ def extract(payload: str) -> tuple:
     if document_id is None or not isinstance(document_id, str):
         return DOCUMENT_ID_MISSING, HTTP_400_BAD_REQUEST, {}
     logger.info('extract: got document_id: %s' % document_id)
-
-    latest = store.latest(document_id)
-    if latest is not None and latest.get('version') >= store.current_version():
-        headers = {
-            'Location': url_for('fulltext.retrieve', doc_id=document_id)
-        }
-        return ALREADY_EXISTS, HTTP_303_SEE_OTHER, headers
-    logger.info('extract: got latest: %s' % latest)
 
     pdf_url = payload.get('url')
     if pdf_url is None or not retrievePDF.is_valid_url(pdf_url):
