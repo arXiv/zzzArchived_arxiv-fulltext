@@ -5,25 +5,24 @@ FROM arxiv/base:latest
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh
 
+WORKDIR /opt/arxiv
+
 # Add Python consumer and configuration.
-ADD requirements/worker.txt /opt/arxiv/requirements.txt
-ADD wsgi.py /opt/arxiv/
-RUN pip install -U pip && pip install -r /opt/arxiv/requirements.txt
+ADD Pipfile /opt/arxiv/
+RUN pip install -U pip pipenv
+RUN pipenv install
 
 ENV PATH "/opt/arxiv:${PATH}"
-VOLUME ["/pdfs"]
 
-# Runtime configuration.
-ENV AWS_ACCESS_KEY_ID ""
-ENV AWS_SECRET_ACCESS_KEY ""
+ENV LC_ALL en_US.utf8
+ENV LANG en_US.utf8
+ENV LOGLEVEL 40
 
-# If not set, secrets will not be retrieved.
-ENV SECRETS_BUCKET_NAME ""
 ENV ARXIV_HOME "https://arxiv.org"
 
-RUN pip install awscli --upgrade
-
 ADD fulltext /opt/arxiv/fulltext/
+
+VOLUME ["/pdfs"]
 
 WORKDIR /opt/arxiv
 ENTRYPOINT ["celery", "worker"]

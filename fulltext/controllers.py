@@ -4,7 +4,8 @@ from werkzeug.exceptions import NotFound, InternalServerError, BadRequest, \
 from arxiv.base import logging
 from arxiv import status
 from fulltext.services import store, pdf
-from fulltext.extract import extract_fulltext, AsyncResult
+from fulltext.extract import create_extraction_task, \
+    get_extraction_task_result, get_extraction_task_status
 from flask import url_for
 from celery import current_app
 
@@ -61,11 +62,9 @@ def retrieve(paper_id: str, content_type: str = 'application/json',
             raise NotFound('Invalid identifier')
         if not pdf.exists(pdf_url):
             raise NotFound('No such document')
-        result = extract_fulltext.delay(paper_id, pdf_url, id_type=id_type)
-        logger.info('extract: started processing as %s' % result.task_id)
-        placeholder = {'task_id': result.task_id}
-        store.store(paper_id, placeholder, bucket=id_type, is_placeholder=True)
-        location = url_for('fulltext.task_status', task_id=result.task_id)
+
+        task_id = create_extraction_task(paper_id, pdf_url, id_type)
+        location = url_for('fulltext.task_status', task_id=task_id)
         return ACCEPTED, status.HTTP_303_SEE_OTHER, {'Location': location}
     except Exception as e:
         raise InternalServerError(f'Unhandled exception: {e}') from e
@@ -100,9 +99,8 @@ def extract(paper_id: str, id_type: str = 'arxiv') -> Response:
         raise NotFound('Invalid identifier')
     if not pdf.exists(pdf_url):
         raise NotFound('No such document')
-    result = extract_fulltext.delay(paper_id, pdf_url, id_type=id_type)
-    logger.info('extract: started processing as %s' % result.task_id)
-    location = url_for('fulltext.task_status', task_id=result.task_id)
+    task_id = create_extraction_task(paper_id, pdf_url, id_type)
+    location = url_for('fulltext.task_status', task_id=task_id)
     return ACCEPTED, status.HTTP_202_ACCEPTED, {'Location': location}
 
 
@@ -112,19 +110,21 @@ def get_task_status(task_id: str) -> Response:
     if not isinstance(task_id, str):
         logger.debug('%s: Failed, invalid task id' % task_id)
         raise ValueError('task_id must be string, not %s' % type(task_id))
-    result = extract_fulltext.AsyncResult(task_id)
-    logger.debug('%s: got result: %s' % (task_id, result.status))
-    if result.status == 'PENDING':
+
+    task_status = get_extraction_task_status(task_id)
+    logger.debug('%s: got result: %s' % (task_id, task_status))
+    if task_status == 'PENDING':
         raise NotFound('task not found')
-    elif result.status in ['SENT', 'STARTED', 'RETRY']:
+    elif task_status in ['SENT', 'STARTED', 'RETRY']:
         return TASK_IN_PROGRESS, status.HTTP_200_OK, {}
-    elif result.status == 'FAILURE':
-        logger.error('%s: failed task: %s' % (task_id, result.result))
+    elif task_status == 'FAILURE':
+        task_result = get_extraction_task_result(task_id)
+        logger.error('%s: failed task: %s' % (task_id, task_result))
         reason = TASK_FAILED
-        reason.update({'reason': str(result.result)})
+        reason.update({'reason': str(task_result)})
         return reason, status.HTTP_200_OK, {}
-    elif result.status == 'SUCCESS':
-        task_result = result.result
+    elif task_status == 'SUCCESS':
+        task_result = get_extraction_task_result(task_id)
         paper_id = task_result.get('paper_id')
         id_type = task_result.get('id_type')
         logger.debug('Retrieved result successfully, paper_id: %s' %

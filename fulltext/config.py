@@ -6,10 +6,6 @@ Docstrings are from the `Flask configuration documentation
 """
 import os
 
-
-VERSION = '0.1'
-"""The application version, used to sign extracted fulltext."""
-
 ON = 'yes'
 OFF = 'no'
 
@@ -210,8 +206,8 @@ S3_BUCKETS = [
 ]
 
 # SUBMISSION_DATABASE_URL = os.environ.get('SUBMISSION_DATABASE_URL')
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', 'nope')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', 'nope')
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 
 SOURCE_WHITELIST = os.environ.get('SOURCE_WHITELIST',
@@ -219,7 +215,7 @@ SOURCE_WHITELIST = os.environ.get('SOURCE_WHITELIST',
 
 
 FULLTEXT_DOCKER_IMAGE = os.environ.get('FULLTEXT_DOCKER_IMAGE',
-                                       'arxiv/fulltext')
+                                       'arxiv/fulltext-extractor:0.3')
 
 # Settings for the indexing agent.
 KINESIS_ENDPOINT = os.environ.get('KINESIS_ENDPOINT')
@@ -249,3 +245,11 @@ BASE_SERVER = 'arxiv.org'
 URLS = [
     ('submission_pdf', '/pdf/<submission_id>', BASE_SERVER)
 ]
+
+VERSION = '0.3'
+"""
+The extractor version, used to sign extracted fulltext.
+
+This should only be incremented when the extraction process itself changes,
+not when the API of this web application changes.
+"""

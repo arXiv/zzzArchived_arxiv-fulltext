@@ -2,28 +2,33 @@
 
 FROM arxiv/base:latest
 
-RUN pip install uwsgi
+WORKDIR /opt/arxiv
 
 # Add Python consumer and configuration.
-ADD requirements/web.txt /opt/arxiv/requirements.txt
-ADD wsgi.py /opt/arxiv/
-ADD bin/start_web.sh /opt/arxiv/
-RUN pip install -U pip
-RUN pip install -r /opt/arxiv/requirements.txt
-
-ADD fulltext /opt/arxiv/fulltext/
+ADD Pipfile /opt/arxiv/
+RUN pip install -U pip pipenv
+RUN pipenv install
 
 ENV PATH "/opt/arxiv:${PATH}"
 
-# Runtime configuration.
-ENV AWS_ACCESS_KEY_ID ""
-ENV AWS_SECRET_ACCESS_KEY ""
+ENV LC_ALL en_US.utf8
+ENV LANG en_US.utf8
+ENV LOGLEVEL 40
 
-# If not set, secrets will not be retrieved.
-ENV SECRETS_BUCKET_NAME ""
 ENV ARXIV_HOME "https://arxiv.org"
+
+ADD fulltext /opt/arxiv/fulltext/
 
 EXPOSE 8000
 
 WORKDIR /opt/arxiv/
-CMD uwsgi --http-socket :8000 -w wsgi -t 3000 --processes 8 --threads 1 -M --async 100 --ugreen --manage-script-name
+CMD ["--http-socket", ":8000", \
+     "-M", \
+     "-t 3000", \
+     "--manage-script-name", \
+     "--processes", "8", \
+     "--threads", "1", \
+     "--async", "100", \
+     "--ugreen", \
+     "--mount", "/fulltext=wsgi.py", \
+     "--logformat", "%(addr) %(addr) - %(user_id)|%(session_id) [%(rtime)] [%(uagent)] \"%(method) %(uri) %(proto)\" %(status) %(size) %(micros) %(ttfb)"]

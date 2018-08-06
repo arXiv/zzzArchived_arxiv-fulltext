@@ -1,7 +1,7 @@
 """Provides asynchronous task for fulltext extraction."""
 
 import os
-from typing import Tuple
+from typing import Tuple, Optional
 from datetime import datetime
 import shutil
 import subprocess
@@ -19,6 +19,70 @@ from fulltext.services import store, pdf
 from fulltext.process import psv
 
 logger = logging.getLogger(__name__)
+
+
+def create_extraction_task(paper_id: str, pdf_url: str, id_type: str) -> str:
+    """
+    Create a new extraction task.
+
+    Parameters
+    ----------
+    paper_id : str
+        Unique identifier for the paper being extracted. Usually an arXiv ID.
+    pdf_url : str
+        The full URL for the PDF from which text will be extracted.
+    id_type : str
+        Either 'arxiv' or 'submission'.
+
+    Returns
+    -------
+    str
+        The identifier for the created extraction task.
+    """
+    result = extract_fulltext.delay(paper_id, pdf_url, id_type=id_type)
+    logger.info('extract: started processing as %s' % result.task_id)
+    placeholder = {'task_id': result.task_id}
+    store.store(paper_id, placeholder, bucket=id_type, is_placeholder=True)
+    return result.task_id
+
+
+def get_extraction_task_status(task_id: str) -> str:
+    """
+    Get the status of an extraction task.
+
+    Parameters
+    ----------
+    task_id : str
+        The identifier for the created extraction task.
+
+    Returns
+    -------
+    str
+        One of 'PENDING', 'SENT', 'STARTED', 'RETRY', 'FAILURE', 'SUCCESS'.
+
+    """
+    result = extract_fulltext.AsyncResult(task_id)
+    return result.status
+
+
+def get_extraction_task_result(task_id: str) -> dict:
+    """
+    Get the result of an extraction task.
+
+    Parameters
+    ----------
+    task_id : str
+        The identifier for the created extraction task.
+
+    Returns
+    -------
+    dict
+        Data returned by :func:`extract_fulltext`. Should include `paper_id`
+        and `id_type` keys.
+
+    """
+    result = extract_fulltext.AsyncResult(task_id)
+    return result.result
 
 
 @celery_app.task
@@ -72,7 +136,7 @@ def update_sent_state(sender=None, headers=None, body=None, **kwargs):
 
 
 def do_extraction(filename: str, cleanup: bool = False,
-                  image: str = 'arxiv/fulltext') -> str:
+                  image: Optional[str] = None) -> str:
     """
     Extract fulltext from the PDF represented by ``filehandle``.
 
@@ -86,6 +150,10 @@ def do_extraction(filename: str, cleanup: bool = False,
         Raw XML response from FullText.
     """
     workdir = current_app.config.get('WORKDIR', '/tmp/pdfs')
+
+    if image is None:
+        image = current_app.config['FULLTEXT_DOCKER_IMAGE']
+
     fldr, name = os.path.split(filename)
     stub, ext = os.path.splitext(os.path.basename(filename))
     pdfpath = os.path.join(workdir, name)

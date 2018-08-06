@@ -6,7 +6,6 @@ WORKDIR /opt/arxiv
 
 # Add Python consumer and configuration.
 ADD Pipfile /opt/arxiv/
-ADD Pipfile.lock /opt/arxiv/
 RUN pip install -U pip pipenv
 RUN pipenv install
 
@@ -16,18 +15,12 @@ ENV LC_ALL en_US.utf8
 ENV LANG en_US.utf8
 ENV LOGLEVEL 40
 
-# Runtime configuration.
-ENV AWS_ACCESS_KEY_ID ""
-ENV AWS_SECRET_ACCESS_KEY ""
-
 VOLUME /checkpoint
 
-ENV KINESIS_STREAM "MetadataIsAvailable"
+ENV KINESIS_STREAM "PDFIsAvailable"
 ENV KINESIS_SHARD_ID "0"
 ENV KINESIS_CHECKPOINT_VOLUME "/checkpoint"
 ENV KINESIS_START_TYPE "AT_TIMESTAMP"
-
-RUN chmod +x /opt/arxiv/start_agent.sh
 
 # Add the application itself last, for faster builds on minor revisions.
 ADD fulltext /opt/arxiv/fulltext/

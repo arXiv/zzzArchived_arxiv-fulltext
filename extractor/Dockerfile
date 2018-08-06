@@ -1,3 +1,5 @@
+# arxiv/fulltext-extractor:0.3
+
 FROM python:3
 
 LABEL maintainer "mkb72@cornell.edu"

@@ -32,14 +32,22 @@ class S3Session(object):
         self.endpoint_url = endpoint_url
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
-        self.client = boto3.client(
-            's3',
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            endpoint_url=endpoint_url,
-            verify=verify,
-            region_name=region_name
-        )
+
+        # Only add credentials to the client if they are explicitly set.
+        # If they are not set, boto3 falls back to environment variables and
+        # credentials files.
+        params = dict(region_name=region_name)
+        if aws_access_key_id and aws_secret_access_key:
+            params.update(dict(
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key
+            ))
+        if endpoint_url:
+            params.update(dict(
+                endpoint_url=endpoint_url,
+                verify=verify
+            ))
+        self.client = boto3.client('s3', **params)
 
     def _create_placeholder(self, data: dict) -> bytes:
         return f'PLACEHOLDER:::{json.dumps(data)}'.encode('utf-8')
