@@ -253,3 +253,5 @@ The extractor version, used to sign extracted fulltext.
 This should only be incremented when the extraction process itself changes,
 not when the API of this web application changes.
 """
+
+WORKDIR = os.environ.get('WORKDIR', '/tmp')

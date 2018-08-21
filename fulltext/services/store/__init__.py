@@ -7,6 +7,7 @@ import json
 from typing import Tuple, Optional, Dict, Union
 from functools import wraps
 from hashlib import md5
+from base64 import b64encode
 import boto3
 import botocore
 from flask import Flask
@@ -94,7 +95,7 @@ class S3Session(object):
             self.client.put_object(
                 Body=body,
                 Bucket=self._get_bucket(bucket),
-                ContentMD5=md5(body).hexdigest(),
+                ContentMD5=b64encode(md5(body).digest()).decode('utf-8'),
                 ContentType='text/plain',
                 Key=f'{paper_id}/{version}/{content_format}',
             )

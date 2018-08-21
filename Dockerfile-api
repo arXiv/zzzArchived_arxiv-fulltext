@@ -6,7 +6,7 @@ WORKDIR /opt/arxiv
 
 # Add Python consumer and configuration.
 ADD Pipfile /opt/arxiv/
-RUN pip install -U pip pipenv
+RUN pip install -U pip pipenv uwsgi
 RUN pipenv install
 
 ENV PATH "/opt/arxiv:${PATH}"
@@ -18,10 +18,13 @@ ENV LOGLEVEL 40
 ENV ARXIV_HOME "https://arxiv.org"
 
 ADD fulltext /opt/arxiv/fulltext/
-
+ADD wsgi.py /opt/arxiv/
+ADD bin/start_api.sh /opt/arxiv/
 EXPOSE 8000
 
 WORKDIR /opt/arxiv/
+
+ENTRYPOINT ["/opt/arxiv/start_api.sh"]
 CMD ["--http-socket", ":8000", \
      "-M", \
      "-t 3000", \

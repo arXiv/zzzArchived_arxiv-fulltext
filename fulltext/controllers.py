@@ -71,7 +71,7 @@ def retrieve(paper_id: str, content_type: str = 'application/json',
 
     # Extraction has already been requested.
     if 'placeholder' in content_data:
-        if 'task_id' in content_data['task_id']:
+        if 'task_id' in content_data['placeholder']:
             task_id = content_data['placeholder']['task_id']
             location = url_for('fulltext.task_status', task_id=task_id)
             return ACCEPTED, status.HTTP_303_SEE_OTHER, {'Location': location}

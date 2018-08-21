@@ -21,9 +21,11 @@ ENV LOGLEVEL 40
 ENV ARXIV_HOME "https://arxiv.org"
 
 ADD fulltext /opt/arxiv/fulltext/
+ADD bin/start_worker.sh /opt/arxiv/
 
 VOLUME ["/pdfs"]
 
-WORKDIR /opt/arxiv
-ENTRYPOINT ["celery", "worker"]
-CMD ["-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=4"]
+ENV WORKDIR /pdfs
+
+ENTRYPOINT ["/opt/arxiv/start_worker.sh"]
+CMD ["-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=2"]

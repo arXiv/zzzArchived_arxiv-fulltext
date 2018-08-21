@@ -212,8 +212,7 @@ def run_docker(image: str, volumes: list = [], ports: list = [],
     result = subprocess.run(cmd, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, shell=True)
     if result.returncode:
-        _cmd = ' '.join(cmd)
-        logger.error(f"Docker image call '{_cmd}' exited {result.returncode}")
+        logger.error(f"Docker image call '{cmd}' exited {result.returncode}")
         logger.error(f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}")
         result.check_returncode()
 
