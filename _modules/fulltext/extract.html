@@ -36,7 +36,7 @@
 <span></span><span class="sd">&quot;&quot;&quot;Provides asynchronous task for fulltext extraction.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
 <span class="kn">import</span> <span class="nn">shutil</span>
 <span class="kn">import</span> <span class="nn">subprocess</span>
@@ -54,6 +54,70 @@
 <span class="kn">from</span> <span class="nn">fulltext.process</span> <span class="k">import</span> <span class="n">psv</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="create_extraction_task"><a class="viewcode-back" href="../../fulltext/fulltext.extract.html#fulltext.extract.create_extraction_task">[docs]</a><span class="k">def</span> <span class="nf">create_extraction_task</span><span class="p">(</span><span class="n">paper_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pdf_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">id_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a new extraction task.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    paper_id : str</span>
+<span class="sd">        Unique identifier for the paper being extracted. Usually an arXiv ID.</span>
+<span class="sd">    pdf_url : str</span>
+<span class="sd">        The full URL for the PDF from which text will be extracted.</span>
+<span class="sd">    id_type : str</span>
+<span class="sd">        Either &#39;arxiv&#39; or &#39;submission&#39;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The identifier for the created extraction task.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">extract_fulltext</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="n">paper_id</span><span class="p">,</span> <span class="n">pdf_url</span><span class="p">,</span> <span class="n">id_type</span><span class="o">=</span><span class="n">id_type</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;extract: started processing as </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">result</span><span class="o">.</span><span class="n">task_id</span><span class="p">)</span>
+    <span class="n">placeholder</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;task_id&#39;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">task_id</span><span class="p">}</span>
+    <span class="n">store</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">paper_id</span><span class="p">,</span> <span class="n">placeholder</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="n">id_type</span><span class="p">,</span> <span class="n">is_placeholder</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">task_id</span></div>
+
+
+<div class="viewcode-block" id="get_extraction_task_status"><a class="viewcode-back" href="../../fulltext/fulltext.extract.html#fulltext.extract.get_extraction_task_status">[docs]</a><span class="k">def</span> <span class="nf">get_extraction_task_status</span><span class="p">(</span><span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the status of an extraction task.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    task_id : str</span>
+<span class="sd">        The identifier for the created extraction task.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        One of &#39;PENDING&#39;, &#39;SENT&#39;, &#39;STARTED&#39;, &#39;RETRY&#39;, &#39;FAILURE&#39;, &#39;SUCCESS&#39;.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">extract_fulltext</span><span class="o">.</span><span class="n">AsyncResult</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">status</span></div>
+
+
+<div class="viewcode-block" id="get_extraction_task_result"><a class="viewcode-back" href="../../fulltext/fulltext.extract.html#fulltext.extract.get_extraction_task_result">[docs]</a><span class="k">def</span> <span class="nf">get_extraction_task_result</span><span class="p">(</span><span class="n">task_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the result of an extraction task.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    task_id : str</span>
+<span class="sd">        The identifier for the created extraction task.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Data returned by :func:`extract_fulltext`. Should include `paper_id`</span>
+<span class="sd">        and `id_type` keys.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">extract_fulltext</span><span class="o">.</span><span class="n">AsyncResult</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">result</span></div>
 
 
 <span class="nd">@celery_app</span><span class="o">.</span><span class="n">task</span>
@@ -107,7 +171,7 @@
 
 
 <div class="viewcode-block" id="do_extraction"><a class="viewcode-back" href="../../fulltext/fulltext.extract.html#fulltext.extract.do_extraction">[docs]</a><span class="k">def</span> <span class="nf">do_extraction</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cleanup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                  <span class="n">image</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;arxiv/fulltext&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+                  <span class="n">image</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Extract fulltext from the PDF represented by ``filehandle``.</span>
 
@@ -121,6 +185,10 @@
 <span class="sd">        Raw XML response from FullText.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">workdir</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;WORKDIR&#39;</span><span class="p">,</span> <span class="s1">&#39;/tmp/pdfs&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">image</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">current_app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;FULLTEXT_DOCKER_IMAGE&#39;</span><span class="p">]</span>
+
     <span class="n">fldr</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
     <span class="n">stub</span><span class="p">,</span> <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
     <span class="n">pdfpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">workdir</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
@@ -179,8 +247,7 @@
     <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
                             <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span><span class="p">:</span>
-        <span class="n">_cmd</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Docker image call &#39;</span><span class="si">{_cmd}</span><span class="s2">&#39; exited </span><span class="si">{result.returncode}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Docker image call &#39;</span><span class="si">{cmd}</span><span class="s2">&#39; exited </span><span class="si">{result.returncode}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;STDOUT: </span><span class="si">{result.stdout}</span><span class="se">\n</span><span class="s2">STDERR: </span><span class="si">{result.stderr}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">result</span><span class="o">.</span><span class="n">check_returncode</span><span class="p">()</span>
 

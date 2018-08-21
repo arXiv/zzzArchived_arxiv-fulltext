@@ -38,8 +38,36 @@
 <span id="fulltext-extract-module"></span><h1>fulltext.extract module<a class="headerlink" href="#module-fulltext.extract" title="Permalink to this headline">¶</a></h1>
 <p>Provides asynchronous task for fulltext extraction.</p>
 <dl class="function">
+<dt id="fulltext.extract.create_extraction_task">
+<code class="descclassname">fulltext.extract.</code><code class="descname">create_extraction_task</code><span class="sig-paren">(</span><em>paper_id</em>, <em>pdf_url</em>, <em>id_type</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/extract.html#create_extraction_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.extract.create_extraction_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new extraction task.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>paper_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Unique identifier for the paper being extracted. Usually an arXiv ID.</li>
+<li><strong>pdf_url</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – The full URL for the PDF from which text will be extracted.</li>
+<li><strong>id_type</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Either ‘arxiv’ or ‘submission’.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The identifier for the created extraction task.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="fulltext.extract.do_extraction">
-<code class="descclassname">fulltext.extract.</code><code class="descname">do_extraction</code><span class="sig-paren">(</span><em>filename</em>, <em>cleanup=False</em>, <em>image='arxiv/fulltext'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/extract.html#do_extraction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.extract.do_extraction" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">fulltext.extract.</code><code class="descname">do_extraction</code><span class="sig-paren">(</span><em>filename</em>, <em>cleanup=False</em>, <em>image=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/extract.html#do_extraction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.extract.do_extraction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract fulltext from the PDF represented by <code class="docutils literal notranslate"><span class="pre">filehandle</span></code>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -48,6 +76,47 @@
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Raw XML response from FullText.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fulltext.extract.get_extraction_task_result">
+<code class="descclassname">fulltext.extract.</code><code class="descname">get_extraction_task_result</code><span class="sig-paren">(</span><em>task_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/extract.html#get_extraction_task_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.extract.get_extraction_task_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the result of an extraction task.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>task_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – The identifier for the created extraction task.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Data returned by <code class="xref py py-func docutils literal notranslate"><span class="pre">extract_fulltext()</span></code>. Should include <cite>paper_id</cite>
+and <cite>id_type</cite> keys.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fulltext.extract.get_extraction_task_status">
+<code class="descclassname">fulltext.extract.</code><code class="descname">get_extraction_task_status</code><span class="sig-paren">(</span><em>task_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/extract.html#get_extraction_task_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.extract.get_extraction_task_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the status of an extraction task.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>task_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – The identifier for the created extraction task.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">One of ‘PENDING’, ‘SENT’, ‘STARTED’, ‘RETRY’, ‘FAILURE’, ‘SUCCESS’.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></td>
 </tr>
