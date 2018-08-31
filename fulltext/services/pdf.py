@@ -5,6 +5,7 @@ from functools import wraps
 import requests
 import os
 import tempfile
+import time
 from urllib.parse import urlparse
 
 from requests.packages.urllib3.util.retry import Retry
@@ -69,7 +70,7 @@ class RetrievePDFSession(object):
             return False
         return True
 
-    def exists(self, target: str) -> str:
+    def exists(self, target: str) -> bool:
         """
         Determine whether or not a target URL is available (HEAD request).
 
@@ -90,9 +91,9 @@ class RetrievePDFSession(object):
             return True
         elif r.status_code == status.HTTP_404_NOT_FOUND:
             return False
-        raise ValueError(f'Unexpected response status code: {r.status_code}')
+        raise IOError(f'Unexpected response status code: {r.status_code}')
 
-    def retrieve(self, target: str, document_id: str) -> str:
+    def retrieve(self, target: str, document_id: str, sleep: int = 5) -> str:
         """
         Retrieve PDFs of published papers from the core arXiv document store.
 
@@ -118,13 +119,30 @@ class RetrievePDFSession(object):
         if not self.is_valid_url(target):
             raise ValueError('URL not allowed: %s' % target)
 
-        pdf_response = requests.get(target)
-        if pdf_response.status_code == requests.codes.NOT_FOUND:
+        pdf_response = self._session.get(target)
+        if pdf_response.status_code == status.HTTP_404_NOT_FOUND:
             logger.info('Could not retrieve PDF for %s' % document_id)
             return None
         elif pdf_response.status_code != requests.codes.ok:
             raise IOError('%s: unexpected status for PDF: %i' %
                           (document_id, pdf_response.status_code))
+
+        # Classic PDF route will return 200 even if PDF is not yet generated.
+        # But at least it will be honest about the Content-Type. If we don't
+        # get a PDF back, we should wait and try again.
+        if pdf_response.headers['Content-Type'] != 'application/pdf':
+            retries = 5
+            while pdf_response.headers['Content-Type'] != 'application/pdf':
+                if retries < 1:
+                    raise IOError('Could not retrieve PDF; giving up')
+                logger.info('Got HTML instead of PDF; retrying (%i remaining)',
+                            retries)
+                time.sleep(sleep)
+                retries -= 1
+                pdf_response = self._session.get(target)
+                if pdf_response.status_code != requests.codes.ok:
+                    raise IOError('%s: unexpected status for PDF: %i' %
+                                  (document_id, pdf_response.status_code))
 
         _, pdf_path = tempfile.mkstemp(prefix=document_id, suffix='.pdf')
         with open(pdf_path, 'wb') as f:
@@ -163,9 +181,9 @@ def is_valid_url(url: str) -> bool:
 
 
 @wraps(RetrievePDFSession.retrieve)
-def retrieve(target: str, document_id: str) -> str:
+def retrieve(target: str, document_id: str, sleep: int = 5) -> str:
     """Retrieve a PDF of a paper from the core arXiv document store."""
-    return current_session().retrieve(target, document_id)
+    return current_session().retrieve(target, document_id, sleep=sleep)
 
 
 @wraps(RetrievePDFSession.exists)
