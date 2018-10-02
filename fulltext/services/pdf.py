@@ -15,6 +15,14 @@ from arxiv.base import logging
 from arxiv.base.globals import get_application_config, get_application_global
 
 
+class InvalidURL(ValueError):
+    """A request was made for a URL that is not allowed."""
+
+
+class DoesNotExist(RuntimeError):
+    """A request was made for a non-existant PDF."""
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -85,7 +93,7 @@ class RetrievePDFSession(object):
 
         """
         if not self.is_valid_url(target):
-            raise ValueError('URL not allowed: %s' % target)
+            raise InvalidURL('URL not allowed: %s' % target)
         r = self._session.head(target, allow_redirects=True)
         if r.status_code == status.HTTP_200_OK:
             return True
@@ -117,12 +125,12 @@ class RetrievePDFSession(object):
             When there is a problem retrieving the resource at ``target``.
         """
         if not self.is_valid_url(target):
-            raise ValueError('URL not allowed: %s' % target)
+            raise InvalidURL('URL not allowed: %s' % target)
 
         pdf_response = self._session.get(target)
         if pdf_response.status_code == status.HTTP_404_NOT_FOUND:
             logger.info('Could not retrieve PDF for %s' % document_id)
-            return None
+            raise DoesNotExist('No such resource')
         elif pdf_response.status_code != requests.codes.ok:
             raise IOError('%s: unexpected status for PDF: %i' %
                           (document_id, pdf_response.status_code))

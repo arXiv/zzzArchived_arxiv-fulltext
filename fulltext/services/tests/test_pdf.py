@@ -118,9 +118,8 @@ class TestRetrieve(TestCase):
         Session.return_value = mock.MagicMock(
             get=mock.MagicMock(return_value=mock_response)
         )
-        self.assertIsNone(
+        with self.assertRaises(pdf.DoesNotExist):
             pdf.retrieve('https://arxiv.org/pdf/1234.56789', '1234.56789')
-        )
 
     @mock.patch(f'{pdf.__name__}.requests.Session')
     def test_pdf_returns_error(self, Session):

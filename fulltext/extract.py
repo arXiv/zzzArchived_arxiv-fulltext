@@ -98,9 +98,12 @@ def extract_fulltext(document_id: str, pdf_url: str, id_type: str = 'arxiv') \
     start_time = datetime.now()
     try:
         # Retrieve PDF from arXiv central document store.
-        pdf_path = pdf.retrieve(pdf_url, document_id)
-        if pdf_path is None:
-            raise RuntimeError('%s: no PDF available' % document_id)
+        try:
+            pdf_path = pdf.retrieve(pdf_url, document_id)
+        except pdf.DoesNotExist as e:
+            raise RuntimeError('%s: no PDF available' % document_id) from e
+        except pdf.InvalidURL as e:
+            raise RuntimeError('%s: URL not allowed' % document_id) from e
         logger.info('%s: retrieved PDF' % document_id)
 
         logger.info('Attempting text extraction for %s' % document_id)

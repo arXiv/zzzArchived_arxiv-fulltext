@@ -4,6 +4,7 @@ from unittest import TestCase, mock
 
 from ..domain import ExtractionTask, ExtractionProduct, ExtractionPlaceholder
 from .. import extract
+from ..services import pdf
 
 
 class TestCreateExtractionTask(TestCase):
@@ -110,3 +111,17 @@ class TestGetExtractionTask(TestCase):
         self.assertEqual(task.status, ExtractionTask.Statuses.SUCCEEDED)
         self.assertEqual(task.paper_id, paper_id)
         self.assertEqual(task.id_type, id_type)
+
+
+class TestExtractFulltext(TestCase):
+    """Tests for :func:`extract.extract_fulltext` (the real meat)."""
+
+    @mock.patch(f'{extract.__name__}.store.store', mock.MagicMock())
+    @mock.patch(f'{extract.__name__}.pdf.retrieve')
+    def test_pdf_does_not_exist(self, mock_retrieve):
+        """We screwed up, and created a task for a non-existant PDf."""
+        document_id = '1234.56789'
+        pdf_url = f'https://arxiv.org/pdf/{document_id}'
+        mock_retrieve.side_effect = pdf.DoesNotExist
+        with self.assertRaises(RuntimeError):
+            extract.extract_fulltext(document_id, pdf_url)
