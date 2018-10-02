@@ -1,7 +1,7 @@
 """Provides asynchronous task for fulltext extraction."""
 
 import os
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
 from datetime import datetime
 import shutil
 import subprocess
@@ -18,7 +18,17 @@ from arxiv.base import logging
 from fulltext.services import store, pdf
 from fulltext.process import psv
 
+from .domain import ExtractionPlaceholder, ExtractionTask
+
 logger = logging.getLogger(__name__)
+
+
+class NoSuchTask(RuntimeError):
+    """A request was made for a non-existant task."""
+
+
+class TaskCreationFailed(RuntimeError):
+    """An extraction task could not be created."""
 
 
 def create_extraction_task(paper_id: str, pdf_url: str, id_type: str) -> str:
@@ -39,14 +49,17 @@ def create_extraction_task(paper_id: str, pdf_url: str, id_type: str) -> str:
     str
         The identifier for the created extraction task.
     """
-    result = extract_fulltext.delay(paper_id, pdf_url, id_type=id_type)
-    logger.info('extract: started processing as %s' % result.task_id)
-    placeholder = {'task_id': result.task_id}
-    store.store(paper_id, placeholder, bucket=id_type, is_placeholder=True)
+    try:
+        result = extract_fulltext.delay(paper_id, pdf_url, id_type=id_type)
+        logger.info('extract: started processing as %s' % result.task_id)
+        placeholder = ExtractionPlaceholder(task_id=result.task_id)
+        store.store(paper_id, placeholder, bucket=id_type)
+    except Exception as e:
+        raise TaskCreationFailed('Failed to create task: %s', e) from e
     return result.task_id
 
 
-def get_extraction_task_status(task_id: str) -> str:
+def get_extraction_task(task_id: str) -> ExtractionTask:
     """
     Get the status of an extraction task.
 
@@ -57,37 +70,29 @@ def get_extraction_task_status(task_id: str) -> str:
 
     Returns
     -------
-    str
-        One of 'PENDING', 'SENT', 'STARTED', 'RETRY', 'FAILURE', 'SUCCESS'.
+    :class:`ExtractionTask`
 
     """
     result = extract_fulltext.AsyncResult(task_id)
-    return result.status
-
-
-def get_extraction_task_result(task_id: str) -> dict:
-    """
-    Get the result of an extraction task.
-
-    Parameters
-    ----------
-    task_id : str
-        The identifier for the created extraction task.
-
-    Returns
-    -------
-    dict
-        Data returned by :func:`extract_fulltext`. Should include `paper_id`
-        and `id_type` keys.
-
-    """
-    result = extract_fulltext.AsyncResult(task_id)
-    return result.result
+    data = {}
+    if result.status == 'PENDING':
+        raise NoSuchTask('No such task')
+    elif result.status in ['SENT', 'STARTED', 'RETRY']:
+        data['status'] = ExtractionTask.Statuses.IN_PROGRESS
+    elif result.status == 'FAILURE':
+        data['status'] = ExtractionTask.Statuses.FAILED
+        data['result']: str = result.result
+    elif result.status == 'SUCCESS':
+        data['status'] = ExtractionTask.Statuses.SUCCEEDED
+        _result: Dist[str, str] = result.result
+        data['paper_id'] = _result['paper_id']
+        data['id_type'] = _result['id_type']
+    return ExtractionTask(task_id=task_id, **data)
 
 
 @celery_app.task
 def extract_fulltext(document_id: str, pdf_url: str, id_type: str = 'arxiv') \
-        -> None:
+        -> Dict[str, str]:
     """Perform fulltext extraction for a single arXiv document."""
     logger.info('Retrieving PDF for %s' % document_id)
     start_time = datetime.now()
@@ -121,8 +126,8 @@ def extract_fulltext(document_id: str, pdf_url: str, id_type: str = 'arxiv') \
 
     except Exception as e:
         logger.error('Failed to process %s: %s' % (document_id, e))
-        content = {'exception': str(e), 'content': None}
-        store.store(document_id, content, is_placeholder=True)
+        placeholder = ExtractionPlaceholder(exception=str(e))
+        store.store(document_id, placeholder)
         raise e
     return {'paper_id': document_id, 'id_type': id_type}
 

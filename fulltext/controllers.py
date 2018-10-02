@@ -3,9 +3,11 @@ from werkzeug.exceptions import NotFound, InternalServerError, BadRequest, \
     NotAcceptable, BadRequest
 from arxiv.base import logging
 from arxiv import status
+
+from .domain import ExtractionPlaceholder, ExtractionTask, ExtractionProduct
 from fulltext.services import store, pdf
-from fulltext.extract import create_extraction_task, \
-    get_extraction_task_result, get_extraction_task_status
+from fulltext.extract import create_extraction_task, get_extraction_task, \
+    NoSuchTask, TaskCreationFailed
 from flask import url_for
 from celery import current_app
 
@@ -55,9 +57,10 @@ def retrieve(paper_id: str, id_type: str = 'arxiv',
     tuple
     """
     try:
-        content_data = store.retrieve(paper_id, version=version,
-                                      content_format=content_format,
-                                      bucket=id_type)
+        product = store.retrieve(paper_id, version=version,
+                                 content_format=content_format,
+                                 bucket=id_type)
+
     except IOError as e:
         raise InternalServerError('Could not connect to backend') from e
     except store.DoesNotExist as e:
@@ -66,14 +69,14 @@ def retrieve(paper_id: str, id_type: str = 'arxiv',
         raise InternalServerError(f'Unhandled exception: {e}') from e
 
     # Extraction has already been requested.
-    if 'placeholder' in content_data:
-        if 'task_id' in content_data['placeholder']:
-            task_id = content_data['placeholder']['task_id']
-            location = url_for('fulltext.task_status', task_id=task_id)
+    if type(product) is ExtractionPlaceholder:
+        if product.task_id is not None:
+            location = url_for('fulltext.task_status', task_id=product.task_id)
             return ACCEPTED, status.HTTP_303_SEE_OTHER, {'Location': location}
         # It is possible that the extraction failed, in which case we simply
         # want to return whatever was stored at the end of the attempt.
-        return content_data['placeholder'], status.HTTP_200_OK, {}
+        return product.to_dict(), status.HTTP_200_OK, {}
+    content_data = product.to_dict()
     return content_data, status.HTTP_200_OK, {}
 
 
@@ -91,8 +94,10 @@ def extract(paper_id: str, id_type: str = 'arxiv') -> Response:
         raise NotFound('Invalid identifier')
     if not pdf.exists(pdf_url):
         raise NotFound('No such document')
-
-    task_id = create_extraction_task(paper_id, pdf_url, id_type)
+    try:
+        task_id = create_extraction_task(paper_id, pdf_url, id_type)
+    except TaskCreationFailed as e:
+        raise InternalServerError('Could not start extraction') from e
     location = url_for('fulltext.task_status', task_id=task_id)
     return ACCEPTED, status.HTTP_202_ACCEPTED, {'Location': location}
 
@@ -104,28 +109,27 @@ def get_task_status(task_id: str) -> Response:
         logger.debug('%s: Failed, invalid task id' % task_id)
         raise BadRequest('task_id must be string, not %s' % type(task_id))
 
-    task_status = get_extraction_task_status(task_id)
-    logger.debug('%s: got result: %s' % (task_id, task_status))
-    if task_status == 'PENDING':
-        raise NotFound('task not found')
-    elif task_status in ['SENT', 'STARTED', 'RETRY']:
+    try:
+        task = get_extraction_task(task_id)
+    except NoSuchTask as e:
+        raise NotFound('No such task') from e
+
+    logger.debug('%s: got task: %s' % (task_id, task))
+    if task.status is ExtractionTask.Statuses.IN_PROGRESS:
         return TASK_IN_PROGRESS, status.HTTP_200_OK, {}
-    elif task_status == 'FAILURE':
-        task_result = get_extraction_task_result(task_id)
-        logger.error('%s: failed task: %s' % (task_id, task_result))
+    elif task.status is ExtractionTask.Statuses.FAILED:
+        logger.error('%s: failed task: %s' % (task_id, task.result))
         reason = TASK_FAILED
-        reason.update({'reason': str(task_result)})
+        reason.update({'reason': task.result})
         return reason, status.HTTP_200_OK, {}
-    elif task_status == 'SUCCESS':
-        task_result = get_extraction_task_result(task_id)
-        paper_id = task_result.get('paper_id')
-        id_type = task_result.get('id_type')
-        logger.debug('Retrieved result successfully, paper_id: %s' %
-                     paper_id)
-        if id_type == 'arxiv':
-            target = url_for('fulltext.retrieve', paper_id=paper_id)
-        elif id_type == 'submission':
-            target = url_for('fulltext.retrieve_submission', paper_id=paper_id)
+    elif task.status is ExtractionTask.Statuses.SUCCEEDED:
+        logger.debug('Retrieved result successfully, paper_id: %s',
+                     task.paper_id)
+        if task.id_type == 'arxiv':
+            target = url_for('fulltext.retrieve', paper_id=task.paper_id)
+        elif task.id_type == 'submission':
+            target = url_for('fulltext.retrieve_submission',
+                             paper_id=task.paper_id)
         else:
             raise NotFound('No such identifier')
         headers = {'Location': target}
