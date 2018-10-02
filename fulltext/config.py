@@ -5,6 +5,7 @@ Docstrings are from the `Flask configuration documentation
 <http://flask.pocoo.org/docs/0.12/config/>`_.
 """
 import os
+import re
 
 ON = 'yes'
 OFF = 'no'
@@ -208,7 +209,24 @@ S3_BUCKETS = [
 # SUBMISSION_DATABASE_URL = os.environ.get('SUBMISSION_DATABASE_URL')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+AWS_SHARED_CREDENTIALS_FILE = os.environ.get('AWS_SHARED_CREDENTIALS_FILE', None)
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+if (AWS_ACCESS_KEY_ID is None
+        and AWS_SECRET_ACCESS_KEY is None
+        and AWS_SHARED_CREDENTIALS_FILE is not None):
+    try:
+        with open(AWS_SHARED_CREDENTIALS_FILE) as f:
+            _raw = f.read()
+            _match = re.search(
+                r"\[default\]\naws_access_key_id=(.*)\naws_secret_access_key=(.*)",
+                _raw
+            )
+            AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY = _match.groups()
+            os.environ['AWS_ACCESS_KEY_ID'] = AWS_ACCESS_KEY_ID
+            os.environ['AWS_SECRET_ACCESS_KEY'] = AWS_SECRET_ACCESS_KEY
+    except Exception as e:
+        print('could not load credentials: %s' % e)
+        pass
 
 SOURCE_WHITELIST = os.environ.get('SOURCE_WHITELIST',
                                   'arxiv.org,export.arxiv.org')

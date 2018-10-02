@@ -2,7 +2,7 @@
 
 set -e
 
-if [ -z ${AWS_SHARED_CREDENTIALS_FILE}]; then
+if [ -z ${AWS_SHARED_CREDENTIALS_FILE} ]; then
     echo "No shared credentials file"
 else
     while [ ! -f ${AWS_SHARED_CREDENTIALS_FILE} ]; do
