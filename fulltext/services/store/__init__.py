@@ -19,6 +19,8 @@ from ...domain import ExtractionProduct
 logger = logging.getLogger(__name__)
 
 
+# TODO: refactor placeholder logic to use type testing rather than flag.
+
 class DoesNotExist(RuntimeError):
     """The requested fulltext content does not exist."""
 
