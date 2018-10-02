@@ -1,6 +1,6 @@
 from typing import Optional, Tuple, Dict, Any
 from werkzeug.exceptions import NotFound, InternalServerError, BadRequest, \
-    NotAcceptable
+    NotAcceptable, BadRequest
 from arxiv.base import logging
 from arxiv import status
 from fulltext.services import store, pdf
@@ -26,8 +26,15 @@ HTTP_500_INTERNAL_SERVER_ERROR = 500
 Response = Tuple[Dict[str, Any], int, Dict[str, Any]]
 
 
-def retrieve(paper_id: str, content_type: str = 'application/json',
-             id_type: str = 'arxiv', version: Optional[str] = None,
+def service_status() -> Response:
+    """Handle a request for the status of this service."""
+    if store.ready():   # This is the critical upstream integration.
+        return {}, status.HTTP_200_OK, {}
+    raise InternalServerError('Failed readiness check')
+
+
+def retrieve(paper_id: str, id_type: str = 'arxiv',
+             version: Optional[str] = None,
              content_format: str = 'plain') -> Response:
     """
     Handle request for full-text content for an arXiv paper.
@@ -35,6 +42,13 @@ def retrieve(paper_id: str, content_type: str = 'application/json',
     Parameters
     ----------
     paper_id : str
+        Identifier for an arXiv resource, usually a published e-print.
+    id_type : str
+        The type of identifier that is `paper_id`.
+    version : str or None
+        If provided, the desired extraction version.
+    content_format : str
+        The desired content format (default: `plain`).
 
     Returns
     -------
@@ -47,25 +61,7 @@ def retrieve(paper_id: str, content_type: str = 'application/json',
     except IOError as e:
         raise InternalServerError('Could not connect to backend') from e
     except store.DoesNotExist as e:
-        # If the client has requested a specific version, it may be the case
-        # that they are simply asking for a non-existant version. We only
-        # want to trigger extraction if there is no content for the current
-        # version.
-        if version and store.exists(paper_id):
-            raise NotFound('No such version')
-        logger.info('Extraction does not exist')
-        if id_type == 'arxiv':
-            pdf_url = url_for('pdf', paper_id=paper_id)
-        elif id_type == 'submission':
-            pdf_url = url_for('submission_pdf', submission_id=paper_id)
-        else:
-            raise NotFound('Invalid identifier')
-        if not pdf.exists(pdf_url):
-            raise NotFound('No such document')
-
-        task_id = create_extraction_task(paper_id, pdf_url, id_type)
-        location = url_for('fulltext.task_status', task_id=task_id)
-        return ACCEPTED, status.HTTP_303_SEE_OTHER, {'Location': location}
+        raise NotFound('No such extraction')
     except Exception as e:
         raise InternalServerError(f'Unhandled exception: {e}') from e
 
@@ -78,19 +74,15 @@ def retrieve(paper_id: str, content_type: str = 'application/json',
         # It is possible that the extraction failed, in which case we simply
         # want to return whatever was stored at the end of the attempt.
         return content_data['placeholder'], status.HTTP_200_OK, {}
-
-    if content_type == 'text/plain':
-        return content_data['content'], status.HTTP_200_OK, {}
-    if content_type != 'application/json':
-        raise NotAcceptable('unsupported content type')
     return content_data, status.HTTP_200_OK, {}
 
 
 def extract(paper_id: str, id_type: str = 'arxiv') -> Response:
     """Handle a request to force text extraction."""
-    if paper_id is None:
-        raise BadRequest('paper_id missing in request')
     logger.info('extract: got paper_id: %s' % paper_id)
+    # Before creating an extraction task, check that the intended document
+    # even exists. This gives the client a clear failure now, rather than
+    # waiting until the async task fails.
     if id_type == 'arxiv':
         pdf_url = url_for('pdf', paper_id=paper_id)
     elif id_type == 'submission':
@@ -99,6 +91,7 @@ def extract(paper_id: str, id_type: str = 'arxiv') -> Response:
         raise NotFound('Invalid identifier')
     if not pdf.exists(pdf_url):
         raise NotFound('No such document')
+
     task_id = create_extraction_task(paper_id, pdf_url, id_type)
     location = url_for('fulltext.task_status', task_id=task_id)
     return ACCEPTED, status.HTTP_202_ACCEPTED, {'Location': location}
@@ -109,7 +102,7 @@ def get_task_status(task_id: str) -> Response:
     logger.debug('%s: Get status for task' % task_id)
     if not isinstance(task_id, str):
         logger.debug('%s: Failed, invalid task id' % task_id)
-        raise ValueError('task_id must be string, not %s' % type(task_id))
+        raise BadRequest('task_id must be string, not %s' % type(task_id))
 
     task_status = get_extraction_task_status(task_id)
     logger.debug('%s: got result: %s' % (task_id, task_status))

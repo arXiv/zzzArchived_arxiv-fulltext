@@ -22,6 +22,7 @@ Flask = "*"
 Werkzeug = "*"
 arxiv-base = "==0.11.1rc8"
 kombu = "==4.0.2"
+arxiv-auth = "==0.2.0rc2"
 
 [dev-packages]
 nose2 = "*"

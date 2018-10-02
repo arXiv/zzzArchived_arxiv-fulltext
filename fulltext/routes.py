@@ -2,8 +2,10 @@
 
 from typing import Optional
 from flask import request, Blueprint, Response
+from werkzeug.exceptions import NotAcceptable, BadRequest
 from flask.json import jsonify
 from arxiv import status
+from arxiv.users import auth
 from fulltext import controllers
 
 blueprint = Blueprint('fulltext', __name__, url_prefix='')
@@ -17,12 +19,15 @@ def best_match(available, default):
 
 
 @blueprint.route('/status', methods=['GET'])
+@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
 def ok() -> tuple:
     """Provide current integration status information for health checks."""
-    return jsonify({'iam': 'ok'}), status.HTTP_200_OK
+    data, code, headers = controllers.service_status()
+    return jsonify(data), code, headers
 
 
 @blueprint.route('/status/<task_id>', methods=['GET'])
+@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
 def task_status(task_id: str) -> tuple:
     """Get the status of a reference extraction task."""
     data, code, headers = controllers.get_task_status(task_id)
@@ -31,27 +36,39 @@ def task_status(task_id: str) -> tuple:
 
 @blueprint.route('/<arxiv:paper_id>', methods=['POST'])
 @blueprint.route('/<id_type>/<paper_id>', methods=['POST'])
+@auth.decorators.scoped(auth.scopes.CREATE_FULLTEXT)
 def extract_fulltext(paper_id: str, id_type: str = 'arxiv') -> tuple:
-    """Handle requests for reference extraction."""
+    """Handle requests for fulltext extraction."""
     data, code, headers = controllers.extract(paper_id)
     return jsonify(data), code, headers
 
 
-@blueprint.route('/<arxiv:paper_id>/version/<version>/format/<content_format>', methods=['GET'])
+@blueprint.route('/<arxiv:paper_id>/version/<version>/format/<content_format>',
+                 methods=['GET'])
 @blueprint.route('/<arxiv:paper_id>/version/<version>', methods=['GET'])
 @blueprint.route('/<arxiv:paper_id>/format/<content_format>', methods=['GET'])
 @blueprint.route('/<arxiv:paper_id>', methods=['GET'])
+@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
 def retrieve(paper_id: str, version: Optional[str] = None,
              content_format: str = "plain") -> tuple:
     """Retrieve full-text content for an arXiv paper."""
+    if paper_id is None:
+        raise BadRequest('paper_id missing in request')
     available = ['application/json', 'text/plain']
     content_type = best_match(available, 'application/json')
-    data, status_code, headers = controllers.retrieve(paper_id, content_type,
-                                                      id_type='arxiv')
+    data, status_code, headers = controllers.retrieve(
+        paper_id,
+        content_type,
+        id_type='arxiv',
+        content_format=content_format
+    )
+
     if content_type == 'text/plain':
-        response_data = Response(data, content_type='text/plain')
+        response_data = Response(data['content'], content_type='text/plain')
     elif content_type == 'application/json':
         response_data = jsonify(data)
+    else:
+        raise NotAcceptable('unsupported content type')
     return response_data, status_code, headers
 
 
@@ -59,6 +76,7 @@ def retrieve(paper_id: str, version: Optional[str] = None,
 @blueprint.route('/submission/<paper_id>/version/<version>', methods=['GET'])
 @blueprint.route('/submission/<paper_id>/format/<content_format>', methods=['GET'])
 @blueprint.route('/submission/<paper_id>', methods=['GET'])
+@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
 def retrieve_submission(paper_id: str, version: Optional[str] = None,
                         content_format: str = "plain") -> tuple:
     """Retrieve full-text content for an arXiv paper."""
@@ -70,4 +88,6 @@ def retrieve_submission(paper_id: str, version: Optional[str] = None,
         response_data = Response(data, content_type='text/plain')
     elif content_type == 'application/json':
         response_data = jsonify(data)
+    else:
+        raise NotAcceptable('unsupported content type')
     return response_data, status_code, headers

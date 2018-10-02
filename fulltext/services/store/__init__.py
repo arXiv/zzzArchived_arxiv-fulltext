@@ -12,6 +12,11 @@ import boto3
 import botocore
 from flask import Flask
 from arxiv.base.globals import get_application_global, get_application_config
+from arxiv.base import logging
+
+from ...domain import ExtractionProduct
+
+logger = logging.getLogger(__name__)
 
 
 class DoesNotExist(RuntimeError):
@@ -58,6 +63,27 @@ class S3Session(object):
 
     def _is_placeholder(self, raw: bytes) -> bool:
         return raw.decode('utf-8').startswith('PLACEHOLDER:::')
+
+    def ready(self, bucket: str = 'arxiv') -> bool:
+        """
+        Determine whether or not the store is ready to handle requests.
+
+        Parameters
+        ----------
+        bucket : str
+            Default is ``'arxiv'``. Used in conjunction with :attr:`.buckets`
+            to determine the S3 bucket where this content should be stored.
+
+        Returns
+        -------
+        bool
+        """
+        try:
+            self.client.head_bucket(Bucket=self._get_bucket(bucket))
+            return True
+        except botocore.exceptions.ClientError as e:
+            logger.error('Failed readiness probe with %s', e)
+            return False
 
     def store(self, paper_id: str, content: Union[str, dict],
               version: Optional[str] = None, content_format: str = 'plain',
@@ -144,13 +170,14 @@ class S3Session(object):
         content = response['Body'].read()
         if self._is_placeholder(content):
             return {'placeholder': self._parse_placeholder(content)}
-        return {
+        return ExtractionProduct(**{
+            'paper_id': paper_id,
             'content': content.decode('utf-8'),
             'version': version,
             'format': content_format,
             'etag': response['ETag'][1:-1],
             'created': response['LastModified']
-        }
+        })
 
     # TODO: consider returning metadata from the HEAD request, instead of just
     # a bool. If it's useful?
@@ -230,6 +257,12 @@ def exists(paper_id: str, version: Optional[str] = None,
     """Check if fulltext content exists using the current S3 session."""
     s = current_session()
     return s.exists(paper_id, version, content_format, bucket)
+
+
+@wraps(S3Session.ready)
+def ready() -> bool:
+    """Determine whether the store is ready to handle requests."""
+    return current_session().ready()
 
 
 def init_app(app: Flask) -> None:
