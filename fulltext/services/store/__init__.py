@@ -159,7 +159,6 @@ class S3Session(object):
         """
         if version is None:
             version = self._get_most_recent_version(paper_id, bucket=bucket)
-
         try:
             response = self.client.get_object(
                 Bucket=self._get_bucket(bucket),
@@ -172,6 +171,7 @@ class S3Session(object):
                                    f'{content_format}') from e
             raise RuntimeError(f'Unhandled exception: {e}') from e
         content = response['Body'].read()
+
         if self._is_placeholder(content):
             return {'placeholder': self._parse_placeholder(content)}
         return ExtractionProduct(**{
@@ -250,6 +250,8 @@ class S3Session(object):
         versions: List[str] = sorted(set([
             result['key'].split('/', 2)[1] for result in response['Contents']
         ]), key=_try_float)
+        if not versions:
+            raise DoesNotExist(f'No versions found for {paper_id} in {bucket}')
         return versions[-1]
 
 
