@@ -100,7 +100,7 @@ logging in debug mode, 'production' will only log in production and 'never'
 disables it entirely.
 """
 
-SERVER_NAME = os.environ.get('FULLTEXT_SERVER_NAME', None)
+SERVER_NAME = os.environ.get('FULLTEXT_SERVER_NAME', 'arxiv.org')
 """
 the name and port number of the server. Required for subdomain support (e.g.:
 'myapp.dev:5000') Note that localhost does not support subdomains so setting
@@ -261,7 +261,8 @@ REDIS_ENDPOINT = os.environ.get('REDIS_ENDPOINT')
 
 BASE_SERVER = 'arxiv.org'
 URLS = [
-    ('submission_pdf', '/pdf/<submission_id>', BASE_SERVER)
+    ('submission_pdf', '/pdf/<submission_id>', BASE_SERVER),
+    ('pdf', '/pdf/<paper_id>', BASE_SERVER)
 ]
 
 VERSION = '0.3'
