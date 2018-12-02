@@ -115,6 +115,7 @@ class S3Session(object):
         """
         if version is None:
             version = self.version
+
         if is_placeholder:
             body = self._create_placeholder(content)
         else:
@@ -157,7 +158,8 @@ class S3Session(object):
 
         """
         if version is None:
-            version = self.version
+            version = self._get_most_recent_version(paper_id, bucket=bucket)
+
         try:
             response = self.client.get_object(
                 Bucket=self._get_bucket(bucket),
@@ -196,7 +198,7 @@ class S3Session(object):
             a submission or other ID.
         version : str or None
             The version of the extractor for which content should be retrieved.
-            If ``None``, the current extractor version will be used.
+            If ``None``, the most recent version will be retrieved.
         content_format : str
             The format to retrieve. Should be ``'plain'`` or ``'psv'``.
         bucket : str
@@ -209,7 +211,7 @@ class S3Session(object):
         bool
         """
         if version is None:
-            version = self.version
+            version = self._get_most_recent_version(paper_id, bucket=bucket)
 
         try:
             self.client.head_object(
@@ -233,6 +235,22 @@ class S3Session(object):
         except KeyError as e:
             raise RuntimeError(f'No such bucket: {bucket}') from e
         return name
+
+    def _get_most_recent_version(self, paper_id: str, bucket: str = 'arxiv') \
+            -> str:
+        response = self.client.list_objects(Bucket=self._get_bucket(bucket),
+                                            Prefix=f'{paper_id}/')
+
+        def _try_float(value: str) -> float:
+            try:
+                return float(value)
+            except ValueError:
+                return 0.0
+
+        versions: List[str] = sorted(set([
+            result['key'].split('/', 2)[1] for result in response['Contents']
+        ]), key=_try_float)
+        return versions[-1]
 
 
 @wraps(S3Session.store)
