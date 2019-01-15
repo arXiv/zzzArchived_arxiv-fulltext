@@ -199,13 +199,6 @@ be useful to figure out why templates cannot be found or wrong templates appear
 to be loaded.
 """
 
-S3_ENDPOINT = os.environ.get('S3_ENDPOINT', None)
-S3_VERIFY = bool(int(os.environ.get('S3_VERIFY', 1)))
-S3_BUCKETS = [
-    ('arxiv', 'arxiv-fulltext'),
-    ('submission', 'arxiv-fulltext-submission')
-]
-
 # SUBMISSION_DATABASE_URL = os.environ.get('SUBMISSION_DATABASE_URL')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
@@ -274,3 +267,4 @@ not when the API of this web application changes.
 """
 
 WORKDIR = os.environ.get('WORKDIR', '/tmp')
+STORAGE_VOLUME = os.environ.get('STORAGE_VOLUME', '/tmp/storage')

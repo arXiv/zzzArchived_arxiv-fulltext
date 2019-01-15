@@ -1,13 +1,13 @@
 # arxiv/fulltext-worker
 
-FROM arxiv/fulltext-api:latest
+FROM arxiv/fulltext-api:0.3
 
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh
 
 ADD bin/start_worker.sh /opt/arxiv/
 
-VOLUME ["/pdfs"]
+VOLUME /pdfs
 
 ENV WORKDIR /pdfs
 

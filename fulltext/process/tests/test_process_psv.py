@@ -1,7 +1,7 @@
 """Tests for :mod:`fulltext.process.psv`."""
 
 from unittest import TestCase
-from fulltext.process import psv
+from .. import psv
 
 PAULI = """
 **Pauli Virtanen** is SciPy's Benevolent Dictator For Life (BDFL).  He says:
