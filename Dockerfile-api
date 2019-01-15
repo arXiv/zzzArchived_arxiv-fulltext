@@ -4,6 +4,9 @@ FROM arxiv/base:latest
 
 WORKDIR /opt/arxiv
 
+# MySQL is needed for the arxiv-auth package.
+RUN yum install -y which mysql mysql-devel
+
 # Add Python consumer and configuration.
 ADD Pipfile /opt/arxiv/
 RUN pip install -U pip pipenv uwsgi

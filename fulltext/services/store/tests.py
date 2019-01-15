@@ -3,6 +3,9 @@
 from unittest import TestCase, mock
 from datetime import datetime
 import io
+import shutil
+import tempfile
+import os
 from pytz import UTC
 
 from .. import store
@@ -12,168 +15,146 @@ from ...domain import ExtractionProduct
 class TestStore(TestCase):
     """Test storing content with :func:`.store.store`."""
 
-    @mock.patch(f'{store.__name__}.get_application_config')
-    @mock.patch(f'{store.__name__}.boto3.client')
-    def test_store_content(self, mock_client_factory, mock_get_config):
-        """Store content for an extraction in S3."""
-        mock_client = mock.MagicMock()
-        mock_waiter = mock.MagicMock()
-        mock_client.get_waiter.return_value = mock_waiter
-        mock_client_factory.return_value = mock_client
-        version = '1.3'
-        bucket = 'arxiv-fulltext'
-        mock_get_config.return_value = {
-            'AWS_REGION': 'us-east-1',
-            'S3_BUCKETS': [('arxiv', bucket)],
-            'VERSION': version
-        }
-        content = 'foocontent'
-        paper_id = '1234.5678v9'
-        store.store(paper_id, content)
-        self.assertTrue(mock_client.put_object.called_with(
-            Key=f'{paper_id}/{version}/plain',
-            Bucket=bucket,
-            Body=content.encode('utf-8')
-        ))
+    def setUp(self):
+        """Get a temporary storage volume."""
+        self.storage_volume = tempfile.mkdtemp()
+
+    def tearDown(self):
+        """Remove the temporary storage volume."""
+        shutil.rmtree(self.storage_volume)
 
     @mock.patch(f'{store.__name__}.get_application_config')
-    @mock.patch(f'{store.__name__}.boto3.client')
-    def test_retrieve_version(self, mock_client_factory, mock_get_config):
-        """Retrieve content for a specific extraction version in S3."""
-        paper_id = '1234.5678v9'
+    def test_store_content(self, mock_get_config):
+        """Store content for an extraction."""
+        version = '1.3'
+        bucket = 'fulltext'
+        mock_get_config.return_value = {
+            'STORAGE_VOLUME': self.storage_volume,
+            'VERSION': version,
+        }
         content = b'foocontent'
-        mock_client = mock.MagicMock()
-        mock_waiter = mock.MagicMock()
-        mock_client.get_waiter.return_value = mock_waiter
-        mock_client.list_objects.return_value = {'Contents': [
-            {'key': f'{paper_id}/0.1/plain'},
-            {'key': f'{paper_id}/0.5/plain'},
-            {'key': f'{paper_id}/1.3/plain'},
-            {'key': f'{paper_id}/2.1/plain'},
-            {'key': f'{paper_id}/classic/plain'}
-        ]}
-        created = datetime.now(UTC)
-        mock_client.get_object.return_value = {
-            'Body': io.BytesIO(content),
-            'ETag': '-footag-',
-            'LastModified': created
-        }
-        mock_client_factory.return_value = mock_client
+        paper_id = '1234.5678v9'
+        store.store(paper_id, content, bucket=bucket)
+        key = f'{paper_id[:4]}/{paper_id}/{version}/plain'
+        content_path = os.path.join(self.storage_volume, bucket, key)
+        self.assertTrue(os.path.exists(content_path))
+        with open(content_path, 'rb') as f:
+            self.assertEqual(content, f.read())
+
+    @mock.patch(f'{store.__name__}.get_application_config')
+    def test_retrieve_version(self, mock_get_config):
+        """Retrieve content for a specific extraction version."""
+        paper_id = '1234.5678v9'
         version = '1.3'
-        bucket = 'arxiv-fulltext'
+        bucket = 'fulltext'
+
         mock_get_config.return_value = {
-            'AWS_REGION': 'us-east-1',
-            'S3_BUCKETS': [('arxiv', bucket)],
+            'STORAGE_VOLUME': self.storage_volume,
             'VERSION': version
         }
 
-        product = store.retrieve(paper_id, version)
-        self.assertTrue(mock_client.get_object.called_with(
-            Key=f'{paper_id}/{version}/plain',
-            Bucket=bucket
-        ))
+        keys = [
+            f'{paper_id[:4]}/{paper_id}/0.1/plain',
+            f'{paper_id[:4]}/{paper_id}/0.5/plain',
+            f'{paper_id[:4]}/{paper_id}/1.3/plain',
+            f'{paper_id[:4]}/{paper_id}/2.1/plain',
+            f'{paper_id[:4]}/{paper_id}/classic/plain'
+        ]
+        for key in keys:
+            content_path = os.path.join(self.storage_volume, bucket, key)
+            parent, _ = os.path.split(content_path)
+            if not os.path.exists(parent):
+                os.makedirs(parent)
+            with open(content_path, 'wb') as f:
+                f.write(key.encode('utf-8'))
+
+        key = f'{paper_id[:4]}/{paper_id}/{version}/plain'
+        content_path = os.path.join(self.storage_volume, bucket, key)
+        product = store.retrieve(paper_id, version, bucket=bucket)
+
         self.assertIsInstance(product, ExtractionProduct)
         self.assertEqual(product.paper_id, paper_id)
-        self.assertEqual(product.content, content.decode('utf-8'))
+        self.assertEqual(
+            product.content,
+            f'{paper_id[:4]}/{paper_id}/1.3/plain'.encode('utf-8')
+        )
         self.assertEqual(product.version, version)
-        self.assertEqual(product.etag, 'footag'),
-        self.assertEqual(product.created, created)
 
     @mock.patch(f'{store.__name__}.get_application_config')
-    @mock.patch(f'{store.__name__}.boto3.client')
-    def test_retrieve_latest(self, mock_client_factory, mock_get_config):
-        """Retrieve content for the latest extraction in S3."""
+    def test_retrieve_latest(self, mock_get_config):
+        """Retrieve content for the latest extraction."""
         paper_id = '1234.5678v9'
-        content = b'foocontent'
-        mock_client = mock.MagicMock()
-        mock_waiter = mock.MagicMock()
-        mock_client.get_waiter.return_value = mock_waiter
-        mock_client.list_objects.return_value = {'Contents': [
-            {'key': f'{paper_id}/0.1/plain'},
-            {'key': f'{paper_id}/0.5/plain'},
-            {'key': f'{paper_id}/1.3/plain'},
-            {'key': f'{paper_id}/2.1/plain'},
-            {'key': f'{paper_id}/classic/plain'}
-        ]}
-        created = datetime.now(UTC)
-        mock_client.get_object.return_value = {
-            'Body': io.BytesIO(content),
-            'ETag': '-footag-',
-            'LastModified': created,
-        }
-        mock_client_factory.return_value = mock_client
-        bucket = 'arxiv-fulltext'
+        bucket = 'fulltext'
+        version = '1.3'
         mock_get_config.return_value = {
-            'AWS_REGION': 'us-east-1',
-            'S3_BUCKETS': [('arxiv', bucket)],
-            'VERSION': '1.3'
+            'STORAGE_VOLUME': self.storage_volume,
+            'VERSION': version
         }
-        product = store.retrieve(paper_id)
-        self.assertTrue(mock_client.get_object.called_with(
-            Key=f'{paper_id}/2.1/plain',
-            Bucket=bucket
-        ))
+        keys = [
+            f'{paper_id[:4]}/{paper_id}/0.1/plain',
+            f'{paper_id[:4]}/{paper_id}/0.5/plain',
+            f'{paper_id[:4]}/{paper_id}/1.3/plain',
+            f'{paper_id[:4]}/{paper_id}/2.1/plain',
+            f'{paper_id[:4]}/{paper_id}/classic/plain'
+        ]
+        for key in keys:
+            content_path = os.path.join(self.storage_volume, bucket, key)
+            parent, _ = os.path.split(content_path)
+            if not os.path.exists(parent):
+                os.makedirs(parent)
+            with open(content_path, 'wb') as f:
+                f.write(key.encode('utf-8'))
+
+        product = store.retrieve(paper_id, bucket=bucket)
 
         self.assertIsInstance(product, ExtractionProduct)
         self.assertEqual(product.paper_id, paper_id)
-        self.assertEqual(product.content, content.decode('utf-8'))
+        self.assertEqual(
+            product.content,
+            f'{paper_id[:4]}/{paper_id}/2.1/plain'.encode('utf-8')
+        )
         self.assertEqual(product.version, '2.1')
-        self.assertEqual(product.etag, 'footag'),
-        self.assertEqual(product.created, created)
 
     @mock.patch(f'{store.__name__}.get_application_config')
-    @mock.patch(f'{store.__name__}.boto3.client')
-    def test_retrieve_classic(self, mock_client_factory, mock_get_config):
+    def test_retrieve_classic(self, mock_get_config):
         """Retrieve classic version when none else are available."""
         paper_id = '1234.5678v9'
-        content = b'foocontent'
-        mock_client = mock.MagicMock()
-        mock_waiter = mock.MagicMock()
-        mock_client.get_waiter.return_value = mock_waiter
-        mock_client.list_objects.return_value = {'Contents': [
-            {'key': f'{paper_id}/classic/plain'}
-        ]}
-        created = datetime.now(UTC)
-        mock_client.get_object.return_value = {
-            'Body': io.BytesIO(content),
-            'ETag': '-footag-',
-            'LastModified': created,
-        }
-        mock_client_factory.return_value = mock_client
-        bucket = 'arxiv-fulltext'
-        mock_get_config.return_value = {
-            'AWS_REGION': 'us-east-1',
-            'S3_BUCKETS': [('arxiv', bucket)],
-            'VERSION': '1.3'
-        }
-        product = store.retrieve(paper_id)
-        self.assertTrue(mock_client.get_object.called_with(
-            Key=f'{paper_id}/classic/plain',
-            Bucket=bucket
-        ))
+        bucket = 'fulltext'
+        version = '1.3'
 
+        mock_get_config.return_value = {
+            'STORAGE_VOLUME': self.storage_volume,
+            'VERSION': version
+        }
+        keys = [f'{paper_id[:4]}/{paper_id}/classic/plain']
+        for key in keys:
+            content_path = os.path.join(self.storage_volume, bucket, key)
+            parent, _ = os.path.split(content_path)
+            if not os.path.exists(parent):
+                os.makedirs(parent)
+            with open(content_path, 'wb') as f:
+                f.write(key.encode('utf-8'))
+
+        product = store.retrieve(paper_id, bucket=bucket)
         self.assertIsInstance(product, ExtractionProduct)
         self.assertEqual(product.paper_id, paper_id)
-        self.assertEqual(product.content, content.decode('utf-8'))
+        self.assertEqual(
+            product.content,
+            f'{paper_id[:4]}/{paper_id}/classic/plain'.encode('utf-8')
+        )
         self.assertEqual(product.version, 'classic')
-        self.assertEqual(product.etag, 'footag'),
-        self.assertEqual(product.created, created)
+        self.assertEqual(product.version, 'classic')
 
     @mock.patch(f'{store.__name__}.get_application_config')
-    @mock.patch(f'{store.__name__}.boto3.client')
-    def test_no_extractions(self, mock_client_factory, mock_get_config):
+    def test_no_extractions(self, mock_get_config):
         """No extractions exist for the paper."""
         paper_id = '1234.5678v9'
-        mock_client = mock.MagicMock()
-        mock_waiter = mock.MagicMock()
-        mock_client.get_waiter.return_value = mock_waiter
-        mock_client.list_objects.return_value = {'Contents': []}
-        bucket = 'arxiv-fulltext'
+        version = '1.3'
+        bucket = 'fulltext'
         mock_get_config.return_value = {
-            'AWS_REGION': 'us-east-1',
-            'S3_BUCKETS': [('arxiv', bucket)],
-            'VERSION': '1.3'
+            'STORAGE_VOLUME': self.storage_volume,
+            'VERSION': version
         }
 
         with self.assertRaises(store.DoesNotExist):
-            store.retrieve(paper_id)
+            store.retrieve(paper_id, bucket=bucket)

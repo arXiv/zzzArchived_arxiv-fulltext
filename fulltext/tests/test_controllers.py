@@ -39,7 +39,6 @@ class TestRetrieve(TestCase):
             paper_id=paper_id,
             version=version,
             format='plain',
-            etag='asdf12345',
             content='foocontent',
             created=datetime.now()
         )

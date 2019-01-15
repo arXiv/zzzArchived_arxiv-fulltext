@@ -66,6 +66,7 @@ def retrieve(paper_id: str, version: Optional[str] = None,
     if content_type == 'text/plain':
         response_data = Response(data['content'], content_type='text/plain')
     elif content_type == 'application/json':
+        data['content'] = data['content'].decode('utf-8')
         response_data = jsonify(data)
     else:
         raise NotAcceptable('unsupported content type')
@@ -87,6 +88,7 @@ def retrieve_submission(paper_id: str, version: Optional[str] = None,
     if content_type == 'text/plain':
         response_data = Response(data, content_type='text/plain')
     elif content_type == 'application/json':
+        data['content'] = data['content'].decode('utf-8')
         response_data = jsonify(data)
     else:
         raise NotAcceptable('unsupported content type')

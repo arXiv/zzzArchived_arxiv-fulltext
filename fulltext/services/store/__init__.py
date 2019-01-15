@@ -1,16 +1,13 @@
-"""
-Content store for extracted full text.
+"""Filesystem-based storage for plain text extraction."""
 
-Uses S3 as the underlying storage facility.
-"""
-import json
-from typing import Tuple, Optional, Dict, Union
+from typing import Tuple, Optional, Dict, Union, List
+import os
 from functools import wraps
-from hashlib import md5
-from base64 import b64encode
-import boto3
-import botocore
+from datetime import datetime
+from pytz import UTC
+
 from flask import Flask
+
 from arxiv.base.globals import get_application_global, get_application_config
 from arxiv.base import logging
 
@@ -19,304 +16,163 @@ from ...domain import ExtractionProduct
 logger = logging.getLogger(__name__)
 
 
-# TODO: refactor placeholder logic to use type testing rather than flag.
+class ConfigurationError(RuntimeError):
+    """A config parameter is missing or invalid."""
+
 
 class DoesNotExist(RuntimeError):
     """The requested fulltext content does not exist."""
 
 
-class S3Session(object):
-    """Represents a session with S3."""
+class StorageFailed(RuntimeError):
+    """Could not store content."""
 
-    def __init__(self, buckets: str, version: str, verify: bool = False,
-                 region_name: Optional[str] = None,
-                 endpoint_url: Optional[str] = None,
-                 aws_access_key_id: Optional[str] = None,
-                 aws_secret_access_key: Optional[str] = None) -> None:
-        """Initialize with connection config parameters."""
-        self.buckets = buckets
-        self.version = version
-        self.region_name = region_name
-        self.endpoint_url = endpoint_url
-        self.aws_access_key_id = aws_access_key_id
-        self.aws_secret_access_key = aws_secret_access_key
 
-        # Only add credentials to the client if they are explicitly set.
-        # If they are not set, boto3 falls back to environment variables and
-        # credentials files.
-        params = dict(region_name=region_name)
-        if aws_access_key_id and aws_secret_access_key:
-            params.update(dict(
-                aws_access_key_id=aws_access_key_id,
-                aws_secret_access_key=aws_secret_access_key
-            ))
-        if endpoint_url:
-            params.update(dict(
-                endpoint_url=endpoint_url,
-                verify=verify
-            ))
-        self.client = boto3.client('s3', **params)
+class Storage(object):
+    """Provides storage integration."""
 
-    def _create_placeholder(self, data: dict) -> bytes:
-        return f'PLACEHOLDER:::{json.dumps(data)}'.encode('utf-8')
+    def __init__(self, volume: str, version: str) -> None:
+        """Check and set the storage volume."""
+        if not os.path.exists(volume):
+            try:
+                os.makedirs(volume)
+            except Exception as e:
+                raise ConfigurationError("Cannot create storage volume") from e
 
-    def _parse_placeholder(self, raw: bytes) -> dict:
-        return json.loads(raw.decode('utf-8').split(':::', 1)[1])
+        self._volume = volume
+        self._version = version
+        logger.debug('Storage with volume %s, version: %s', volume, version)
 
-    def _is_placeholder(self, raw: bytes) -> bool:
-        return raw.decode('utf-8').startswith('PLACEHOLDER:::')
+    def _paper_path(self, paper_id: str, bucket: str) -> str:
+        return os.path.join(self._volume, bucket, paper_id[:4], paper_id)
 
-    def ready(self, bucket: str = 'arxiv') -> bool:
-        """
-        Determine whether or not the store is ready to handle requests.
+    def _path(self, paper_id: str, version: str, content_format: str,
+              bucket: str) -> str:
+        return os.path.join(self._paper_path(paper_id, bucket),
+                            version, content_format)
 
-        Parameters
-        ----------
-        bucket : str
-            Default is ``'arxiv'``. Used in conjunction with :attr:`.buckets`
-            to determine the S3 bucket where this content should be stored.
+    def _creation_time(self, path: str) -> datetime:
+        return datetime.fromtimestamp(os.path.getmtime(path), tz=UTC)
 
-        Returns
-        -------
-        bool
-        """
-        try:
-            self.client.head_bucket(Bucket=self._get_bucket(bucket))
-            return True
-        except botocore.exceptions.ClientError as e:
-            logger.error('Failed readiness probe with %s', e)
-            return False
-
-    def store(self, paper_id: str, content: Union[str, dict],
-              version: Optional[str] = None, content_format: str = 'plain',
-              bucket: str = 'arxiv', is_placeholder: bool = False) -> None:
-        """
-        Store fulltext content.
-
-        Parameters
-        ----------
-        paper_id : str
-            The unique identifier for the paper to which this content
-            corresponds. This will usually be an arXiv ID, but could also be
-            a submission or other ID.
-        content : str or dict
-            The text content to store, or placeholder data.
-        version : str or None
-            The version of the extractor used to generate this content. If
-            ``None``, the current extractor version will be used.
-        content_format : str
-            Should be ``'plain'`` or ``'psv'``.
-        bucket : str
-            Default is ``'arxiv'``. Used in conjunction with :attr:`.buckets`
-            to determine the S3 bucket where this content should be stored.
-        is_placeholder : bool
-            If ``True``, ``content`` should be a JSON-serializable ``dict``.
-
-        """
-        if version is None:
-            version = self.version
-
-        if is_placeholder:
-            body = self._create_placeholder(content)
-        else:
-            body = content.encode('utf-8')
-        try:
-            self.client.put_object(
-                Body=body,
-                Bucket=self._get_bucket(bucket),
-                ContentMD5=b64encode(md5(body).digest()).decode('utf-8'),
-                ContentType='text/plain',
-                Key=f'{paper_id}/{version}/{content_format}',
-            )
-        except botocore.exceptions.ClientError as e:
-            raise RuntimeError(f'Unhandled exception: {e}') from e
-
-    def retrieve(self, paper_id: str, version: Optional[str] = None,
-                 content_format: str = 'plain', bucket: str = 'arxiv') -> Dict:
-        """
-        Retrieve fulltext content.
-
-        Parameters
-        ----------
-        paper_id : str
-            The unique identifier for the paper to which this content
-            corresponds. This will usually be an arXiv ID, but could also be
-            a submission or other ID.
-        version : str or None
-            The version of the extractor for which content should be retrieved.
-            If ``None``, the current extractor version will be used.
-        content_format : str
-            The format to retrieve. Should be ``'plain'`` or ``'psv'``.
-        bucket : str
-            Default is ``'arxiv'``. Used in conjunction with :attr:`.buckets`
-            to determine the S3 bucket from which the content should be
-            retrieved
-
-        Returns
-        -------
-        dict
-
-        """
-        if version is None:
-            version = self._get_most_recent_version(paper_id, bucket=bucket)
-        try:
-            response = self.client.get_object(
-                Bucket=self._get_bucket(bucket),
-                Key=f'{paper_id}/{version}/{content_format}'
-            )
-        except botocore.exceptions.ClientError as e:
-            if e.response['Error']['Code'] == "NoSuchKey":
-                raise DoesNotExist(f'No fulltext content for {paper_id} with '
-                                   f'extractor version {version} in format '
-                                   f'{content_format}') from e
-            raise RuntimeError(f'Unhandled exception: {e}') from e
-        content = response['Body'].read()
-
-        if self._is_placeholder(content):
-            return {'placeholder': self._parse_placeholder(content)}
-        return ExtractionProduct(**{
-            'paper_id': paper_id,
-            'content': content.decode('utf-8'),
-            'version': version,
-            'format': content_format,
-            'etag': response['ETag'][1:-1],
-            'created': response['LastModified']
-        })
-
-    # TODO: consider returning metadata from the HEAD request, instead of just
-    # a bool. If it's useful?
-    def exists(self, paper_id: str, version: Optional[str] = None,
-               content_format: str = 'plain', bucket: str = 'arxiv') -> bool:
-        """
-        Check whether fulltext content (or a placeholder) exists.
-
-        Parameters
-        ----------
-        paper_id : str
-            The unique identifier for the paper to which this content
-            corresponds. This will usually be an arXiv ID, but could also be
-            a submission or other ID.
-        version : str or None
-            The version of the extractor for which content should be retrieved.
-            If ``None``, the most recent version will be retrieved.
-        content_format : str
-            The format to retrieve. Should be ``'plain'`` or ``'psv'``.
-        bucket : str
-            Default is ``'arxiv'``. Used in conjunction with :attr:`.buckets`
-            to determine the S3 bucket from which the content should be
-            retrieved
-
-        Returns
-        -------
-        bool
-        """
-        if version is None:
-            version = self._get_most_recent_version(paper_id, bucket=bucket)
-
-        try:
-            self.client.head_object(
-                Bucket=self._get_bucket(bucket),
-                Key=f'{paper_id}/{version}/{content_format}'
-            )
-        except botocore.exceptions.ClientError as e:
-            if e.response['Error']['Code'] == "404":
-                return False
-            raise RuntimeError(f'Unhandled exception: {e}') from e
-        return True
-
-    def create_bucket(self):
-        """Create S3 buckets. This is just for testing."""
-        for key, bucket in self.buckets:
-            self.client.create_bucket(Bucket=bucket)
-
-    def _get_bucket(self, bucket: str) -> str:
-        try:
-            name: str = dict(self.buckets)[bucket]
-        except KeyError as e:
-            raise RuntimeError(f'No such bucket: {bucket}') from e
-        return name
-
-    def _get_most_recent_version(self, paper_id: str, bucket: str = 'arxiv') \
-            -> str:
-        response = self.client.list_objects(Bucket=self._get_bucket(bucket),
-                                            Prefix=f'{paper_id}/')
-
+    def _latest_version(self, paper_id: str, bucket: str = 'arxiv') -> str:
         def _try_float(value: str) -> float:
             try:
                 return float(value)
             except ValueError:
                 return 0.0
-
-        versions: List[str] = sorted(set([
-            result['key'].split('/', 2)[1] for result in response['Contents']
-        ]), key=_try_float)
+        try:
+            paths = os.listdir(self._paper_path(paper_id, bucket))
+        except FileNotFoundError as e:
+            raise DoesNotExist("No extractions found") from e
+        versions = sorted([p for p in paths if not p.startswith('.')],
+                          key=_try_float)
         if not versions:
             raise DoesNotExist(f'No versions found for {paper_id} in {bucket}')
         return versions[-1]
 
+    @staticmethod
+    def make_paths(path: str) -> None:
+        parent, _ = os.path.split(path)
+        if not os.path.exists(parent):
+            os.makedirs(parent)
 
-@wraps(S3Session.store)
-def store(paper_id: str, content: Union[str, dict],
+    def ready(self) -> bool:
+        """Check whether the storage volume is available."""
+        # TODO: read/write check?
+        return os.path.exists(self._volume)
+
+    def store(self, paper_id: str, content: bytes,
+              version: Optional[str] = None, content_format: str = 'plain',
+              bucket: str = 'arxiv') -> None:
+        if version is None:
+            version = self._version
+
+        content_path = self._path(paper_id, version, content_format, bucket)
+        logger.debug('Store for paper %s, format %s, in bucket %s, at: %s',
+                     paper_id, content_format, bucket, content_path)
+        self.make_paths(content_path)
+        try:
+            with open(content_path, 'wb') as f:
+                f.write(content)
+        except IOError as e:
+            raise StorageFailed("Could not store content") from e
+
+    def retrieve(self, paper_id: str, version: Optional[str] = None,
+                 content_format: str = 'plain', bucket: str = 'arxiv') \
+            -> ExtractionProduct:
+        if version is None:
+            version = self._latest_version(paper_id, bucket)
+        content_path = self._path(paper_id, version, content_format, bucket)
+        try:
+            with open(content_path, 'rb') as f:
+                content = f.read()
+        except FileNotFoundError as e:
+            raise DoesNotExist("No such resource") from e
+        return ExtractionProduct(**{
+            'paper_id': paper_id,
+            'content': content,
+            'version': version,
+            'format': content_format,
+            'created': self._creation_time(content_path)
+        })
+
+    def exists(self, paper_id: str, version: Optional[str] = None,
+               content_format: str = 'plain', bucket: str = 'arxiv') -> bool:
+        content_path = self._path(paper_id, version, content_format, bucket)
+        return os.path.exists(content_path)
+
+
+@wraps(Storage.store)
+def store(paper_id: str, content: bytes,
           version: Optional[str] = None, content_format: str = 'plain',
-          bucket: str = 'arxiv', is_placeholder: bool = False) -> None:
-    """Store fulltext content using the current S3 session."""
-    s = current_session()
-    return s.store(paper_id, content, version, content_format, bucket,
-                   is_placeholder)
+          bucket: str = 'arxiv') -> None:
+    """Store fulltext content."""
+    return current_instance().store(paper_id, content, version, content_format,
+                                    bucket)
 
 
-@wraps(S3Session.retrieve)
+@wraps(Storage.retrieve)
 def retrieve(paper_id: str, version: Optional[str] = None,
-             content_format: str = 'plain', bucket: str = 'arxiv') -> None:
-    """Retrieve fulltext content using the current S3 session."""
-    s = current_session()
-    return s.retrieve(paper_id, version, content_format, bucket)
+             content_format: str = 'plain', bucket: str = 'arxiv') \
+        -> ExtractionProduct:
+    """Retrieve fulltext content."""
+    return current_instance().retrieve(
+        paper_id, version, content_format, bucket
+    )
 
 
-@wraps(S3Session.exists)
+@wraps(Storage.exists)
 def exists(paper_id: str, version: Optional[str] = None,
-           content_format: str = 'plain', bucket: str = 'arxiv') -> None:
-    """Check if fulltext content exists using the current S3 session."""
-    s = current_session()
-    return s.exists(paper_id, version, content_format, bucket)
+           content_format: str = 'plain', bucket: str = 'arxiv') -> bool:
+    """Check if fulltext content exists."""
+    return current_instance().exists(paper_id, version, content_format, bucket)
 
 
-@wraps(S3Session.ready)
+@wraps(Storage.ready)
 def ready() -> bool:
     """Determine whether the store is ready to handle requests."""
-    return current_session().ready()
+    return current_instance().ready()
 
 
 def init_app(app: Flask) -> None:
     """Set defaults for required configuration parameters."""
-    app.config.setdefault('AWS_REGION', 'us-east-1')
-    app.config.setdefault('AWS_ACCESS_KEY_ID', None)
-    app.config.setdefault('AWS_SECRET_ACCESS_KEY', None)
-    app.config.setdefault('S3_ENDPOINT', None)
-    app.config.setdefault('S3_VERIFY', True)
-    app.config.setdefault('S3_BUCKET', [])
-    app.config.setdefault('VERSION', "0.0")
+    app.config.setdefault('STORAGE_VOLUME', '/tmp/storage')
+    app.config.setdefault('VERSION', '0.0')
 
 
-def get_session() -> S3Session:
-    """Create a new :class:`botocore.client.S3` session."""
+def create_instance() -> Storage:
+    """Create a new :class:`.Storage` instance."""
     config = get_application_config()
-    access_key = config.get('AWS_ACCESS_KEY_ID')
-    secret_key = config.get('AWS_SECRET_ACCESS_KEY')
-    endpoint = config.get('S3_ENDPOINT')
-    verify = config.get('S3_VERIFY')
-    region = config.get('AWS_REGION')
-    buckets = config.get('S3_BUCKETS')
-    version = config.get('VERSION')
-    return S3Session(buckets, version, verify, region,
-                     endpoint, access_key, secret_key)
+    volume = config.get('STORAGE_VOLUME', '/tmp/storage')
+    version = config.get('VERSION', '0.0')
+    return Storage(volume, version)
 
 
-def current_session() -> S3Session:
-    """Get the current new :class:`botocore.client.S3` for this application."""
+def current_instance() -> Storage:
+    """Get the current :class:`.Storage` instance for this application."""
     g = get_application_global()
     if g is None:
-        return get_session()
+        return create_instance()
     if 'store' not in g:
-        g.store = get_session()
+        g.store = create_instance()
     return g.store

@@ -1,26 +1,10 @@
 # arxiv/fulltext-worker
 
-FROM arxiv/base:latest
+FROM arxiv/fulltext-api:latest
 
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh
 
-WORKDIR /opt/arxiv
-
-# Add Python consumer and configuration.
-ADD Pipfile /opt/arxiv/
-RUN pip install -U pip pipenv
-RUN pipenv install
-
-ENV PATH "/opt/arxiv:${PATH}"
-
-ENV LC_ALL en_US.utf8
-ENV LANG en_US.utf8
-ENV LOGLEVEL 40
-
-ENV ARXIV_HOME "https://arxiv.org"
-
-ADD fulltext /opt/arxiv/fulltext/
 ADD bin/start_worker.sh /opt/arxiv/
 
 VOLUME ["/pdfs"]
