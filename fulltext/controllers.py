@@ -102,23 +102,21 @@ def extract(paper_id: str, id_type: str = 'arxiv') -> Response:
     return ACCEPTED, status.HTTP_202_ACCEPTED, {'Location': location}
 
 
-def get_task_status(task_id: str) -> Response:
+def get_task_status(paper_id: str, id_type: str = 'arxiv',
+                    version: Optional[str] = None) -> Response:
     """Check the status of an extraction request."""
-    logger.debug('%s: Get status for task' % task_id)
-    if not isinstance(task_id, str):
-        logger.debug('%s: Failed, invalid task id' % task_id)
-        raise BadRequest('task_id must be string, not %s' % type(task_id))
+    logger.debug('%s: Get status for paper' % paper_id)
 
     try:
-        task = get_extraction_task(task_id)
+        task = get_extraction_task(paper_id, id_type, version)
     except NoSuchTask as e:
         raise NotFound('No such task') from e
 
-    logger.debug('%s: got task: %s' % (task_id, task))
+    logger.debug('%s: got task: %s' % (task.task_id, task))
     if task.status is ExtractionTask.Statuses.IN_PROGRESS:
         return TASK_IN_PROGRESS, status.HTTP_200_OK, {}
     elif task.status is ExtractionTask.Statuses.FAILED:
-        logger.error('%s: failed task: %s' % (task_id, task.result))
+        logger.error('%s: failed task: %s' % (task.task_id, task.result))
         reason = TASK_FAILED
         reason.update({'reason': task.result})
         return reason, status.HTTP_200_OK, {}

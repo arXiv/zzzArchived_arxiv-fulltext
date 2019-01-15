@@ -19,27 +19,25 @@ def best_match(available, default):
 
 
 @blueprint.route('/status', methods=['GET'])
-@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
 def ok() -> tuple:
     """Provide current integration status information for health checks."""
     data, code, headers = controllers.service_status()
     return jsonify(data), code, headers
 
 
-@blueprint.route('/status/<task_id>', methods=['GET'])
-@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
-def task_status(task_id: str) -> tuple:
-    """Get the status of a reference extraction task."""
-    data, code, headers = controllers.get_task_status(task_id)
+@blueprint.route('/<arxiv:paper_id>', methods=['POST'])
+@auth.decorators.scoped(auth.scopes.CREATE_FULLTEXT)
+def extract_fulltext(paper_id: str) -> tuple:
+    """Handle requests for fulltext extraction."""
+    data, code, headers = controllers.extract(paper_id)
     return jsonify(data), code, headers
 
 
-@blueprint.route('/<arxiv:paper_id>', methods=['POST'])
-@blueprint.route('/<id_type>/<paper_id>', methods=['POST'])
+@blueprint.route('/submission/<paper_id>', methods=['POST'])
 @auth.decorators.scoped(auth.scopes.CREATE_FULLTEXT)
-def extract_fulltext(paper_id: str, id_type: str = 'arxiv') -> tuple:
-    """Handle requests for fulltext extraction."""
-    data, code, headers = controllers.extract(paper_id)
+def extract_fulltext_from_submission(paper_id: str) -> tuple:
+    """Handle requests for fulltext extraction for submissions."""
+    data, code, headers = controllers.extract(paper_id, id_type='submission')
     return jsonify(data), code, headers
 
 
@@ -66,6 +64,7 @@ def retrieve(paper_id: str, version: Optional[str] = None,
     if content_type == 'text/plain':
         response_data = Response(data['content'], content_type='text/plain')
     elif content_type == 'application/json':
+        data['content'] = data['content'].decode('utf-8')
         response_data = jsonify(data)
     else:
         raise NotAcceptable('unsupported content type')
@@ -87,7 +86,31 @@ def retrieve_submission(paper_id: str, version: Optional[str] = None,
     if content_type == 'text/plain':
         response_data = Response(data, content_type='text/plain')
     elif content_type == 'application/json':
+        data['content'] = data['content'].decode('utf-8')
         response_data = jsonify(data)
     else:
         raise NotAcceptable('unsupported content type')
     return response_data, status_code, headers
+
+
+@blueprint.route('/<arxiv:paper_id>/version/<version>/status', methods=['GET'])
+@blueprint.route('/<arxiv:paper_id>/status', methods=['GET'])
+@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
+def task_status(paper_id: str, version: Optional[str] = None) -> tuple:
+    """Get the status of a text extraction task."""
+    data, code, headers = controllers.get_task_status(paper_id,
+                                                      version=version)
+    return jsonify(data), code, headers
+
+
+@blueprint.route('/submission/<arxiv:paper_id>/version/<version>/status',
+                 methods=['GET'])
+@blueprint.route('/submission/<arxiv:paper_id>/status', methods=['GET'])
+@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
+def submission_task_status(paper_id: str, version: Optional[str] = None) \
+        -> tuple:
+    """Get the status of a text extraction task."""
+    data, code, headers = controllers.get_task_status(paper_id,
+                                                      id_type='submission',
+                                                      version=version)
+    return jsonify(data), code, headers

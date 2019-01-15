@@ -1,13 +1,18 @@
 # arxiv/fulltext-api
 
-FROM arxiv/base:latest
+FROM arxiv/base:0.12.1
 
 WORKDIR /opt/arxiv
+
+# MySQL is needed for the arxiv-auth package.
+RUN yum install -y which mysql mysql-devel
 
 # Add Python consumer and configuration.
 ADD Pipfile /opt/arxiv/
 RUN pip install -U pip pipenv uwsgi
 RUN pipenv install
+
+VOLUME /data/storage
 
 ENV PATH "/opt/arxiv:${PATH}"
 
@@ -16,6 +21,7 @@ ENV LANG en_US.utf8
 ENV LOGLEVEL 40
 
 ENV ARXIV_HOME "https://arxiv.org"
+ENV STORAGE_VOLUME /data/storage
 
 ADD fulltext /opt/arxiv/fulltext/
 ADD wsgi.py /opt/arxiv/
@@ -33,5 +39,5 @@ CMD ["--http-socket", ":8000", \
      "--threads", "1", \
      "--async", "100", \
      "--ugreen", \
-     "--mount", "/fulltext=wsgi.py", \
+     "--mount", "/=wsgi.py", \
      "--logformat", "%(addr) %(addr) - %(user_id)|%(session_id) [%(rtime)] [%(uagent)] \"%(method) %(uri) %(proto)\" %(status) %(size) %(micros) %(ttfb)"]

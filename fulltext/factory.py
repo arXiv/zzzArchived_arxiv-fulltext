@@ -3,6 +3,7 @@
 import logging
 from flask import Flask
 from arxiv.base import Base
+from arxiv.users.auth import Auth
 from fulltext.celery import celery_app
 from fulltext.services import store, pdf
 
@@ -16,6 +17,7 @@ def create_web_app():
     # logging.getLogger('boto3').setLevel(logging.DEBUG)
     # logging.getLogger('botocore').setLevel(logging.DEBUG)
     Base(app)
+    Auth(app)
     app.register_blueprint(routes.blueprint)
     store.init_app(app)
     pdf.init_app(app)
