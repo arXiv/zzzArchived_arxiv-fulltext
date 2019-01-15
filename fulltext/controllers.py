@@ -7,7 +7,7 @@ from arxiv import status
 from .domain import ExtractionPlaceholder, ExtractionTask, ExtractionProduct
 from fulltext.services import store, pdf
 from fulltext.extract import create_extraction_task, get_extraction_task, \
-    NoSuchTask, TaskCreationFailed
+    extraction_task_exists, get_version, NoSuchTask, TaskCreationFailed
 from flask import url_for
 from celery import current_app
 
@@ -64,42 +64,55 @@ def retrieve(paper_id: str, id_type: str = 'arxiv',
     except IOError as e:
         raise InternalServerError('Could not connect to backend') from e
     except store.DoesNotExist as e:
+        # Check whether there is a task in progress for this paper.
+        if extraction_task_exists(paper_id, id_type, version):
+            if id_type == 'arxiv':
+                status_endpoint = 'fulltext.task_status'
+            elif id_type == 'submission':
+                status_endpoint = 'fulltext.submission_task_status'
+            headers = {'Location': url_for(status_endpoint, paper_id=paper_id)}
+            return TASK_IN_PROGRESS, status.HTTP_303_SEE_OTHER, headers
         raise NotFound('No such extraction')
     except Exception as e:
         raise InternalServerError(f'Unhandled exception: {e}') from e
-
-    # Extraction has already been requested.
-    if type(product) is ExtractionPlaceholder:
-        if product.task_id is not None:
-            location = url_for('fulltext.task_status', task_id=product.task_id)
-            return ACCEPTED, status.HTTP_303_SEE_OTHER, {'Location': location}
-        # It is possible that the extraction failed, in which case we simply
-        # want to return whatever was stored at the end of the attempt.
-        return product.to_dict(), status.HTTP_200_OK, {}
-    content_data = product.to_dict()
-    return content_data, status.HTTP_200_OK, {}
+    return product.to_dict(), status.HTTP_200_OK, {}
 
 
 def extract(paper_id: str, id_type: str = 'arxiv') -> Response:
     """Handle a request to force text extraction."""
     logger.info('extract: got paper_id: %s' % paper_id)
-    # Before creating an extraction task, check that the intended document
-    # even exists. This gives the client a clear failure now, rather than
-    # waiting until the async task fails.
     if id_type == 'arxiv':
-        pdf_url = url_for('pdf', paper_id=paper_id)
+        status_endpoint = 'fulltext.task_status'
     elif id_type == 'submission':
-        pdf_url = url_for('submission_pdf', submission_id=paper_id)
+        status_endpoint = 'fulltext.submission_task_status'
+
+    # If an extraction task already exists for this paper, redirect. Don't
+    # create the same task twice.
+    if extraction_task_exists(paper_id, id_type):
+        status_code = status.HTTP_303_SEE_OTHER
+
+    # Otherwise, we have a task to create.
     else:
-        raise NotFound('Invalid identifier')
-    if not pdf.exists(pdf_url):
-        raise NotFound('No such document')
-    try:
-        task_id = create_extraction_task(paper_id, pdf_url, id_type)
-    except TaskCreationFailed as e:
-        raise InternalServerError('Could not start extraction') from e
-    location = url_for('fulltext.task_status', task_id=task_id)
-    return ACCEPTED, status.HTTP_202_ACCEPTED, {'Location': location}
+        # Before creating an extraction task, check that the intended document
+        # even exists. This gives the client a clear failure now, rather than
+        # waiting until the async task fails.
+        if id_type == 'arxiv':
+            pdf_url = url_for('pdf', paper_id=paper_id)
+        elif id_type == 'submission':
+            pdf_url = url_for('submission_pdf', submission_id=paper_id)
+        else:
+            raise NotFound('Invalid identifier')
+        if not pdf.exists(pdf_url):
+            raise NotFound('No such document')
+
+        status_code = status.HTTP_202_ACCEPTED
+        try:
+            create_extraction_task(paper_id, pdf_url, id_type)
+        except TaskCreationFailed as e:
+            raise InternalServerError('Could not start extraction') from e
+
+    headers = {'Location': url_for(status_endpoint, paper_id=paper_id)}
+    return ACCEPTED, status_code, headers
 
 
 def get_task_status(paper_id: str, id_type: str = 'arxiv',

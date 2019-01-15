@@ -57,12 +57,13 @@ class TestRetrieve(TestCase):
 class TestExtract(TestCase):
     """Test requesting a new extraction."""
 
-    @mock.patch(f'{controllers.__name__}.create_extraction_task')
+    @mock.patch(f'{controllers.__name__}.extraction_task_exists')
     @mock.patch(f'{controllers.__name__}.url_for')
     @mock.patch(f'{controllers.__name__}.pdf.exists')
     def test_arxiv_paper_exists(self, mock_exists, mock_url_for,
                                 mock_create_extraction_task):
         """Request extraction for an existant arXiv paper."""
+        extraction_task_exists.return_value = True
         paper_id = '1234.56789v2'
         task_id = extract.task_id(paper_id, 'arxiv'),
         mock_exists.return_value = True
@@ -76,10 +77,13 @@ class TestExtract(TestCase):
         self.assertEqual(code, status.HTTP_202_ACCEPTED)
         self.assertIn('Location', headers)
 
+    @mock.patch(f'{controllers.__name__}.extraction_task_exists')
     @mock.patch(f'{controllers.__name__}.url_for')
     @mock.patch(f'{controllers.__name__}.pdf.exists')
-    def test_arxiv_paper_does_not_exist(self, mock_exists, mock_url_for):
+    def test_arxiv_paper_does_not_exist(self, mock_exists, mock_url_for,
+                                        mock_extraction_task_exists):
         """Request extraction for a non-existant arXiv paper."""
+        mock_extraction_task_exists.return_value = False
         paper_id = '1234.56789v2'
         mock_exists.return_value = False
         mock_url_for.side_effect = \
@@ -88,10 +92,13 @@ class TestExtract(TestCase):
         with self.assertRaises(NotFound):
             controllers.extract(paper_id)
 
+    @mock.patch(f'{controllers.__name__}.extraction_task_exists')
     @mock.patch(f'{controllers.__name__}.url_for')
     @mock.patch(f'{controllers.__name__}.pdf.exists')
-    def test_arxiv_submission_does_not_exist(self, mock_exists, mock_url_for):
+    def test_arxiv_submission_does_not_exist(self, mock_exists, mock_url_for,
+                                             mock_extraction_task_exists):
         """Request extraction for a non-existant submission."""
+        mock_extraction_task_exists.return_value = False
         paper_id = '1234.56789v2'
         mock_exists.return_value = False
         mock_url_for.side_effect = \
