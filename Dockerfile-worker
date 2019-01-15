@@ -1,6 +1,8 @@
 # arxiv/fulltext-worker
 
-FROM arxiv/fulltext-api:0.3
+FROM arxiv/fulltext-api
+
+
 
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh

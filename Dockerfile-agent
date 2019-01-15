@@ -1,6 +1,6 @@
 # arxiv/fulltext-agent
 
-FROM arxiv/fulltext-api:latest
+FROM arxiv/fulltext-api
 
 VOLUME /checkpoint
 
