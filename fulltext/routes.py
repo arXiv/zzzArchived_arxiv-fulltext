@@ -101,7 +101,8 @@ def task_status(paper_id: str, version: Optional[str] = None) -> tuple:
                  methods=['GET'])
 @blueprint.route('/submission/<arxiv:paper_id>/status', methods=['GET'])
 @auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
-def task_status(paper_id: str, version: Optional[str] = None) -> tuple:
+def submission_task_status(paper_id: str, version: Optional[str] = None) \
+        -> tuple:
     """Get the status of a text extraction task."""
     data, code, headers = controllers.get_task_status(paper_id,
                                                       id_type='submission',
