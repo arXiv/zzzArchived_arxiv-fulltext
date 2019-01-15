@@ -26,14 +26,6 @@ def ok() -> tuple:
     return jsonify(data), code, headers
 
 
-@blueprint.route('/status/<task_id>', methods=['GET'])
-@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
-def task_status(task_id: str) -> tuple:
-    """Get the status of a reference extraction task."""
-    data, code, headers = controllers.get_task_status(task_id)
-    return jsonify(data), code, headers
-
-
 @blueprint.route('/<arxiv:paper_id>', methods=['POST'])
 @blueprint.route('/<id_type>/<paper_id>', methods=['POST'])
 @auth.decorators.scoped(auth.scopes.CREATE_FULLTEXT)
@@ -93,3 +85,25 @@ def retrieve_submission(paper_id: str, version: Optional[str] = None,
     else:
         raise NotAcceptable('unsupported content type')
     return response_data, status_code, headers
+
+
+@blueprint.route('/<arxiv:paper_id>/version/<version>/status', methods=['GET'])
+@blueprint.route('/<arxiv:paper_id>/status', methods=['GET'])
+@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
+def task_status(paper_id: str, version: Optional[str] = None) -> tuple:
+    """Get the status of a text extraction task."""
+    data, code, headers = controllers.get_task_status(paper_id,
+                                                      version=version)
+    return jsonify(data), code, headers
+
+
+@blueprint.route('/submission/<arxiv:paper_id>/version/<version>/status',
+                 methods=['GET'])
+@blueprint.route('/submission/<arxiv:paper_id>/status', methods=['GET'])
+@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
+def task_status(paper_id: str, version: Optional[str] = None) -> tuple:
+    """Get the status of a text extraction task."""
+    data, code, headers = controllers.get_task_status(paper_id,
+                                                      id_type='submission',
+                                                      version=version)
+    return jsonify(data), code, headers

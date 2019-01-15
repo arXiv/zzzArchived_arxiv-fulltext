@@ -31,6 +31,16 @@ class TaskCreationFailed(RuntimeError):
     """An extraction task could not be created."""
 
 
+def get_version() -> str:
+    return get_application_config().get('VERSION', '-1.0')
+
+
+def task_id(paper_id: str, id_type: str, version: Optional[str] = None) -> str:
+    if version is None:
+        version = get_version()
+    return f"{id_type}::{paper_id}::{version}"
+
+
 def create_extraction_task(paper_id: str, pdf_url: str, id_type: str) -> str:
     """
     Create a new extraction task.
@@ -50,7 +60,11 @@ def create_extraction_task(paper_id: str, pdf_url: str, id_type: str) -> str:
         The identifier for the created extraction task.
     """
     try:
-        result = extract_fulltext.delay(paper_id, pdf_url, id_type=id_type)
+        result = extract_fulltext.apply_async(
+            (paper_id, pdf_url),
+            dict(id_type=id_type),
+            task_id=task_id(paper_id, id_type)
+        )
         logger.info('extract: started processing as %s' % result.task_id)
         placeholder = ExtractionPlaceholder(task_id=result.task_id)
         store.store(paper_id, placeholder, bucket=id_type)
@@ -59,21 +73,27 @@ def create_extraction_task(paper_id: str, pdf_url: str, id_type: str) -> str:
     return result.task_id
 
 
-def get_extraction_task(task_id: str) -> ExtractionTask:
+def get_extraction_task(paper_id: str, id_type: str,
+                        version: Optional[str] = None) -> ExtractionTask:
     """
     Get the status of an extraction task.
 
     Parameters
     ----------
-    task_id : str
-        The identifier for the created extraction task.
+    paper_id : str
+        Unique identifier for the paper being extracted. Usually an arXiv ID.
+    id_type : str
+        Either 'arxiv' or 'submission'.
+    version : str
+        Extractor version (optional). Will use the current version if not
+        provided.
 
     Returns
     -------
     :class:`ExtractionTask`
 
     """
-    result = extract_fulltext.AsyncResult(task_id)
+    result = extract_fulltext.AsyncResult(task_id(paper_id, id_type, version))
     data = {}
     if result.status == 'PENDING':
         raise NoSuchTask('No such task')
@@ -87,7 +107,7 @@ def get_extraction_task(task_id: str) -> ExtractionTask:
         _result: Dist[str, str] = result.result
         data['paper_id'] = _result['paper_id']
         data['id_type'] = _result['id_type']
-    return ExtractionTask(task_id=task_id, **data)
+    return ExtractionTask(task_id=task_id(paper_id, id_type, version), **data)
 
 
 @celery_app.task

@@ -64,13 +64,13 @@ class TestExtract(TestCase):
                                 mock_create_extraction_task):
         """Request extraction for an existant arXiv paper."""
         paper_id = '1234.56789v2'
-        task_id = 'asdf-1234-qwerr-5678'
+        task_id = extract.task_id(paper_id, 'arxiv'),
         mock_exists.return_value = True
         mock_url_for.side_effect = [
             lambda *a, **k: f'https://arxiv.org/pdf/{k["paper_id"]}',
             lambda *a, **k: f'/fulltext/status/{k["task_id"]}'
         ]
-        mock_create_extraction_task.return_value = task_id
+        mock_create_extraction_task.return_value = paper_id
 
         data, code, headers = controllers.extract(paper_id)
         self.assertEqual(code, status.HTTP_202_ACCEPTED)
@@ -124,39 +124,34 @@ class TestExtract(TestCase):
 class TestTaskStatus(TestCase):
     """Test getting the status of a task."""
 
-    def test_not_a_task_id(self):
-        """Something other than a task ID got passed."""
-        with self.assertRaises(BadRequest):
-            controllers.get_task_status(None)
-
     @mock.patch(f'{controllers.__name__}.get_extraction_task')
     def test_task_is_pending(self, mock_get_task):
         """Pending status is the default; we set to SENT on creation."""
         mock_get_task.side_effect = extract.NoSuchTask
         with self.assertRaises(NotFound):
-            controllers.get_task_status('task12345')
+            controllers.get_task_status('1234.56789')
 
     @mock.patch(f'{controllers.__name__}.get_extraction_task')
     def test_task_is_in_progress(self, mock_get_task):
         """The task is currently running."""
-        task_id = 'task12345'
+        paper_id = '1234.56789'
         mock_get_task.return_value = ExtractionTask(
-            task_id=task_id,
+            task_id=extract.task_id(paper_id, 'arxiv'),
             status=ExtractionTask.Statuses.IN_PROGRESS
         )
-        data, code, headers = controllers.get_task_status(task_id)
+        data, code, headers = controllers.get_task_status(paper_id)
         self.assertEqual(code, status.HTTP_200_OK)
 
     @mock.patch(f'{controllers.__name__}.get_extraction_task')
     def test_task_failed(self, mock_get_task):
         """Task failed for good."""
-        task_id = 'task12345'
+        paper_id = '1234.56789'
         mock_get_task.return_value = ExtractionTask(
-            task_id=task_id,
+            task_id=extract.task_id(paper_id, 'arxiv'),
             status=ExtractionTask.Statuses.FAILED,
             result='No good!'
         )
-        data, code, headers = controllers.get_task_status(task_id)
+        data, code, headers = controllers.get_task_status(paper_id)
         self.assertEqual(code, status.HTTP_200_OK)
         self.assertEqual(data['reason'], 'No good!')
 
@@ -164,16 +159,15 @@ class TestTaskStatus(TestCase):
     @mock.patch(f'{controllers.__name__}.get_extraction_task')
     def test_task_succeeded(self, mock_get_task, mock_url_for):
         """Task succeeded."""
-        task_id = 'task12345'
         paper_id = '1234.56789'
         mock_get_task.return_value = ExtractionTask(
-            task_id=task_id,
+            task_id=extract.task_id(paper_id, 'arxiv'),
             status=ExtractionTask.Statuses.SUCCEEDED,
             paper_id=paper_id,
             id_type='arxiv'
         )
         mock_url_for.side_effect = lambda *a, **k: '/fulltext/{k["paper_id"]}'
-        data, code, headers = controllers.get_task_status(task_id)
+        data, code, headers = controllers.get_task_status(paper_id)
         self.assertEqual(code, status.HTTP_303_SEE_OTHER)
         self.assertIn('Location', headers)
 
@@ -181,30 +175,28 @@ class TestTaskStatus(TestCase):
     @mock.patch(f'{controllers.__name__}.get_extraction_task')
     def test_sub_task_succeeded(self, mock_get_task, mock_url_for):
         """Task succeeded."""
-        task_id = 'task12345'
         paper_id = '1234'
         mock_get_task.return_value = ExtractionTask(
-            task_id=task_id,
+            task_id=extract.task_id(paper_id, 'arxiv'),
             status=ExtractionTask.Statuses.SUCCEEDED,
             paper_id=paper_id,
             id_type='submission'
         )
         mock_url_for.side_effect = \
             lambda *a, **k: '/fulltext/submission/{k["paper_id"]}'
-        data, code, headers = controllers.get_task_status(task_id)
+        data, code, headers = controllers.get_task_status(paper_id)
         self.assertEqual(code, status.HTTP_303_SEE_OTHER)
         self.assertIn('Location', headers)
 
     @mock.patch(f'{controllers.__name__}.get_extraction_task')
     def test_task_succeeded_oddly(self, mock_get_task):
         """Task succeeded, but the identifier is mangled..."""
-        task_id = 'task12345'
         paper_id = '1234'
         mock_get_task.return_value = ExtractionTask(
-            task_id=task_id,
+            task_id=extract.task_id(paper_id, 'arxiv'),
             status=ExtractionTask.Statuses.SUCCEEDED,
             paper_id=paper_id,
             id_type='somethingfishy'
         )
         with self.assertRaises(NotFound):
-            controllers.get_task_status('task12345')
+            controllers.get_task_status(paper_id)

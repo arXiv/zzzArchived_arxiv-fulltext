@@ -97,6 +97,66 @@ paths:
         '404':
           description: The requested version + format does not exist.
 
+  /{paper_id}/status:
+    get:
+      operationId: getExtractionTaskStatus
+      summary: |
+        Get the current status of an extraction task. If the extraction task
+        has completed successfully, redirects to the resulting fulltext
+        resource.
+      responses:
+        '200':
+          description: |
+            The extraction task exists, and is either pending, running, or has
+            failed.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/status.json'
+        '303':
+          description: |
+            The extraction task has completed successfully, and a fulltext
+            resource exists.
+          headers:
+            Location:
+              description: |
+                The URI of the fulltext resource created by this extraction
+                task.
+              schema:
+                type: string
+        '404':
+          description: The requested task does not exist.
+
+  /{paper_id}/version/{extractor_version}/status:
+    get:
+      operationId: getExtractionTaskStatusByVersion
+      summary: |
+        Get the current status of an extraction task. If the extraction task
+        has completed successfully, redirects to the resulting fulltext
+        resource.
+      responses:
+        '200':
+          description: |
+            The extraction task exists, and is either pending, running, or has
+            failed.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/status.json'
+        '303':
+          description: |
+            The extraction task has completed successfully, and a fulltext
+            resource exists.
+          headers:
+            Location:
+              description: |
+                The URI of the fulltext resource created by this extraction
+                task.
+              schema:
+                type: string
+        '404':
+          description: The requested task does not exist.
+
   /submission/{submission_id}:
     get:
       operationId: getLatestSubmissionExtraction
@@ -185,10 +245,39 @@ paths:
         '404':
           description: The requested version + format does not exist.
 
-
-  /status/{task_id}:
+  /submission/{submission_id}/status:
     get:
-      operationId: getExtractionTaskStatus
+      operationId: getSubmissionExtractionTaskStatus
+      summary: |
+        Get the current status of an extraction task. If the extraction task
+        has completed successfully, redirects to the resulting fulltext
+        resource.
+      responses:
+        '200':
+          description: |
+            The extraction task exists, and is either pending, running, or has
+            failed.
+          content:
+            application/json:
+              schema:
+                $ref: 'resources/status.json'
+        '303':
+          description: |
+            The extraction task has completed successfully, and a fulltext
+            resource exists.
+          headers:
+            Location:
+              description: |
+                The URI of the fulltext resource created by this extraction
+                task.
+              schema:
+                type: string
+        '404':
+          description: The requested task does not exist.
+
+  /submission/{submission_id}/version/{extractor_version}/status:
+    get:
+      operationId: getSubmissionExtractionTaskStatusByVersion
       summary: |
         Get the current status of an extraction task. If the extraction task
         has completed successfully, redirects to the resulting fulltext
