@@ -85,6 +85,8 @@ def extract(paper_id: str, id_type: str = 'arxiv') -> Response:
         status_endpoint = 'fulltext.task_status'
     elif id_type == 'submission':
         status_endpoint = 'fulltext.submission_task_status'
+    else:
+        raise NotFound('No such identifier')
 
     # If an extraction task already exists for this paper, redirect. Don't
     # create the same task twice.

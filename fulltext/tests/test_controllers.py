@@ -45,33 +45,49 @@ class TestRetrieve(TestCase):
         data, code, headers = controllers.retrieve(paper_id)
         self.assertEqual(code, status.HTTP_200_OK)
 
+    @mock.patch(f'{controllers.__name__}.extraction_task_exists')
     @mock.patch(f'{controllers.__name__}.store.retrieve')
-    def test_extraction_does_not_exist(self, mock_retrieve):
+    def test_extraction_does_not_exist(self, mock_retrieve, mock_exists):
         """The requested extraction does not exist."""
         paper_id = '1234.56789v2'
+        mock_exists.return_value = False
         mock_retrieve.side_effect = store.DoesNotExist
         with self.assertRaises(NotFound):
             controllers.retrieve(paper_id)
+
+    @mock.patch(f'{controllers.__name__}.url_for')
+    @mock.patch(f'{controllers.__name__}.extraction_task_exists')
+    @mock.patch(f'{controllers.__name__}.store.retrieve')
+    def test_in_progress(self, mock_retrieve, mock_exists, mock_url_for):
+        """The requested extraction is in progress."""
+        mock_url_for.return_value = '/path/to/task/status'
+        paper_id = '1234.56789v2'
+        mock_exists.return_value = True
+        mock_retrieve.side_effect = store.DoesNotExist
+        data, code, headers = controllers.retrieve(paper_id)
+        self.assertEqual(code, status.HTTP_303_SEE_OTHER)
+        self.assertEqual(headers['Location'], '/path/to/task/status')
 
 
 class TestExtract(TestCase):
     """Test requesting a new extraction."""
 
     @mock.patch(f'{controllers.__name__}.extraction_task_exists')
+    @mock.patch(f'{controllers.__name__}.create_extraction_task')
     @mock.patch(f'{controllers.__name__}.url_for')
     @mock.patch(f'{controllers.__name__}.pdf.exists')
     def test_arxiv_paper_exists(self, mock_exists, mock_url_for,
-                                mock_create_extraction_task):
+                                mock_create, mock_task_exists):
         """Request extraction for an existant arXiv paper."""
-        extraction_task_exists.return_value = True
         paper_id = '1234.56789v2'
         task_id = extract.task_id(paper_id, 'arxiv'),
         mock_exists.return_value = True
+        mock_task_exists.return_value = False
         mock_url_for.side_effect = [
             lambda *a, **k: f'https://arxiv.org/pdf/{k["paper_id"]}',
             lambda *a, **k: f'/fulltext/status/{k["task_id"]}'
         ]
-        mock_create_extraction_task.return_value = paper_id
+        mock_create.return_value = paper_id
 
         data, code, headers = controllers.extract(paper_id)
         self.assertEqual(code, status.HTTP_202_ACCEPTED)
@@ -80,10 +96,28 @@ class TestExtract(TestCase):
     @mock.patch(f'{controllers.__name__}.extraction_task_exists')
     @mock.patch(f'{controllers.__name__}.url_for')
     @mock.patch(f'{controllers.__name__}.pdf.exists')
+    def test_task_exists(self, mock_exists, mock_url_for, mock_task_exists):
+        """Request extraction for an existant arXiv paper."""
+        paper_id = '1234.56789v2'
+        task_id = extract.task_id(paper_id, 'arxiv'),
+        mock_exists.return_value = True
+        mock_task_exists.return_value = True
+        mock_url_for.side_effect = [
+            lambda *a, **k: f'https://arxiv.org/pdf/{k["paper_id"]}',
+            lambda *a, **k: f'/fulltext/status/{k["task_id"]}'
+        ]
+
+        data, code, headers = controllers.extract(paper_id)
+        self.assertEqual(code, status.HTTP_303_SEE_OTHER)
+        self.assertIn('Location', headers)
+
+    @mock.patch(f'{controllers.__name__}.extraction_task_exists')
+    @mock.patch(f'{controllers.__name__}.url_for')
+    @mock.patch(f'{controllers.__name__}.pdf.exists')
     def test_arxiv_paper_does_not_exist(self, mock_exists, mock_url_for,
-                                        mock_extraction_task_exists):
+                                        mock_task_exists):
         """Request extraction for a non-existant arXiv paper."""
-        mock_extraction_task_exists.return_value = False
+        mock_task_exists.return_value = False
         paper_id = '1234.56789v2'
         mock_exists.return_value = False
         mock_url_for.side_effect = \
@@ -96,9 +130,9 @@ class TestExtract(TestCase):
     @mock.patch(f'{controllers.__name__}.url_for')
     @mock.patch(f'{controllers.__name__}.pdf.exists')
     def test_arxiv_submission_does_not_exist(self, mock_exists, mock_url_for,
-                                             mock_extraction_task_exists):
+                                             mock_task_exists):
         """Request extraction for a non-existant submission."""
-        mock_extraction_task_exists.return_value = False
+        mock_task_exists.return_value = False
         paper_id = '1234.56789v2'
         mock_exists.return_value = False
         mock_url_for.side_effect = \
@@ -114,12 +148,15 @@ class TestExtract(TestCase):
         with self.assertRaises(NotFound):
             controllers.extract(paper_id, id_type='somethingfishy')
 
+    @mock.patch(f'{controllers.__name__}.extraction_task_exists')
     @mock.patch(f'{controllers.__name__}.url_for')
     @mock.patch(f'{controllers.__name__}.pdf.exists')
     @mock.patch(f'{controllers.__name__}.create_extraction_task')
-    def test_creation_failed(self, mock_create, mock_exists, mock_url_for):
+    def test_creation_failed(self, mock_create, mock_exists, mock_url_for,
+                             mock_task_exists):
         """Could not create an extraction task."""
         paper_id = '1234.56789v2'
+        mock_task_exists.return_value = False
         mock_url_for.side_effect = \
             lambda *a, **k: f'https://arxiv.org/pdf/{k["paper_id"]}'
         mock_exists.return_value = True
