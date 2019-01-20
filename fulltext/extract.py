@@ -110,6 +110,30 @@ def get_extraction_task(paper_id: str, id_type: str,
     return ExtractionTask(task_id=task_id(paper_id, id_type, version), **data)
 
 
+def extraction_task_exists(paper_id: str, id_type: str,
+                           version: Optional[str] = None) -> bool:
+    """
+    Check whether an extraction task exists.
+
+    Parameters
+    ----------
+    paper_id : str
+        Unique identifier for the paper being extracted. Usually an arXiv ID.
+    id_type : str
+        Either 'arxiv' or 'submission'.
+    version : str
+        Extractor version (optional). Will use the current version if not
+        provided.
+
+    Returns
+    -------
+    bool
+
+    """
+    result = extract_fulltext.AsyncResult(task_id(paper_id, id_type, version))
+    return result.status != 'PENDING'   # 'PENDING' => non-existant.
+
+
 @celery_app.task
 def extract_fulltext(document_id: str, pdf_url: str, id_type: str = 'arxiv') \
         -> Dict[str, str]:
