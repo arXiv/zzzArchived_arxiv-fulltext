@@ -17,8 +17,8 @@ after_success:
 deploy:
 - provider: script
   script:
-    ./deploy/make_and_push_images.sh agent &&
     ./deploy/make_and_push_images.sh api &&
+    ./deploy/make_and_push_images.sh agent &&
     ./deploy/make_and_push_images.sh worker
   on:
     all_branches: true
