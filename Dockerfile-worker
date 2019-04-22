@@ -1,6 +1,29 @@
 # arxiv/fulltext-worker
 
-FROM arxiv/fulltext-api
+FROM arxiv/base:0.12.1
+
+WORKDIR /opt/arxiv
+
+# MySQL is needed for the arxiv-auth package.
+RUN yum install -y which mysql mysql-devel
+
+# Add Python consumer and configuration.
+ADD Pipfile /opt/arxiv/
+RUN pip install -U pip pipenv uwsgi
+RUN pipenv install
+
+VOLUME /data
+
+ENV PATH "/opt/arxiv:${PATH}"
+
+ENV LC_ALL en_US.utf8
+ENV LANG en_US.utf8
+ENV LOGLEVEL 40
+
+ENV ARXIV_HOME "https://arxiv.org"
+ENV STORAGE_VOLUME /data
+
+ADD fulltext /opt/arxiv/fulltext/
 
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh
