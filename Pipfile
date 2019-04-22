@@ -23,6 +23,7 @@ Werkzeug = "*"
 arxiv-base = "==0.14.1"
 kombu = "==4.0.2"
 arxiv-auth = "==0.2.6rc1"
+arxiv-vault = "*"
 
 [dev-packages]
 nose2 = "*"

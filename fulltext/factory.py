@@ -4,6 +4,9 @@ import logging
 from flask import Flask
 from arxiv.base import Base
 from arxiv.users.auth import Auth
+from arxiv.users import auth
+from arxiv.base.middleware import wrap, request_logs
+from arxiv import vault
 from fulltext.celery import celery_app
 from fulltext.services import store, pdf
 
@@ -21,6 +24,11 @@ def create_web_app():
     app.register_blueprint(routes.blueprint)
     store.init_app(app)
     pdf.init_app(app)
+
+    middleware = [auth.middleware.AuthMiddleware]
+    if app.config['VAULT_ENABLED']:
+        middleware.insert(0, vault.middleware.VaultMiddleware)
+    wrap(app, middleware)
 
     return app
 

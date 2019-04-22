@@ -13,3 +13,21 @@ script:
   - pipenv run nose2 -s extractor -s ./ --with-coverage
 after_success:
   - coveralls
+
+deploy:
+- provider: script
+  script:
+    ./deploy/make_and_push_images.sh agent &&
+    ./deploy/make_and_push_images.sh api &&
+    ./deploy/make_and_push_images.sh worker &&
+  on:
+    all_branches: true
+- provider: script
+  script:
+    ./deploy/make_and_push_images.sh agent &&
+    ./deploy/make_and_push_images.sh api &&
+    ./deploy/make_and_push_images.sh worker &&
+    ./deploy/install_helm.sh &&
+    ./deploy/publish_helm_chart.sh
+  on:
+    tags: true

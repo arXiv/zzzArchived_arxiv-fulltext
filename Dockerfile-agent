@@ -11,6 +11,6 @@ ENV KINESIS_START_TYPE "AT_TIMESTAMP"
 
 # Add the application itself last, for faster builds on minor revisions.
 ADD bin/start_agent.py /opt/arxiv/
-ADD bin/start_agent.sh /opt/arxiv/
 
-ENTRYPOINT ["/opt/arxiv/start_agent.sh"]
+ENTRYPOINT ["pipenv", "run"]
+CMD ["/opt/arxiv/start_agent.py"]

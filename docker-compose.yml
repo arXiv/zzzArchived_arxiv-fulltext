@@ -1,64 +1,64 @@
 version: '3'
 
 services:
-  fulltext-test-redis:
+  plaintext-test-redis:
     image: redis
-    container_name: fulltext-test-redis
+    container_name: plaintext-test-redis
     networks:
-      - fulltext-test
+      - plaintext-test
     # ports:
     #   - "6379:6379"
-  # fulltext-test-localstack:
+  # plaintext-test-localstack:
   #   image: atlassianlabs/localstack
-  #   container_name: fulltext-test-localstack
+  #   container_name: plaintext-test-localstack
   #   networks:
-  #     - fulltext-test
+  #     - plaintext-test
   #   ports:
   #     - "4572:4572"
   #     - "4568:4568"
   #   environment:
   #     USE_SSL: 'true'
   #     DEBUG: 'true'
-  fulltext-worker:
+  plaintext-worker:
     build:
       context: .
       dockerfile: Dockerfile-worker
     environment:
-      REDIS_ENDPOINT: "fulltext-test-redis:6379"
+      REDIS_ENDPOINT: "plaintext-test-redis:6379"
       AWS_ACCESS_KEY_ID: "foo"
       AWS_SECRET_ACCESS_KEY: "bar"
       KINESIS_VERIFY: ""
-      KINESIS_ENDPOINT: "fulltext-test-redis:4568"
+      KINESIS_ENDPOINT: "plaintext-test-redis:4568"
       LOGLEVEL: 10
     networks:
-      - fulltext-test
+      - plaintext-test
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/pdfs:/pdfs
     depends_on:
-      - fulltext-test-redis
-      - fulltext-api
-  fulltext-api:
-    image: arxiv/fulltext-api
+      - plaintext-test-redis
+      - plaintext-api
+  plaintext-api:
+    image: arxiv/plaintext-api
     build:
       context: .
       dockerfile: Dockerfile-api
-    container_name: fulltext-api
+    container_name: plaintext-api
     command: --http-socket :8000 -M -t 3000 --manage-script-name --processes 8 --threads 1 --async 100 --ugreen  --mount /=wsgi.py --logformat "%(addr) %(addr) - %(user_id)|%(session_id) [%(rtime)] [%(uagent)] \"%(method) %(uri) %(proto)\" %(status) %(size) %(micros) %(ttfb)"
     environment:
-      REDIS_ENDPOINT: "fulltext-test-redis:6379"
+      REDIS_ENDPOINT: "plaintext-test-redis:6379"
       AWS_ACCESS_KEY_ID: "foo"
       AWS_SECRET_ACCESS_KEY: "bar"
       KINESIS_VERIFY: ""
-      KINESIS_ENDPOINT: "fulltext-test-redis:4568"
+      KINESIS_ENDPOINT: "plaintext-test-redis:4568"
       LOGLEVEL: 10
     ports:
       - "8000:8000"
     networks:
-      - fulltext-test
+      - plaintext-test
     depends_on:
-      - fulltext-test-redis
-  # fulltext-agent:
+      - plaintext-test-redis
+  # plaintext-agent:
   #   build:
   #     context: .
   #     dockerfile: Dockerfile-agent
@@ -73,17 +73,17 @@ services:
   #     CLOUDWATCH_VERIFY: ""
   #     EXTRACTION_ENDPOINT: "http://api:8000"
   #     LOGLEVEL: 10
-  #     LOGFILE: "/var/log/fulltext-agent-processor.log"
+  #     LOGFILE: "/var/log/plaintext-agent-processor.log"
   #     MODE: "test"
   #     JAVA_FLAGS: "-Dcom.amazonaws.sdk.disableCertChecking"
   #     AWS_CBOR_DISABLE: "true"
   #     INSTANCE_CREDENTIALS: ""
   #   networks:
-  #     - fulltext-test
+  #     - plaintext-test
   #   depends_on:
-  #     - fulltext-test-localstack
-  #     - fulltext-worker
-  #     - fulltext-api
+  #     - plaintext-test-localstack
+  #     - plaintext-worker
+  #     - plaintext-api
 
 networks:
-  fulltext-test:
+  plaintext-test:

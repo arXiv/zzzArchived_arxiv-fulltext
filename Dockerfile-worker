@@ -2,16 +2,13 @@
 
 FROM arxiv/fulltext-api
 
-
-
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh
 
-ADD bin/start_worker.sh /opt/arxiv/
-
 VOLUME /pdfs
+VOLUME /data
 
 ENV WORKDIR /pdfs
 
-ENTRYPOINT ["/opt/arxiv/start_worker.sh"]
-CMD ["-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=2"]
+ENTRYPOINT ["pipenv", "run"]
+CMD ["celery", "worker", "-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=2"]

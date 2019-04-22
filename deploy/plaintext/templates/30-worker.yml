@@ -1,0 +1,103 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: plaintext-worker
+  namespace: "{{ .Values.namespace }}"
+  labels:
+    subsystem: "{{ .Values.labels.subsystem }}"
+    container: plaintext-worker
+    service-group: api
+    log-style: python
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        subsystem: "{{ .Values.labels.subsystem }}"
+        container: plaintext-worker
+        service-group: backend
+        log-style: celery
+    spec:
+      serviceAccount: plaintext
+      volumes:
+      - name: docker-graph-storage
+        emptyDir: {}
+      - name: temp-pdfs
+        emptyDir: {}
+      - name: vault-certificate
+        secret:
+          secretName: vault-certificate
+      - name: vault-token
+        emptyDir: {}
+      - name: "{{ .Values.name }}-data"
+        persistentVolumeClaim:
+          claimName: "{{ .Values.name }}"
+
+      containers:
+      - name: dind-daemon
+        image: docker:17.11-dind
+        # resources:
+        #   requests:
+        #     memory: "50Mi"
+        #     cpu: "250m"
+        #   limits:
+        #     memory: "100Mi"
+        #     cpu: "300m"
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: docker-graph-storage
+          mountPath: /var/lib/docker
+        - name: temp-pdfs
+          mountPath: /pdfs
+
+      - name: plaintext-worker
+        image: "arxiv/plaintext-worker:{{ .Values.worker.image.tag }}"
+        imagePullPolicy: "{{ default "Always" .Values.imagePullPolicy }}"
+        volumeMounts:
+        - name: temp-pdfs
+          mountPath: /pdfs
+        - name: app-creds
+          mountPath: /etc/app
+        - name: vault-token
+          mountPath: /etc/vault
+        - mountPath: /data
+          name: "{{ .Values.name }}-data"
+
+        env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+        - name: LOGLEVEL
+          value: "{{ .Values.api.log_level }}"
+        - name: LOGFILE
+          value: "{{ .Values.agent.log_file }}"
+        - name: REDIS_ENDPOINT
+          value: "{{ .Values.redis.host }}:6379"
+        - name: VAULT_ENABLED
+          value: "1"
+        - name: VAULT_HOST
+          value: "{{ .Values.vault.host }}"
+        - name: VAULT_PORT
+          value: "{{ .Values.vault.port }}"
+        - name: VAULT_CERT
+          value: /etc/vault-certificate/vaulttls.cert.pem
+        - name: VAULT_ROLE
+          value: "{{ .Values.vault.role }}-{{ .Values.namespace }}"
+        - name: VAULT_CREDENTIAL
+          value: "{{ .Values.vault.credential }}"
+        - name: KUBE_TOKEN
+          value: /var/run/secrets/kubernetes.io/serviceaccount/token
+        - name: FULLTEXT_DOCKER_IMAGE
+          value: arxiv/plaintext-extractor:{{ default "latest" .Values.plaintext.image.tag }}
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+
+        resources:
+          limits:
+            cpu: 300m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi

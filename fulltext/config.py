@@ -267,4 +267,25 @@ not when the API of this web application changes.
 """
 
 WORKDIR = os.environ.get('WORKDIR', '/tmp')
-STORAGE_VOLUME = os.environ.get('STORAGE_VOLUME', '/tmp/storage')
+STORAGE_VOLUME = os.environ.get('STORAGE_VOLUME', '/data')
+
+VAULT_ENABLED = bool(int(os.environ.get('VAULT_ENABLED', '0')))
+NAMESPACE = os.environ.get('NAMESPACE')
+KUBE_TOKEN = os.environ.get('KUBE_TOKEN', 'fookubetoken')
+VAULT_HOST = os.environ.get('VAULT_HOST', 'foovaulthost')
+VAULT_PORT = os.environ.get('VAULT_PORT', '1234')
+VAULT_ROLE = os.environ.get('VAULT_ROLE', 'plaintext')
+VAULT_CERT = os.environ.get('VAULT_CERT')
+NS_AFFIX = '' if NAMESPACE == 'production' else f'-{NAMESPACE}'
+VAULT_REQUESTS = [
+    {'type': 'generic',
+     'name': 'JWT_SECRET',
+     'mount_point': f'secret{NS_AFFIX}/',
+     'path': 'jwt',
+     'key': 'jwt-secret',
+     'minimum_ttl': 60},
+    {'type': 'aws',
+     'name': 'AWS_S3_CREDENTIAL',
+     'mount_point': f'aws{NS_AFFIX}/',
+     'role': os.environ.get('VAULT_CREDENTIAL')}
+]

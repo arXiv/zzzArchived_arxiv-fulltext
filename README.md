@@ -1,2 +1,2 @@
-# arxiv-fulltext
+# fulltext
 arXiv fulltext extraction
