@@ -38,7 +38,7 @@ storage:
   size: "10Gi"
 
 ingress:
-  host: api.arxiv.org
+  host: api.development.arxiv.org
 
 authenticator:
   service: authenticator
