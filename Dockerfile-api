@@ -27,7 +27,5 @@ ADD fulltext /opt/arxiv/fulltext/
 ADD wsgi.py uwsgi.ini /opt/arxiv/
 EXPOSE 8000
 
-WORKDIR /opt/arxiv/
-
 ENTRYPOINT ["pipenv", "run"]
 CMD ["uwsgi", "--ini", "/opt/arxiv/uwsgi.ini"]

@@ -37,4 +37,4 @@ ENV KINESIS_START_TYPE "AT_TIMESTAMP"
 ADD bin/start_agent.py /opt/arxiv/
 
 ENTRYPOINT ["pipenv", "run"]
-CMD ["/opt/arxiv/start_agent.py"]
+CMD ["python", "/opt/arxiv/start_agent.py"]

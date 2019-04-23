@@ -11,7 +11,7 @@ metadata:
   annotations:
     ingress.kubernetes.io/configuration-snippet: |
       more_set_headers "Request-Id: $req_id";
-    ingress.kubernetes.io/auth-url: http://{{ .Values.authenticatorService }}.{{ .Values.namespace }}.svc.cluster.local/auth
+    ingress.kubernetes.io/auth-url: http://{{ default "authenticator" .Values.authenticator.service }}.{{ .Values.namespace }}.svc.cluster.local/auth
     ingress.kubernetes.io/auth-response-headers: Authorization
     ingress.kubernetes.io/limit-connections: "4"
     ingress.kubernetes.io/limit-rps: "4"
@@ -20,9 +20,9 @@ metadata:
 spec:
   tls:  # This will use the default certificate for the ingress controller.
   - hosts:
-    - "{{ .Values.host }}"
+    - "{{ .Values.ingress.host }}"
   rules:
-  - host: "{{ .Values.host }}"
+  - host: "{{ .Values.ingress.host }}"
     http:
       paths:
       - path: "{{ default "/plaintext" .Values.subPath }}"

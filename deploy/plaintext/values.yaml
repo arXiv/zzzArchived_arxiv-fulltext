@@ -1,21 +1,29 @@
 api:
   log_level: "40"
-  image.tag: "0.3.2"
+  image:
+    tag: "0.3.2"
+
 agent:
   log_level: "40"
-  image.tag: "0.3.2"
+  image:
+    tag: "0.3.2"
+
 worker:
   log_level: "40"
   image:
     tag: "0.3.2"
+
 plaintext:
-  image.tag: "0.3.2"
+  image:
+    tag: "0.3.2"
+
 
 labels:
   subsystem: submission-moderation
   service_group: backend
 
-redis.host: changeme
+redis:
+  host: changeme
 
 name: plaintext
 namespace: development
@@ -26,4 +34,11 @@ vault:
   role: plaintext   # namespace is affixed in template
   credential: plaintext
 
-storage.size: "10Gi"
+storage:
+  size: "10Gi"
+
+ingress:
+  host: api.arxiv.org
+
+authenticator:
+  service: authenticator

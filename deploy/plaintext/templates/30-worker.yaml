@@ -52,13 +52,11 @@ spec:
           mountPath: /pdfs
 
       - name: plaintext-worker
-        image: "arxiv/plaintext-worker:{{ .Values.worker.image.tag }}"
+        image: arxiv/plaintext-worker:{{ .Values.worker.image.tag }}
         imagePullPolicy: "{{ default "Always" .Values.imagePullPolicy }}"
         volumeMounts:
         - name: temp-pdfs
           mountPath: /pdfs
-        - name: app-creds
-          mountPath: /etc/app
         - name: vault-token
           mountPath: /etc/vault
         - mountPath: /data
