@@ -28,13 +28,13 @@ class FulltextRecordProcessor(BaseConsumer):
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize a secrets manager before starting."""
-        self._config = kwargs.pop('config')
-        if self.__secrets is None:
-            self.__secrets = ConfigManager(self._config)
+        self._config = kwargs.pop('config', {})
         super(FulltextRecordProcessor, self).__init__(*args, **kwargs)
-        self.update_secrets()
-        self._access_key = self._config['AWS_ACCESS_KEY_ID']
-        self._secret_key = self._config['AWS_SECRET_ACCESS_KEY']
+        if self._config.get('VAULT_ENABLED'):
+            self.__secrets = ConfigManager(self._config)
+            self.update_secrets()
+        self._access_key = self._config.get('AWS_ACCESS_KEY_ID')
+        self._secret_key = self._config.get('AWS_SECRET_ACCESS_KEY')
 
     def update_secrets(self) -> bool:
         """Update any secrets that are out of date."""
@@ -47,7 +47,7 @@ class FulltextRecordProcessor(BaseConsumer):
 
     def process_records(self, start: str) -> Tuple[str, int]:
         """Update secrets before getting a new batch of records."""
-        if self.update_secrets():
+        if self._config.get('VAULT_ENABLED') and self.update_secrets():
             raise RestartProcessing('Got fresh credentials')
         return super(FulltextRecordProcessor, self).process_records(start)
 
