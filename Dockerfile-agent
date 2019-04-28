@@ -8,8 +8,8 @@ WORKDIR /opt/arxiv
 RUN yum install -y which mysql mysql-devel
 
 # Add Python consumer and configuration.
-ADD Pipfile /opt/arxiv/
 RUN pip install -U pip pipenv uwsgi
+ADD Pipfile /opt/arxiv/
 RUN pipenv install
 
 VOLUME /data
@@ -18,7 +18,7 @@ ENV PATH "/opt/arxiv:${PATH}"
 
 ENV LC_ALL en_US.utf8
 ENV LANG en_US.utf8
-ENV LOGLEVEL 40
+ENV LOGLEVEL 10
 
 ENV ARXIV_HOME "https://arxiv.org"
 ENV STORAGE_VOLUME /data
@@ -34,7 +34,7 @@ ENV KINESIS_CHECKPOINT_VOLUME "/checkpoint"
 ENV KINESIS_START_TYPE "AT_TIMESTAMP"
 
 # Add the application itself last, for faster builds on minor revisions.
-ADD bin/start_agent.py /opt/arxiv/
+# ADD bin/start_agent.py /opt/arxiv/
 
 ENTRYPOINT ["pipenv", "run"]
-CMD ["python", "/opt/arxiv/start_agent.py"]
+CMD ["python", "-m", "fulltext.agent"]

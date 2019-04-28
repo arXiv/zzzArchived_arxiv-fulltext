@@ -272,3 +272,4 @@ VAULT_REQUESTS = [
      'mount_point': f'aws{NS_AFFIX}/',
      'role': os.environ.get('VAULT_CREDENTIAL')}
 ]
+LOGLEVEL = int(os.environ.get('LOGLEVEL', '40'))

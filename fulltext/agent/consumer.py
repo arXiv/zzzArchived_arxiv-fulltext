@@ -14,7 +14,7 @@ from arxiv.vault.manager import ConfigManager
 from fulltext.extract import extract_fulltext
 
 logger = logging.getLogger(__name__)
-logger.propagate = False
+# logger.propagate = True
 
 
 class BadMessage(RuntimeError):
@@ -29,8 +29,11 @@ class FulltextRecordProcessor(BaseConsumer):
     def __init__(self, *args, **kwargs) -> None:
         """Initialize a secrets manager before starting."""
         self._config = kwargs.pop('config', {})
+        print('init with config', self._config)
         super(FulltextRecordProcessor, self).__init__(*args, **kwargs)
         if self._config.get('VAULT_ENABLED'):
+            print('vault enabled')
+            logger.info('Vault enabled; getting secrets')
             self.__secrets = ConfigManager(self._config)
             self.update_secrets()
         self._access_key = self._config.get('AWS_ACCESS_KEY_ID')

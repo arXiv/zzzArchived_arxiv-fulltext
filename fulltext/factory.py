@@ -16,6 +16,7 @@ def create_web_app():
     from fulltext import routes
     app = Flask('fulltext')
     app.config.from_pyfile('config.py')
+    print(app.config)
     # logging.getLogger('boto').setLevel(logging.DEBUG)
     # logging.getLogger('boto3').setLevel(logging.DEBUG)
     # logging.getLogger('botocore').setLevel(logging.DEBUG)

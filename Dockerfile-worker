@@ -8,8 +8,8 @@ WORKDIR /opt/arxiv
 RUN yum install -y which mysql mysql-devel
 
 # Add Python consumer and configuration.
-ADD Pipfile /opt/arxiv/
 RUN pip install -U pip pipenv uwsgi
+ADD Pipfile /opt/arxiv/
 RUN pipenv install
 
 VOLUME /data
