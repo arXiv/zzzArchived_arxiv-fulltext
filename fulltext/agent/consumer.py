@@ -46,6 +46,8 @@ class FulltextRecordProcessor(BaseConsumer):
             if self._config.get(key) != value:
                 got_new_secrets = True
             self._config[key] = value
+        self._access_key = self._config.get('AWS_ACCESS_KEY_ID')
+        self._secret_key = self._config.get('AWS_SECRET_ACCESS_KEY')
         return got_new_secrets
 
     def process_records(self, start: str) -> Tuple[str, int]:

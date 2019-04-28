@@ -42,7 +42,7 @@ task for a worker process on a Redis queue (using Celery).
 The worker process monitors the Redis queue, and does the work of retrieving
 PDFs, performing extractions, and storing the results.
 
-Extractions are stored in a private S3 bucket, and organized by submission or
+Extractions are stored on a network filesystem, and organized by submission or
 e-print ID and extractor version. When an extraction task is created, a
 placeholder file with the task ID is stored where the content will eventually
 be. This helps to prevent duplicate extraction tasks.
@@ -70,7 +70,7 @@ in :doc:`arxitecture:crosscutting/services`.
 
 Two service modules, :mod:`fulltext.services.pdf` and
 :mod:`fulltext.services.store`, provide integration with arXiv PDF content
-and S3, respectively.
+and the filesystem, respectively.
 
 :mod:`fulltext.routes` defines the HTTP API exposed by the
 :mod:`fulltext.factory` application entry-point. Request handling is
