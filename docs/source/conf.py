@@ -1,4 +1,4 @@
-"""Configuration for arxiv-fulltext documentation build."""
+"""Configuration for fulltext documentation build."""
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #

@@ -1,0 +1,44 @@
+api:
+  log_level: "10"
+  image:
+    tag: "0.3.2"
+
+agent:
+  log_level: "10"
+  image:
+    tag: "0.3.2"
+
+worker:
+  log_level: "10"
+  image:
+    tag: "0.3.2"
+
+plaintext:
+  image:
+    tag: "0.3.2"
+
+
+labels:
+  subsystem: submission-moderation
+  service_group: backend
+
+redis:
+  host: changeme
+
+name: plaintext
+namespace: development
+
+vault:
+  host: nunya
+  port: 8200
+  role: plaintext   # namespace is affixed in template
+  credential: plaintext
+
+storage:
+  size: "10Gi"
+
+ingress:
+  host: api.development.arxiv.org
+
+authenticator:
+  service: authenticator

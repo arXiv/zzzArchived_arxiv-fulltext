@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 boto = "*"
-"boto3" = "*"
+"boto3" = "==1.9.137"
 botocore = "*"
 celery = "==4.1.0"
 chardet = "*"
@@ -20,9 +20,11 @@ simplejson = "*"
 Flask = "*"
 "Jinja2" = "*"
 Werkzeug = "*"
-arxiv-base = "==0.14.1"
+arxiv-base = "==0.15.7rc6"
 kombu = "==4.0.2"
 arxiv-auth = "==0.2.6rc1"
+arxiv-vault = "*"
+retry = "*"
 
 [dev-packages]
 nose2 = "*"

@@ -29,6 +29,6 @@ class TestIndexPaper(TestCase):
         mock_url_for.return_value = f'http://foo/{paper_id}'
         data = json.dumps({'document_id': paper_id}).encode('utf-8')
         record = {'SequenceNumber': 'foo123', 'Data': data}
-        processor = consumer.FulltextRecordProcessor(*self.args)
+        processor = consumer.FulltextRecordProcessor(*self.args, config={})
         processor.process_record(record)
         self.assertTrue(mock_task.delay.called_with(paper_id, 'http://foo'))

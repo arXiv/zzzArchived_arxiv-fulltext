@@ -1,0 +1,7 @@
+name: plaintext
+version: 0.1
+appVersion: 0.1
+description: arXiv plaintext extraction
+sources:
+  - https://github.com/arxiv/fulltext
+engine: gotpl

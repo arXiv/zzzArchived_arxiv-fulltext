@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: "{{ .Values.name }}"
+  namespace: "{{ .Values.namespace }}"
+  annotations:
+    volume.beta.kubernetes.io/storage-class: efs-development
+spec:
+  storageClassName: efs-development
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: "{{ .Values.storage.size }}"

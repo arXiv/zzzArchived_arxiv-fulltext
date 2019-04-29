@@ -1,17 +1,37 @@
 # arxiv/fulltext-worker
 
-FROM arxiv/fulltext-api
+FROM arxiv/base:0.12.1
 
+WORKDIR /opt/arxiv
 
+# MySQL is needed for the arxiv-auth package.
+RUN yum install -y which mysql mysql-devel
+
+# Add Python consumer and configuration.
+RUN pip install -U pip pipenv uwsgi
+ADD Pipfile /opt/arxiv/
+RUN pipenv install
+
+VOLUME /data
+
+ENV PATH "/opt/arxiv:${PATH}"
+
+ENV LC_ALL en_US.utf8
+ENV LANG en_US.utf8
+ENV LOGLEVEL 40
+
+ENV ARXIV_HOME "https://arxiv.org"
+ENV STORAGE_VOLUME /data
+
+ADD fulltext /opt/arxiv/fulltext/
 
 RUN curl https://get.docker.com/ > getdocker.sh
 RUN /bin/sh getdocker.sh
 
-ADD bin/start_worker.sh /opt/arxiv/
-
 VOLUME /pdfs
+VOLUME /data
 
 ENV WORKDIR /pdfs
 
-ENTRYPOINT ["/opt/arxiv/start_worker.sh"]
-CMD ["-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=2"]
+ENTRYPOINT ["pipenv", "run"]
+CMD ["celery", "worker", "-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=2"]

@@ -8,11 +8,11 @@ WORKDIR /opt/arxiv
 RUN yum install -y which mysql mysql-devel
 
 # Add Python consumer and configuration.
-ADD Pipfile /opt/arxiv/
 RUN pip install -U pip pipenv uwsgi
+ADD Pipfile /opt/arxiv/
 RUN pipenv install
 
-VOLUME /data/storage
+VOLUME /data
 
 ENV PATH "/opt/arxiv:${PATH}"
 
@@ -21,23 +21,11 @@ ENV LANG en_US.utf8
 ENV LOGLEVEL 40
 
 ENV ARXIV_HOME "https://arxiv.org"
-ENV STORAGE_VOLUME /data/storage
+ENV STORAGE_VOLUME /data
 
 ADD fulltext /opt/arxiv/fulltext/
-ADD wsgi.py /opt/arxiv/
-ADD bin/start_api.sh /opt/arxiv/
+ADD wsgi.py uwsgi.ini /opt/arxiv/
 EXPOSE 8000
 
-WORKDIR /opt/arxiv/
-
-ENTRYPOINT ["/opt/arxiv/start_api.sh"]
-CMD ["--http-socket", ":8000", \
-     "-M", \
-     "-t 3000", \
-     "--manage-script-name", \
-     "--processes", "8", \
-     "--threads", "1", \
-     "--async", "100", \
-     "--ugreen", \
-     "--mount", "/=wsgi.py", \
-     "--logformat", "%(addr) %(addr) - %(user_id)|%(session_id) [%(rtime)] [%(uagent)] \"%(method) %(uri) %(proto)\" %(status) %(size) %(micros) %(ttfb)"]
+ENTRYPOINT ["pipenv", "run"]
+CMD ["uwsgi", "--ini", "/opt/arxiv/uwsgi.ini"]

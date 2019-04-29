@@ -28,7 +28,7 @@ class StorageFailed(RuntimeError):
     """Could not store content."""
 
 
-class Storage(object):
+class Storage:
     """Provides storage integration."""
 
     def __init__(self, volume: str, version: str) -> None:
