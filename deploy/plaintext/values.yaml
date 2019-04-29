@@ -1,15 +1,15 @@
 api:
-  log_level: "40"
+  log_level: "10"
   image:
     tag: "0.3.2"
 
 agent:
-  log_level: "40"
+  log_level: "10"
   image:
     tag: "0.3.2"
 
 worker:
-  log_level: "40"
+  log_level: "10"
   image:
     tag: "0.3.2"
 

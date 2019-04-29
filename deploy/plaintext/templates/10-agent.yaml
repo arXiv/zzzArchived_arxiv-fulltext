@@ -35,7 +35,7 @@ spec:
         imagePullPolicy: "{{ default "Always" .Values.imagePullPolicy }}"
         env:
         - name: LOGLEVEL
-          value: "{{ .Values.api.log_level }}"
+          value: "{{ .Values.agent.log_level }}"
         - name: LOGFILE
           value: "{{ .Values.agent.log_file }}"
         - name: REDIS_ENDPOINT

@@ -29,10 +29,8 @@ class FulltextRecordProcessor(BaseConsumer):
     def __init__(self, *args, **kwargs) -> None:
         """Initialize a secrets manager before starting."""
         self._config = kwargs.pop('config', {})
-        print('init with config', self._config)
         super(FulltextRecordProcessor, self).__init__(*args, **kwargs)
         if self._config.get('VAULT_ENABLED'):
-            print('vault enabled')
             logger.info('Vault enabled; getting secrets')
             self.__secrets = ConfigManager(self._config)
             self.update_secrets()
@@ -46,8 +44,11 @@ class FulltextRecordProcessor(BaseConsumer):
             if self._config.get(key) != value:
                 got_new_secrets = True
             self._config[key] = value
+            os.environ[key] = str(value)
         self._access_key = self._config.get('AWS_ACCESS_KEY_ID')
         self._secret_key = self._config.get('AWS_SECRET_ACCESS_KEY')
+        if got_new_secrets:
+            time.sleep(0.5)
         return got_new_secrets
 
     def process_records(self, start: str) -> Tuple[str, int]:
