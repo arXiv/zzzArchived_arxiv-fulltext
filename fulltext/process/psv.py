@@ -1,4 +1,6 @@
 """
+PSV conversion of extracted plain text.
+
 Utilities to convert text extracted from a PDF (usually from pdf2txt) to clean
 format in which only ascii characters are left and sentences are separated by
 new lines (PSV). This utility was converted from arXiv::Overlap::TidyText in
@@ -181,7 +183,8 @@ def _remove_Numbers(line: str) -> str:
 
 def _remove_Abbrev(line: str) -> str:
     """
-    Remove abbreviation #.#.#. #.#. #. (e.g. U.S., U.S.A., ...)
+    Remove abbreviation #.#.#. #.#. #. (e.g. U.S., U.S.A., ...).
+
     Abbreviations often cause problems when separating sentences.
     """
     line = re.subn(r'\s\w\.\w\.\w\.\s', ' ', line)[0]
@@ -191,7 +194,7 @@ def _remove_Abbrev(line: str) -> str:
 
 
 def _remove_SingleAlphabet(line: str) -> str:
-    """ Remove single characters: [b-zB-Z] """
+    """Remove single characters: [b-zB-Z]."""
     line = re.subn(r'\s[a-zA-Z]\s', ' ', line)[0]
     line = re.subn(r'\s[a-zA-Z]\s', ' ', line)[0]
     line = re.subn(r'\s[a-zA-Z]\.', r'.', line)[0]
@@ -199,14 +202,14 @@ def _remove_SingleAlphabet(line: str) -> str:
 
 
 def _remove_ExtraSpaces(line: str) -> str:
-    """ Remove extra spaces """
+    """Remove extra spaces."""
     line = re.subn(r'\s+', ' ', line)[0]
     line = re.subn(r'^\s+', '', line)[0]
     return line
 
 
 def _split_sentence(lines: List[str]) -> List[str]:
-    """ Split sentences using the ". " as the delimiter """
+    """Split sentences using the ". " as the delimiter."""
     out: List[str] = []
     for line in lines:
         out.extend(re.split(r'\.\s', line))
@@ -214,7 +217,7 @@ def _split_sentence(lines: List[str]) -> List[str]:
 
 
 def _clean_sentence(lines: List[str]) -> List[str]:
-    """ Remove non-alphabet from the sentences. Convert to lower-case """
+    """Remove non-alphabet from the sentences. Convert to lower-case."""
     out: List[str] = []
     for line in lines:
         # continue if the line does not have any words
@@ -240,8 +243,10 @@ def _clean_sentence(lines: List[str]) -> List[str]:
 def split_on_references(lines: List[str], max_refs_fraction: float = 0.5) \
         -> Tuple[List[str], List[str]]:
     """
-    Mark the start of the references by looking for the last occurrence
-    of the word "Reference" or "Bibliography"
+    Mark the start of the references.
+
+    Does this by looking for the last occurrence of the word "Reference" or
+    "Bibliography".
     """
     regex_refsection = re.compile(
         r'^[^a-zA-Z]*(Reference[s]?|Bibliography)[\W]*$', flags=re.IGNORECASE
@@ -279,6 +284,8 @@ def split_on_references(lines: List[str], max_refs_fraction: float = 0.5) \
 
 def _recover_accents(txt: str) -> str:
     """
+    Try to recover plain text with garbled accents.
+
     Hack to try to recover plain text with accents removed from various
     outputs from xpdf pdf->txt which garble accented characters into multi-byte
     sequences often including linefeed characeters

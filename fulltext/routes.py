@@ -109,7 +109,7 @@ def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
         response_data = Response(data['content'], content_type='text/plain')
     elif content_type == 'application/json':
         if 'content' in data:
-            data['content'] = data['content'].decode('utf-8')
+            data['content'] = data['content']
         response_data = jsonify(data)
     else:
         raise NotAcceptable('unsupported content type')
