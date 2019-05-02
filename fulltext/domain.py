@@ -51,7 +51,8 @@ class Extraction(NamedTuple):
             'task_id': self.task_id,
             'exception': self.exception,
             'status': self.status.value,
-            'content': self.content
+            'content': self.content,
+            'bucket': self.bucket
         }
 
     def copy(self, **kwargs) -> 'Extraction':
@@ -70,3 +71,27 @@ class Extraction(NamedTuple):
     def completed(self):
         """Determine whether the task is in a completed states."""
         return self.status in [self.Status.SUCCEEDED, self.Status.FAILED]
+
+
+class _SupportedFormats:
+    """Defines the text output formats supported by this service."""
+
+    PLAIN = 'plain'
+    PSV = 'psv'
+
+    def __contains__(self, value: str) -> bool:
+        return value in [self.PLAIN, self.PSV]
+
+
+class _SupportedBuckets:
+    """Defines the supported buckets for extracted plain text."""
+
+    ARXIV = 'arxiv'
+    SUBMISSION = 'submission'
+
+    def __contains__(self, value: str) -> bool:
+        return value in [self.ARXIV, self.SUBMISSION]
+
+
+SupportedFormats = _SupportedFormats()
+SupportedBuckets = _SupportedBuckets()

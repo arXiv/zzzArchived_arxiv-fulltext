@@ -11,7 +11,8 @@ def get_a_pdf(arxiv_id):
     return send_file('/opt/arxiv/1702.07336.pdf', mimetype='application/pdf')
 
 
-@application.route('/compiler/<string:source_id>/<string:checksum>/pdf/product')
-def get_a_submission_pdf(source_id, checksum):
+@application.route('/compiler/<string:src_id>/<string:checksum>/pdf/product')
+def get_a_submission_pdf(src_id, checksum):
     """Get a PDF for a submission from the compiler service."""
-    return send_file('/opt/arxiv/1702.07336.pdf', mimetype='application/pdf'), 200, {'ARXIV-OWNER': '1234'}
+    resp = send_file('/opt/arxiv/1702.07336.pdf', mimetype='application/pdf')
+    return resp, 200, {'ARXIV-OWNER': '1234'}   # <- NB owner of compiled PDF.

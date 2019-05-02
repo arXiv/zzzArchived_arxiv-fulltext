@@ -10,31 +10,18 @@ from arxiv.users.auth import scopes
 from arxiv.users.auth.decorators import scoped
 from arxiv.base import logging
 from fulltext import controllers
+from .domain import SupportedBuckets, SupportedFormats
 
 logger = logging.getLogger(__name__)
 
-ARXIV = 'arxiv'
-SUBMISSION = 'submission'
 ARXIV_PREFIX = '/<id_type>/<arxiv:identifier>'
 SUBMISSION_PREFIX = '/<id_type>/<source:identifier>'
 
 blueprint = Blueprint('fulltext', __name__, url_prefix='')
-#
-#
-# def authorizer(session: Session, id_type: str, identifier: str,
-#                *args, **kwargs) -> bool:
-#     if id_type == SUBMISSION:
-#         try:
-#             source_id, checksum = identifier.split('/', 1)
-#         except ValueError:
-#             raise NotFound('Unsupported identifier')
-#         return session.is_authorized(scopes.READ_UPLOAD, source_id)
-#     return True
 
 
 def make_authorizer(scope: Scope) -> Callable[[str, str], bool]:
     """Make an authorizer function for injection into a controller."""
-
     def inner(identifier: str, owner_id: str) -> bool:
         """Check whether the session is authorized for a specific resource."""
         logger.debug('Authorize for %s owned by %s', identifier, owner_id)
@@ -52,7 +39,7 @@ def make_authorizer(scope: Scope) -> Callable[[str, str], bool]:
 
 def resource_id(id_type: str, identifier: str, *args, **kwargs) -> str:
     """Get the resource ID for an endpoint."""
-    if id_type == SUBMISSION:
+    if id_type == SupportedBuckets.SUBMISSION:
         return identifier.split('/', 1)
     return identifier
 
@@ -80,7 +67,7 @@ def extract(id_type: str, identifier: str) -> tuple:
     token = request.environ['token']
 
     # Authorization is required to work with submissions.
-    if id_type == SUBMISSION:
+    if id_type == SupportedBuckets.SUBMISSION:
         authorizer = make_authorizer(scopes.READ_COMPILE)
     else:
         authorizer = None
@@ -101,7 +88,7 @@ def extract(id_type: str, identifier: str) -> tuple:
 @blueprint.route(SUBMISSION_PREFIX)
 @scoped(scopes.READ_FULLTEXT, resource=resource_id)
 def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
-             content_fmt: str = "plain") -> tuple:
+             content_fmt: str = SupportedFormats.PLAIN) -> tuple:
     """Retrieve full-text content for an arXiv paper."""
     if identifier is None:
         raise BadRequest('identifier missing in request')
@@ -109,12 +96,12 @@ def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
     content_type = best_match(available, 'application/json')
 
     # Authorization is required to work with submissions.
-    if id_type == SUBMISSION:
+    if id_type == SupportedBuckets.SUBMISSION:
         authorizer = make_authorizer(scopes.READ_COMPILE)
     else:
         authorizer = None
 
-    data, code, headers = controllers.retrieve(identifier, id_type,
+    data, code, headers = controllers.retrieve(identifier, id_type, version,
                                                content_format=content_fmt,
                                                authorizer=authorizer)
     if content_type == 'text/plain':
@@ -137,7 +124,7 @@ def task_status(id_type: str, identifier: str,
                 version: Optional[str] = None) -> tuple:
     """Get the status of a text extraction task."""
     # Authorization is required to work with submissions.
-    if id_type == SUBMISSION:
+    if id_type == SupportedBuckets.SUBMISSION:
         authorizer = make_authorizer(scopes.READ_COMPILE)
     else:
         authorizer = None

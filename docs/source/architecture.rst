@@ -85,3 +85,6 @@ worker process, which listens for tasks defined in :mod:`fulltext.extract`.
 The extraction task itself (in :mod:`fulltext.extract`) uses a Docker image
 (``extractor``) to perform the actual extraction. This is defined separately
 from the main application.
+
+Authentication & Authorization
+------------------------------

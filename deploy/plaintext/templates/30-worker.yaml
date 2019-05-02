@@ -85,7 +85,7 @@ spec:
           value: "{{ .Values.vault.credential }}"
         - name: KUBE_TOKEN
           value: /var/run/secrets/kubernetes.io/serviceaccount/token
-        - name: FULLTEXT_DOCKER_IMAGE
+        - name: EXTRACTOR_IMAGE
           value: arxiv/plaintext-extractor:{{ default "latest" .Values.plaintext.image.tag }}
         - name: NAMESPACE
           valueFrom:

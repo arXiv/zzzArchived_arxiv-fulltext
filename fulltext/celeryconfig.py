@@ -13,6 +13,7 @@ AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
 # AWS_SECRET_KEY = parse.quote(AWS_SECRET_KEY, safe='')
 # broker_url = "sqs://{}:{}@".format(AWS_ACCESS_KEY, AWS_SECRET_KEY)
 REDIS_ENDPOINT = os.environ.get('REDIS_ENDPOINT')
+task_always_eager = bool(int(os.environ.get('CELERY_ALWAYS_EAGER', '0')))
 broker_url = "redis://%s/0" % REDIS_ENDPOINT
 result_backend = "redis://%s/0" % REDIS_ENDPOINT
 broker_transport_options = {

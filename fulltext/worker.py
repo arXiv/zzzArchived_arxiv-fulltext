@@ -29,7 +29,7 @@ def get_secrets(*args: Any, **kwargs: Any) -> None:
 def pull_image(*args: Any, **kwargs: Any) -> None:
     """Make the dind host pull the fulltext extractor image."""
     client = docker.DockerClient(app.config['DOCKER_HOST'])
-    image_name = app.config['FULLTEXT_DOCKER_IMAGE']
+    image_name = app.config['EXTRACTOR_IMAGE']
     image_tag = app.config['EXTRACTOR_VERSION']
     client.images.pull(f'{image_name}:{image_tag}')
 

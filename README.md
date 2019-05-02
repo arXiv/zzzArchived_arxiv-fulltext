@@ -30,6 +30,13 @@ helper script
 Make sure that you use the same ``JWT_SECRET`` that is used in
 ``docker-compose.yml``.
 
+To extract text from announced e-prints, you need only ``fulltext:create``
+and ``fulltext:read``.
+
+To extract text from submissions, you will also need ``compile:read`` and
+``compile:create``. Your user ID will also need to match the owner stated by
+the mock compiler endpoint in [``mock_arxiv.py``](./mock_arxiv.py).
+
 ```bash
 JWT_SECRET=foosecret pipenv run python generate_token.py
 ```
@@ -59,6 +66,19 @@ not starting, you may want to start fresh with:
 docker-compose rm -v
 docker-compose up
 ```
+
+## Tests
+
+You can run all of the tests with:
+
+```
+CELERY_ALWAYS_EAGER=1 pipenv run nose2 -s extractor -s ./ --with-coverage --coverage-report=term-missing
+```
+
+Note that the app tests in [``tests/``](./tests) require Docker to be running
+and available at ``/var/run/docker.sock``. If you do not already have the
+image ``arxiv/fulltext-extractor:0.3`` on your system, the first run may
+take a little longer than usual.
 
 ## Documentation
 

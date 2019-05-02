@@ -14,7 +14,7 @@ from arxiv.integration.meta import MetaIntegration
 from arxiv.base.globals import get_application_global, get_application_config
 from arxiv.base import logging
 
-from ...domain import Extraction
+from ..domain import Extraction, SupportedFormats, SupportedBuckets
 
 logger = logging.getLogger(__name__)
 MonkeyPatch.patch_fromisoformat()
@@ -60,19 +60,24 @@ class Storage(metaclass=MetaIntegration):
     def _creation_time(self, path: str) -> datetime:
         return datetime.fromtimestamp(os.path.getmtime(path), tz=UTC)
 
-    def _latest_version(self, identifier: str, bucket: str = 'arxiv') -> str:
+    def _latest_version(self, identifier: str,
+                        bucket: str = SupportedBuckets.ARXIV) -> str:
         def _try_float(value: str) -> float:
             try:
                 return float(value)
             except ValueError:
                 return 0.0
         try:
-            paths = os.listdir(self._paper_path(identifier, bucket))
+            root_path = self._paper_path(identifier, bucket)
+            paths = os.listdir(root_path)
         except FileNotFoundError as e:
+            logger.debug('Extraction root path does not exist: %s', root_path)
             raise DoesNotExist("No extractions found") from e
         versions = sorted([p for p in paths if not p.startswith('.')],
                           key=_try_float)
         if not versions:
+            logger.debug('Cannot find any versions for %s in %s',
+                         identifier, bucket)
             raise DoesNotExist(f'No versions for {identifier} in {bucket}')
         return versions[-1]
 
@@ -92,7 +97,10 @@ class Storage(metaclass=MetaIntegration):
     def store(self, extraction: Extraction,
               content_format: Optional[str] = None) -> None:
         """Store an :class:`.Extraction`."""
+        logger.debug('Store content format %s: %s', content_format,
+                     extraction.content is not None)
         if content_format is not None and extraction.content is not None:
+            logger.debug('Store content for %s', extraction.identifier)
             content_path = self._path(extraction.identifier,
                                       extraction.version,
                                       content_format, extraction.bucket)
@@ -111,7 +119,8 @@ class Storage(metaclass=MetaIntegration):
         meta.pop('content')
         meta_path = self._meta_path(extraction.identifier, extraction.version,
                                     extraction.bucket)
-        logger.debug('Meta path: %s', meta_path)
+        logger.debug('Store metadata for %s at %s',
+                     extraction.identifier, meta_path)
         self.make_paths(meta_path)
         try:    # Write metadata record.
             with open(meta_path, 'w') as f:
@@ -120,10 +129,13 @@ class Storage(metaclass=MetaIntegration):
             raise StorageFailed("Could not store content") from e
 
     def retrieve(self, identifier: str, version: Optional[str] = None,
-                 content_format: str = 'plain', bucket: str = 'arxiv',
+                 content_format: str = SupportedFormats.PLAIN,
+                 bucket: str = SupportedBuckets.ARXIV,
                  meta_only: bool = False) -> Extraction:
         """Retrieve an :class:`.Extraction`."""
         content: Optional[bytes] = None
+        logger.debug('Retrieve %s (v%s) for %s from %s', content_format,
+                     version, identifier, bucket)
         if version is None:
             version = self._latest_version(identifier, bucket)
         content_path = self._path(identifier, version, content_format, bucket)
@@ -150,14 +162,8 @@ class Storage(metaclass=MetaIntegration):
                 logger.info('No %s content found for %s (extractor version '
                             '%s) in bucket %s', content_format, identifier,
                             version, bucket)
+        assert meta['bucket'] == bucket
         return Extraction(content=content, **meta)
-
-    def exists(self, identifier: str, version: Optional[str] = None,
-               content_format: str = 'plain', bucket: str = 'arxiv') -> bool:
-        """Check whether an extraction exists."""
-        logger.debug('PDF exists? %s', identifier)
-        content_path = self._path(identifier, version, content_format, bucket)
-        return os.path.exists(content_path)
 
     @classmethod
     def init_app(cls, app: Flask) -> None:

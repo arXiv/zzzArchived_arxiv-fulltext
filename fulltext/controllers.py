@@ -13,18 +13,15 @@ from arxiv.base import logging
 from .services import store, pdf, compiler
 from .extract import create_extraction_task, get_extraction_task, \
     extraction_task_exists, get_version, NoSuchTask, TaskCreationFailed
-from .domain import Extraction
+from .domain import Extraction, SupportedFormats, SupportedBuckets
 
 logger = logging.getLogger(__name__)
 
 ACCEPTED = {'reason': 'fulltext extraction in process'}
 ALREADY_EXISTS = {'reason': 'extraction already exists'}
-TASK_IN_PROGRESS = {'status': 'in progress'}
-TASK_FAILED = {'status': 'failed'}
-TASK_COMPLETE = {'status': 'complete'}
-
-ARXIV = 'arxiv'
-SUBMISSION = 'submission'
+TASK_IN_PROGRESS = {'status': Extraction.Status.IN_PROGRESS.value}
+TASK_FAILED = {'status': Extraction.Status.FAILED.value}
+TASK_COMPLETE = {'status': Extraction.Status.SUCCEEDED.value}
 
 Response = Tuple[Dict[str, Any], int, Dict[str, Any]]
 Authorizer = Callable[[str, Optional[str]], bool]
@@ -37,9 +34,9 @@ def service_status() -> Response:
     raise InternalServerError('Failed readiness check')
 
 
-def retrieve(identifier: str, id_type: str = 'arxiv',
+def retrieve(identifier: str, id_type: str = SupportedBuckets.ARXIV,
              version: Optional[str] = None,
-             content_format: str = 'plain',
+             content_format: str = SupportedFormats.PLAIN,
              authorizer: Optional[Authorizer] = None) -> Response:
     """
     Handle request for full-text content for an arXiv e-print.
@@ -60,8 +57,10 @@ def retrieve(identifier: str, id_type: str = 'arxiv',
     tuple
 
     """
-    if id_type not in [ARXIV, SUBMISSION]:
+    if id_type not in SupportedBuckets:
         raise NotFound('Unrecognized identifier')
+    if content_format not in SupportedFormats:
+        raise NotFound('Unsupported format')
 
     try:
         product = store.Storage.retrieve(identifier, version, content_format,
@@ -90,13 +89,14 @@ def retrieve(identifier: str, id_type: str = 'arxiv',
 def extract(id_type: str, identifier: str, token: str, force: bool = False,
             authorizer: Optional[Authorizer] = None) -> Response:
     """Handle a request to force text extraction."""
-    if id_type not in [ARXIV, SUBMISSION]:
+    if id_type not in SupportedBuckets:
         raise NotFound('Unsupported identifier')
 
     if not force:
         # If an extraction product or task already exists for this paper,
         # redirect. Don't do the same work twice for a given version of the
         # extractor.
+        logger.debug('Check for an existing product or task')
         product: Optional[Extraction] = None
         try:
             product = store.Storage.retrieve(identifier, bucket=id_type,
@@ -117,9 +117,11 @@ def extract(id_type: str, identifier: str, token: str, force: bool = False,
     # waiting until the async task fails. At the same time, we'll also grab
     # the owner (if there is one) so that we can authorize the request.
     owner: Optional[str] = None
-    if id_type == ARXIV and not pdf.CanonicalPDF.exists(identifier):
+    if id_type == SupportedBuckets.ARXIV \
+            and not pdf.CanonicalPDF.exists(identifier):
+        logger.debug('No PDF for this resource exists')
         raise NotFound('No such document')
-    elif id_type == SUBMISSION:
+    elif id_type == SupportedBuckets.SUBMISSION:
         try:
             owner = compiler.Compiler.owner(identifier, token)
             logger.debug('Got owner %s', owner)
@@ -146,41 +148,45 @@ def extract(id_type: str, identifier: str, token: str, force: bool = False,
     return ACCEPTED, status.ACCEPTED, {'Location': target}
 
 
-def get_task_status(identifier: str, id_type: str = 'arxiv',
+def get_task_status(identifier: str, id_type: str = SupportedBuckets.ARXIV,
                     version: Optional[str] = None,
                     authorizer: Optional[Authorizer] = None) -> Response:
     """Check the status of an extraction request."""
-    logger.debug('%s: Get status for paper' % identifier)
-    if id_type not in [ARXIV, SUBMISSION]:
+    logger.debug('get task status for %s in %s', identifier, id_type)
+    if id_type not in SupportedBuckets:
+        logger.debug('unsupported identifier type %s', id_type)
         raise NotFound('Unsupported identifier')
 
     try:
-        product = store.Storage.retrieve(identifier, version, id_type,
+        product = store.Storage.retrieve(identifier, version, bucket=id_type,
                                          meta_only=True)
     except IOError as e:
+        logger.error('could not connect to storage backend')
         raise InternalServerError('Could not connect to backend') from e
     except store.DoesNotExist:
         # If there is only metadata, we should still get a response from
         # the store. So if we hit DoesNotExist there really is nothing to see
         # here folks, move along.
+        logger.debug('store says does not exist')
         raise NotFound('No such task')
 
     # Make sure that the client is authorized to work with this resource before
     # doing anything else.
     if authorizer and not authorizer(identifier, product.owner):
+        logger.debug('requester not authorized; return 404 Not Found')
         raise NotFound('No such task')
 
     if product.status is Extraction.Status.SUCCEEDED:
         logger.debug('Task for %s is already complete', identifier)
         target = url_for('fulltext.retrieve', identifier=identifier,
                          id_type=id_type)
-        return TASK_COMPLETE, status.SEE_OTHER, {'Location': target}
+        return product.to_dict(), status.SEE_OTHER, {'Location': target}
 
     try:
         task = get_extraction_task(identifier, id_type, version)
     except NoSuchTask as e:
         raise NotFound('No such task') from e
-    return _task_redirect(task)
+    return _task_redirect(task, product)
 
 
 def _redirect(extraction: Extraction, authorizer: Authorizer) -> Response:
@@ -205,17 +211,20 @@ def _redirect(extraction: Extraction, authorizer: Authorizer) -> Response:
     return data, status.SEE_OTHER, {'Location': target}
 
 
-def _task_redirect(task: Extraction) -> Response:
+def _task_redirect(task: Extraction, product: Extraction) -> Response:
+    data: Dict[str, Any] = product.to_dict()
+    code: int = status.OK
+    headers: Dict[str, str] = {}
     if task.status is Extraction.Status.IN_PROGRESS:
-        return TASK_IN_PROGRESS, status.OK, {}
+        data.update(TASK_IN_PROGRESS)
     elif task.status is Extraction.Status.FAILED:
         logger.error('%s: failed task: %s' % (task.task_id, task.result))
-        reason = TASK_FAILED
-        reason.update({'reason': str(task.result)})
-        return reason, status.OK, {}
+        data.update({'reason': str(task.result)})
     elif task.status is Extraction.Status.SUCCEEDED:
         logger.debug('Task for %s is already complete', task.identifier)
         target = url_for('fulltext.retrieve', identifier=task.identifier,
                          id_type=task.bucket)
-        return TASK_COMPLETE, status.SEE_OTHER, {'Location': target}
-    raise InternalServerError('Unexpected state')
+        data.update(TASK_COMPLETE)
+        code = status.SEE_OTHER
+        headers = {'Location': target}
+    return data, code, headers

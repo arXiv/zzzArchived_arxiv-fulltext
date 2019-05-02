@@ -109,7 +109,7 @@ enables URL generation without a request context but with an application
 context.
 """
 
-APPLICATION_ROOT = os.environ.get('APPLICATION_ROOT', None)
+APPLICATION_ROOT = os.environ.get('APPLICATION_ROOT', '/')
 """
 If the application does not occupy a whole domain or subdomain this can be set
 to the path where the application is configured to live. This is for session
@@ -204,7 +204,7 @@ AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 
-FULLTEXT_DOCKER_IMAGE = os.environ.get('FULLTEXT_DOCKER_IMAGE',
+EXTRACTOR_IMAGE = os.environ.get('EXTRACTOR_IMAGE',
                                        'arxiv/fulltext-extractor')
 EXTRACTOR_VERSION = '0.3'
 """

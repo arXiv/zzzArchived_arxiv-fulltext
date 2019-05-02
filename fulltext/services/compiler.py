@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 
 from arxiv.base import logging
 from arxiv.integration.api import status, service, exceptions
+from arxiv.integration.api.exceptions import *
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class Compiler(service.HTTPIntegration):
         return self.json('get', 'status')[0]
 
     def exists(self, identifier: str, token: str) -> bool:
+        """Check whether a compilation product exists."""
         endpoint = f'/{identifier}/pdf/product'
         try:
             response = self.request('head', endpoint, token, stream=True)
