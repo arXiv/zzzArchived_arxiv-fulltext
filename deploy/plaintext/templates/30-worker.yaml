@@ -20,8 +20,8 @@ spec:
     spec:
       serviceAccount: plaintext
       volumes:
-      - name: docker-graph-storage
-        emptyDir: {}
+      # - name: docker-graph-storage
+      #   emptyDir: {}
       - name: temp-pdfs
         emptyDir: {}
       - name: vault-certificate
@@ -35,7 +35,7 @@ spec:
 
       containers:
       - name: dind-daemon
-        image: docker:17.11-dind
+        image: docker:18-dind
         # resources:
         #   requests:
         #     memory: "50Mi"
@@ -46,8 +46,8 @@ spec:
         securityContext:
           privileged: true
         volumeMounts:
-        - name: docker-graph-storage
-          mountPath: /var/lib/docker
+        # - name: docker-graph-storage
+        #   mountPath: /var/lib/docker
         - name: temp-pdfs
           mountPath: /pdfs
 
@@ -85,7 +85,7 @@ spec:
           value: "{{ .Values.vault.credential }}"
         - name: KUBE_TOKEN
           value: /var/run/secrets/kubernetes.io/serviceaccount/token
-        - name: FULLTEXT_DOCKER_IMAGE
+        - name: EXTRACTOR_IMAGE
           value: arxiv/plaintext-extractor:{{ default "latest" .Values.plaintext.image.tag }}
         - name: NAMESPACE
           valueFrom:

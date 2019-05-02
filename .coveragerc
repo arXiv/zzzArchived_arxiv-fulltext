@@ -1,8 +1,12 @@
 [run]
 omit =
-    app.py
+    */app.py
+    */wsgi.py
+    */config.py
     docs/*
     test*
+    */tests*
     wsgi.py
     fulltext/config.py
     fulltext/celeryconfig.py
+    mock_arxiv.py

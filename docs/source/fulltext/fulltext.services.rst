@@ -11,12 +11,14 @@ Subpackages
 
 .. toctree::
 
-    fulltext.services.store
+    fulltext.services.tests
 
 Submodules
 ----------
 
 .. toctree::
 
+   fulltext.services.compiler
    fulltext.services.pdf
+   fulltext.services.store
 

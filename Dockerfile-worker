@@ -7,6 +7,9 @@ WORKDIR /opt/arxiv
 # MySQL is needed for the arxiv-auth package.
 RUN yum install -y which mysql mysql-devel
 
+RUN curl https://get.docker.com/ > getdocker.sh
+RUN /bin/sh getdocker.sh
+
 # Add Python consumer and configuration.
 RUN pip install -U pip pipenv uwsgi
 ADD Pipfile /opt/arxiv/
@@ -24,9 +27,6 @@ ENV ARXIV_HOME "https://arxiv.org"
 ENV STORAGE_VOLUME /data
 
 ADD fulltext /opt/arxiv/fulltext/
-
-RUN curl https://get.docker.com/ > getdocker.sh
-RUN /bin/sh getdocker.sh
 
 VOLUME /pdfs
 VOLUME /data
