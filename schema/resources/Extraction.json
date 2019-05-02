@@ -1,0 +1,66 @@
+{
+  "title": "Extraction",
+  "type": "object",
+  "properties": {
+    "identifier": {
+      "type": "string",
+      "description": "Identifier of the document from which the extraction was generated."
+    },
+    "version": {
+      "type": "string",
+      "description": "The version of the extractor that generated the product."
+    },
+    "bucket": {
+      "type": "string",
+      "enum": ["arxiv", "submission"],
+      "description": "The bucket or collection to which the extraction belongs."
+    },
+    "started": {
+      "oneOf": [
+        {"type": "string", "format": "date-time"},
+        {"type": "null"}
+      ],
+      "description": "The datetime when the extraction was created."
+    },
+    "ended": {
+      "oneOf": [
+        {"type": "string", "format": "date-time"},
+        {"type": "null"}
+      ],
+      "description": "The datetime when the extraction was completed."
+    },
+    "owner": {
+      "oneOf": [
+        {"type": "string"},
+        {"type": "null"}
+      ],
+      "description": "Owner of the resource."
+    },
+    "exception": {
+      "oneOf": [
+        {"type": "string"},
+        {"type": "null"}
+      ],
+      "description": "An exception raised during a failed extraction."
+    },
+    "task_id": {
+      "oneOf": [
+        {"type": "string"},
+        {"type": "null"}
+      ],
+      "description": "The identifier of the extraction task."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["in_progress", "succeeded", "failed"],
+      "description": "Status of the extraction task."
+    },
+    "content": {
+      "oneOf": [
+        {"type": "string"},
+        {"type": "null"}
+      ],
+      "description": "Extraction content."
+    }
+  }
+}

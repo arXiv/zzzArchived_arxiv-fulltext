@@ -9,19 +9,20 @@ info:
     name: MIT
 
 paths:
-  /{identifier}:
+  /arxiv/arxiv/{identifier}:
     get:
       operationId: getLatestExtraction
-      summary: |
-        Retrieve the latest extraction for a paper.
+      summary: Retrieve the latest extraction for an e-print.
       responses:
         '200':
-          description: |
-            An extraction for the current version of the extractor exists.
+          description: An extraction exists.
           content:
             text/plain:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
         '303':
           description: |
             An extraction task exists for this paper using the current
@@ -50,7 +51,7 @@ paths:
           description: |
             Forbidden. Client or user is not authorized to force extraction.
 
-  /{identifier}/format/{format}:
+  /arxiv/{identifier}/format/{format}:
     get:
       operationId: getLatestExtractionByFormat
       summary: |
@@ -62,10 +63,13 @@ paths:
             text/plain:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
         '404':
           description: The requested format does not exist.
 
-  /{identifier}/version/{extractor_version}:
+  /arxiv/{identifier}/version/{extractor_version}:
     get:
       operationId: getExtractionByVersion
       summary: |
@@ -78,10 +82,13 @@ paths:
             text/plain:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
         '404':
           description: The requested version does not exist.
 
-  /{identifier}/version/{extractor_version}/format/{format}:
+  /arxiv/{identifier}/version/{extractor_version}/format/{format}:
     get:
       operationId: getExtractionByVersionAndFormat
       summary: |
@@ -94,10 +101,13 @@ paths:
             text/plain:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
         '404':
           description: The requested version + format does not exist.
 
-  /{identifier}/status:
+  /arxiv/{identifier}/status:
     get:
       operationId: getExtractionStatus
       summary: |
@@ -112,7 +122,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/status.json'
+                $ref: './resources/Extraction.json#'
         '303':
           description: |
             The extraction task has completed successfully, and a fulltext
@@ -127,7 +137,7 @@ paths:
         '404':
           description: The requested task does not exist.
 
-  /{identifier}/version/{extractor_version}/status:
+  /arxiv/{identifier}/version/{extractor_version}/status:
     get:
       operationId: getExtractionStatusByVersion
       summary: |
@@ -142,7 +152,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/status.json'
+                $ref: './resources/Extraction.json#'
         '303':
           description: |
             The extraction task has completed successfully, and a fulltext
@@ -157,7 +167,7 @@ paths:
         '404':
           description: The requested task does not exist.
 
-  /submission/{submission_id}:
+  /submission/{source_id}/{source_checksum}:
     get:
       operationId: getLatestSubmissionExtraction
       summary: |
@@ -170,6 +180,9 @@ paths:
             text/plain:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
         '303':
           description: |
             An extraction task exists for this submission using the current
@@ -198,7 +211,7 @@ paths:
           description: |
             Forbidden. Client or user is not authorized to force extraction.
 
-  /submission/{submission_id}/format/{format}:
+  /submission/{source_id}/{source_checksum}/format/{format}:
     get:
       operationId: getSubmissionExtractionByFormat
       summary: |
@@ -210,10 +223,13 @@ paths:
             text/plain:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
         '404':
           description: The requested format does not exist.
 
-  /submission/{submission_id}/version/{extractor_version}:
+  /submission/{source_id}/{source_checksum}/version/{extractor_version}:
     get:
       operationId: getSubmissionExtractionByVersion
       summary: |
@@ -226,10 +242,13 @@ paths:
             text/plain:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
         '404':
           description: The requested version does not exist.
 
-  /submission/{submission_id}/version/{extractor_version}/format/{format}:
+  /submission/{source_id}/{source_checksum}/version/{extractor_version}/format/{format}:
     get:
       operationId: getSubmissionExtractionByVersionAndFormat
       summary: |
@@ -242,10 +261,13 @@ paths:
             text/plain:
               schema:
                 type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
         '404':
           description: The requested version + format does not exist.
 
-  /submission/{submission_id}/status:
+  /submission/{source_id}/{source_checksum}/status:
     get:
       operationId: getSubmissionExtractionStatus
       summary: |
@@ -260,7 +282,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/status.json'
+                $ref: './resources/Extraction.json#'
         '303':
           description: |
             The extraction task has completed successfully, and a fulltext
@@ -275,7 +297,7 @@ paths:
         '404':
           description: The requested task does not exist.
 
-  /submission/{submission_id}/version/{extractor_version}/status:
+  /submission/{source_id}/{source_checksum}/version/{extractor_version}/status:
     get:
       operationId: getSubmissionExtractionStatusByVersion
       summary: |
@@ -290,7 +312,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'resources/status.json'
+                $ref: './resources/Extraction.json#'
         '303':
           description: |
             The extraction task has completed successfully, and a fulltext
