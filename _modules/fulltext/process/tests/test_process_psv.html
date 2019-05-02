@@ -1,0 +1,225 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>fulltext.process.tests.test_process_psv &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for fulltext.process.tests.test_process_psv</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Tests for :mod:`fulltext.process.psv`.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">unittest</span> <span class="k">import</span> <span class="n">TestCase</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">psv</span>
+
+<span class="n">PAULI</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">**Pauli Virtanen** is SciPy&#39;s Benevolent Dictator For Life (BDFL).  He says:</span>
+
+<span class="s2">*Truthfully speaking, we could have released a SciPy 1.0 a long time ago, so</span>
+<span class="s2">I&#39;m happy we do it now at long last. The project has a long history, and during</span>
+<span class="s2">the years it has matured also as a software project.  I believe it has well</span>
+<span class="s2">proved its merit to warrant a version number starting with unity.*</span>
+
+<span class="s2">*Since its conception 15+ years ago, SciPy has largely been written by and for</span>
+<span class="s2">scientists, to provide a box of basic tools that they need. Over time, the set</span>
+<span class="s2">of people active in its development has undergone some rotation, and we have</span>
+<span class="s2">evolved towards a somewhat more systematic approach to development.</span>
+<span class="s2">Regardless, this underlying drive has stayed the same, and I think it will also</span>
+<span class="s2">continue propelling the project forward in future. This is all good, since not</span>
+<span class="s2">long after 1.0 comes 1.1.*</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="TestConvertToPSV"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSV">[docs]</a><span class="k">class</span> <span class="nc">TestConvertToPSV</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;We have raw plain text extracted from a PDF.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestConvertToPSV.test_tidy_text"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSV.test_tidy_text">[docs]</a>    <span class="k">def</span> <span class="nf">test_tidy_text</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;All of the cleanup procedures are applied.&quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">PAULI</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39; </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;pauli virtanen is scipy benevolent dictator for life bdfl&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;he says&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;truthfully speaking we could have released scipy&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;long time ago so&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;i happy we do it now at long last&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;the project has long history and during the years it has matured also as software project&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;believe it has well proved its merit to warrant version number starting with unity&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;since its conception years ago scipy has largely been written by and for scientists to provide box of basic tools that they need&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;over time the set of people active in its development has undergone some rotation and we have evolved towards somewhat more systematic approach to development&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;regardless this underlying drive has stayed the same and think it will also continue propelling the project forward in future&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;this is all good since not long after&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;comes&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">psv</span><span class="o">.</span><span class="n">tidy_txt_from_pdf</span><span class="p">(</span><span class="n">text</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestConvertToPSV.test_to_psv"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSV.test_to_psv">[docs]</a>    <span class="k">def</span> <span class="nf">test_to_psv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;pauli virtanen is scipy benevolent dictator for life bdfl he says truthfully speaking we could have released scipy long time ago so i happy we do it now at long last the project has long history and during the years it has matured also as software project believe it has well proved its merit to warrant version number starting with unity since its conception years ago scipy has largely been written by and for scientists to provide box of basic tools that they need over time the set of people active in its development has undergone some rotation and we have evolved towards somewhat more systematic approach to development regardless this underlying drive has stayed the same and think it will also continue propelling the project forward in future this is all good since not long after comes&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">psv</span><span class="o">.</span><span class="n">normalize_text_psv</span><span class="p">(</span><span class="n">PAULI</span><span class="p">),</span> <span class="n">expected</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TestConvertToPSVUnits"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSVUnits">[docs]</a><span class="k">class</span> <span class="nc">TestConvertToPSVUnits</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;We have raw plain text extracted from a PDF.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestConvertToPSVUnits.test_expand_words"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSVUnits.test_expand_words">[docs]</a>    <span class="k">def</span> <span class="nf">test_expand_words</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The text contains common abbreviations.&quot;&quot;&quot;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="s2">&quot;Lorem Prof. Dr. ipsum dolor Fig. sit amet Sects. 1 Refs Eqs. 2&quot;</span>
+        <span class="n">expanded</span> <span class="o">=</span> <span class="n">psv</span><span class="o">.</span><span class="n">expandWords</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span>
+            <span class="n">expanded</span><span class="p">,</span>
+            <span class="s2">&quot;Lorem Prof Dr ipsum dolor Figure sit &quot;</span>
+            <span class="s2">&quot;amet Section 1 Reference Equation 2&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Abbreviations should be expanded.&quot;</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestConvertToPSVUnits.test_text_has_symbols"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSVUnits.test_text_has_symbols">[docs]</a>    <span class="k">def</span> <span class="nf">test_text_has_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The text has symbols.&quot;&quot;&quot;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="s2">&quot;Bacon ipsum$@@ dolor amet lan!!!#djaeger chuc&amp;&amp;&amp;^k bacon&quot;</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="s2">&quot;Bacon ipsum    dolor amet lan    djaeger chuc    k bacon&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">psv</span><span class="o">.</span><span class="n">_remove_Symbols</span><span class="p">(</span><span class="n">raw</span><span class="p">),</span> <span class="n">expected</span><span class="p">,</span>
+                         <span class="s2">&quot;Symbols should be removed&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestConvertToPSVUnits.test_text_has_numbers"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSVUnits.test_text_has_numbers">[docs]</a>    <span class="k">def</span> <span class="nf">test_text_has_numbers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The text has numbers.&quot;&quot;&quot;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="s2">&quot;Pork 2chop boudin5 picanha chic4ken&quot;</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="s2">&quot;Pork  chop boudin  picanha chic ken&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">psv</span><span class="o">.</span><span class="n">_remove_Numbers</span><span class="p">(</span><span class="n">raw</span><span class="p">),</span> <span class="n">expected</span><span class="p">,</span>
+                         <span class="s2">&quot;Numbers should be removed&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestConvertToPSVUnits.test_text_has_unwanted_keywords"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSVUnits.test_text_has_unwanted_keywords">[docs]</a>    <span class="k">def</span> <span class="nf">test_text_has_unwanted_keywords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The text has some unwanted content identified by keywords.&quot;&quot;&quot;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Bacon ipsum dolor amet landjaeger chuck bacon boudin sausage&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;arxiv ribs meatloaf chicken turducken bresaola shoulder. Pork&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;chop boudin will be inserted by hand later picanha chicken short&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;loin alcatra, turducken flank t-bone tail sirloin hamburger&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;turkey short ribs prosciutto. Pork was prepared with the aas&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;chop ribeye strip steak jerky, ball tip andouille leberkas cupim&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;1234567890&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;university&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ham. Pig meatloaf short ribs leberkas, cupim pork chop&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Bacon ipsum dolor amet landjaeger chuck bacon boudin sausage&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;loin alcatra, turducken flank t-bone tail sirloin hamburger&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;chop ribeye strip steak jerky, ball tip andouille leberkas cupim&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;1234567890&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ham. Pig meatloaf short ribs leberkas, cupim pork chop&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">psv</span><span class="o">.</span><span class="n">_remove_Keyword</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestConvertToPSVUnits.test_text_has_continuations"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSVUnits.test_text_has_continuations">[docs]</a>    <span class="k">def</span> <span class="nf">test_text_has_continuations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The text has hyphenated continuations. Yuck.&quot;&quot;&quot;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Bacon ipsum dolor amet landjaeger chuck bacon boudin saus- &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;age.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Chop boudin picanha chicken short &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;hmmm&quot;</span>
+        <span class="p">]</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Bacon ipsum dolor amet landjaeger chuck bacon boudin sausage.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Chop boudin picanha chicken short hmmm&quot;</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">psv</span><span class="o">.</span><span class="n">_remove_BadEOL</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestConvertToPSVUnits.test_whitespace_all_over_the_place"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSVUnits.test_whitespace_all_over_the_place">[docs]</a>    <span class="k">def</span> <span class="nf">test_whitespace_all_over_the_place</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The text has a variety of whitespace.&quot;&quot;&quot;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Meatball</span><span class="se">\t</span><span class="s2"> pastrami chicken hamburger brisket ham hock capicola.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Shankle turkey tongue</span><span class="se">\n\n</span><span class="s2">sirloin meatloaf corned beef tail strip&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;steak   sausage bacon beef ribs. &quot;</span>
+        <span class="p">]</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Meatball  pastrami chicken hamburger brisket ham hock capicola.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Shankle turkey tongue  sirloin meatloaf corned beef tail strip&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;steak   sausage bacon beef ribs. &quot;</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">psv</span><span class="o">.</span><span class="n">_remove_WhiteSpace</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv Fulltext Extraction Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../fulltext/fulltext.html">fulltext package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv.org.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

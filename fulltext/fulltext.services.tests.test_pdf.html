@@ -1,0 +1,190 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>fulltext.services.tests.test_pdf module &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="fulltext.services.compiler module" href="fulltext.services.compiler.html" />
+    <link rel="prev" title="fulltext.services.tests package" href="fulltext.services.tests.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-fulltext.services.tests.test_pdf">
+<span id="fulltext-services-tests-test-pdf-module"></span><h1>fulltext.services.tests.test_pdf module<a class="headerlink" href="#module-fulltext.services.tests.test_pdf" title="Permalink to this headline">¶</a></h1>
+<p>Tests for <a class="reference internal" href="fulltext.services.pdf.html#module-fulltext.services.pdf" title="fulltext.services.pdf"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.services.pdf</span></code></a>.</p>
+<dl class="class">
+<dt id="fulltext.services.tests.test_pdf.TestExists">
+<em class="property">class </em><code class="descclassname">fulltext.services.tests.test_pdf.</code><code class="descname">TestExists</code><span class="sig-paren">(</span><em>methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestExists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestExists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Tests for <a class="reference internal" href="fulltext.services.pdf.html#fulltext.services.pdf.CanonicalPDF.exists" title="fulltext.services.pdf.CanonicalPDF.exists"><code class="xref py py-func docutils literal notranslate"><span class="pre">fulltext.services.pdf.CanonicalPDF.exists()</span></code></a>.</p>
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestExists.setUp">
+<code class="descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestExists.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestExists.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start an app so that we have some context.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestExists.test_pdf_does_not_exist">
+<code class="descname">test_pdf_does_not_exist</code><span class="sig-paren">(</span><em>Session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestExists.test_pdf_does_not_exist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestExists.test_pdf_does_not_exist" title="Permalink to this definition">¶</a></dt>
+<dd><p>A PDF does not exist at the passed URL.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestExists.test_pdf_exists">
+<code class="descname">test_pdf_exists</code><span class="sig-paren">(</span><em>Session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestExists.test_pdf_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestExists.test_pdf_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>A PDF exists at the passed URL.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestExists.test_pdf_returns_error">
+<code class="descname">test_pdf_returns_error</code><span class="sig-paren">(</span><em>Session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestExists.test_pdf_returns_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestExists.test_pdf_returns_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>An unexpected status was returned.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="fulltext.services.tests.test_pdf.TestRetrieve">
+<em class="property">class </em><code class="descclassname">fulltext.services.tests.test_pdf.</code><code class="descname">TestRetrieve</code><span class="sig-paren">(</span><em>methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestRetrieve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestRetrieve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">unittest.case.TestCase</span></code></p>
+<p>Tests for <a class="reference internal" href="fulltext.services.pdf.html#fulltext.services.pdf.CanonicalPDF.retrieve" title="fulltext.services.pdf.CanonicalPDF.retrieve"><code class="xref py py-func docutils literal notranslate"><span class="pre">fulltext.services.pdf.CanonicalPDF.retrieve()</span></code></a>.</p>
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestRetrieve.setUp">
+<code class="descname">setUp</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestRetrieve.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestRetrieve.setUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start an app so that we have some context.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_does_not_exist">
+<code class="descname">test_pdf_does_not_exist</code><span class="sig-paren">(</span><em>Session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestRetrieve.test_pdf_does_not_exist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_does_not_exist" title="Permalink to this definition">¶</a></dt>
+<dd><p>A PDF does not exist at the passed URL.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_exists">
+<code class="descname">test_pdf_exists</code><span class="sig-paren">(</span><em>Session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestRetrieve.test_pdf_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>A PDF exists at the passed URL.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_never_ready">
+<code class="descname">test_pdf_never_ready</code><span class="sig-paren">(</span><em>Session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestRetrieve.test_pdf_never_ready"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_never_ready" title="Permalink to this definition">¶</a></dt>
+<dd><p>A PDF cannot be rendered.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_not_ready">
+<code class="descname">test_pdf_not_ready</code><span class="sig-paren">(</span><em>Session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestRetrieve.test_pdf_not_ready"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_not_ready" title="Permalink to this definition">¶</a></dt>
+<dd><p>A PDF still needs to be rendered.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_returns_error">
+<code class="descname">test_pdf_returns_error</code><span class="sig-paren">(</span><em>Session</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/tests/test_pdf.html#TestRetrieve.test_pdf_returns_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_returns_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>An unexpected status was returned.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv Fulltext Extraction Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="fulltext.html">fulltext package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="fulltext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fulltext.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="fulltext.html">fulltext package</a><ul>
+  <li><a href="fulltext.services.html">fulltext.services package</a><ul>
+  <li><a href="fulltext.services.tests.html">fulltext.services.tests package</a><ul>
+      <li>Previous: <a href="fulltext.services.tests.html" title="previous chapter">fulltext.services.tests package</a></li>
+      <li>Next: <a href="fulltext.services.compiler.html" title="next chapter">fulltext.services.compiler module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv.org.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../_sources/fulltext/fulltext.services.tests.test_pdf.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

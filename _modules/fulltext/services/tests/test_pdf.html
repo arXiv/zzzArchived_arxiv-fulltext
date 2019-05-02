@@ -1,0 +1,242 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>fulltext.services.tests.test_pdf &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for fulltext.services.tests.test_pdf</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Tests for :mod:`fulltext.services.pdf`.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">unittest</span> <span class="k">import</span> <span class="n">TestCase</span><span class="p">,</span> <span class="n">mock</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">Flask</span>
+
+<span class="kn">from</span> <span class="nn">arxiv</span> <span class="k">import</span> <span class="n">status</span>
+<span class="kn">from</span> <span class="nn">arxiv.integration.api</span> <span class="k">import</span> <span class="n">service</span>
+
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">pdf</span>
+
+
+<div class="viewcode-block" id="TestExists"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestExists">[docs]</a><span class="k">class</span> <span class="nc">TestExists</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tests for :func:`fulltext.services.pdf.CanonicalPDF.exists`.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestExists.setUp"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestExists.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start an app so that we have some context.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestExists.test_pdf_exists"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestExists.test_pdf_exists">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{service.__name__}</span><span class="s1">.requests.Session&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_pdf_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Session</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A PDF exists at the passed URL.&quot;&quot;&quot;</span>
+        <span class="n">mock_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">)</span>
+        <span class="n">Session</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">head</span><span class="o">=</span><span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">return_value</span><span class="o">=</span><span class="n">mock_response</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span>
+                <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;1234.56789&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestExists.test_pdf_does_not_exist"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestExists.test_pdf_does_not_exist">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{service.__name__}</span><span class="s1">.requests.Session&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_pdf_does_not_exist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Session</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A PDF does not exist at the passed URL.&quot;&quot;&quot;</span>
+        <span class="n">mock_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+        <span class="n">Session</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">head</span><span class="o">=</span><span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">return_value</span><span class="o">=</span><span class="n">mock_response</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span>
+                <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;1234.56789&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestExists.test_pdf_returns_error"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestExists.test_pdf_returns_error">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{service.__name__}</span><span class="s1">.requests.Session&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_pdf_returns_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Session</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;An unexpected status was returned.&quot;&quot;&quot;</span>
+        <span class="n">mock_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">)</span>
+        <span class="n">Session</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">head</span><span class="o">=</span><span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">return_value</span><span class="o">=</span><span class="n">mock_response</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">IOError</span><span class="p">):</span>
+                <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;1234.56789&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TestRetrieve"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestRetrieve">[docs]</a><span class="k">class</span> <span class="nc">TestRetrieve</span><span class="p">(</span><span class="n">TestCase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tests for :func:`fulltext.services.pdf.CanonicalPDF.retrieve`.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TestRetrieve.setUp"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestRetrieve.setUp">[docs]</a>    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Start an app so that we have some context.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="s1">&#39;test&#39;</span><span class="p">)</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestRetrieve.test_pdf_exists"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_exists">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{service.__name__}</span><span class="s1">.requests.Session&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_pdf_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Session</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A PDF exists at the passed URL.&quot;&quot;&quot;</span>
+        <span class="n">mock_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+            <span class="n">content</span><span class="o">=</span><span class="sa">b</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/pdf&#39;</span><span class="p">})</span>
+        <span class="n">Session</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">get</span><span class="o">=</span><span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">return_value</span><span class="o">=</span><span class="n">mock_response</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">document_id</span> <span class="o">=</span> <span class="s1">&#39;1234.56789&#39;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="n">pdf_path</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">document_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIn</span><span class="p">(</span><span class="n">document_id</span><span class="p">,</span> <span class="n">pdf_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">pdf_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.pdf&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pdf_path</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestRetrieve.test_pdf_not_ready"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_not_ready">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{service.__name__}</span><span class="s1">.requests.Session&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_pdf_not_ready</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Session</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A PDF still needs to be rendered.&quot;&quot;&quot;</span>
+        <span class="n">mock_html_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+            <span class="n">content</span><span class="o">=</span><span class="sa">b</span><span class="s1">&#39;&lt;html&gt;foo&lt;/html&gt;&#39;</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;text/html&#39;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">mock_pdf_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+            <span class="n">content</span><span class="o">=</span><span class="sa">b</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/pdf&#39;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">mock_get</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">side_effect</span><span class="o">=</span><span class="p">[</span><span class="n">mock_html_response</span><span class="p">,</span> <span class="n">mock_pdf_response</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">Session</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">get</span><span class="o">=</span><span class="n">mock_get</span><span class="p">)</span>
+        <span class="n">document_id</span> <span class="o">=</span> <span class="s1">&#39;1234.56789&#39;</span>
+
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="n">pdf_path</span> <span class="o">=</span> <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">document_id</span><span class="p">,</span> <span class="n">sleep</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIn</span><span class="p">(</span><span class="n">document_id</span><span class="p">,</span> <span class="n">pdf_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">pdf_path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.pdf&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pdf_path</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">mock_get</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestRetrieve.test_pdf_never_ready"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_never_ready">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{service.__name__}</span><span class="s1">.requests.Session&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_pdf_never_ready</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Session</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A PDF cannot be rendered.&quot;&quot;&quot;</span>
+        <span class="n">mock_html_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">,</span>
+            <span class="n">content</span><span class="o">=</span><span class="sa">b</span><span class="s1">&#39;&lt;html&gt;foo&lt;/html&gt;&#39;</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;text/html&#39;</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">mock_get</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">return_value</span><span class="o">=</span><span class="n">mock_html_response</span><span class="p">)</span>
+        <span class="n">Session</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">get</span><span class="o">=</span><span class="n">mock_get</span><span class="p">)</span>
+        <span class="n">document_id</span> <span class="o">=</span> <span class="s1">&#39;1234.56789&#39;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">IOError</span><span class="p">):</span>
+                <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="s1">&#39;1234.56789&#39;</span><span class="p">,</span> <span class="n">sleep</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertGreater</span><span class="p">(</span><span class="n">mock_get</span><span class="o">.</span><span class="n">call_count</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestRetrieve.test_pdf_does_not_exist"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_does_not_exist">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{service.__name__}</span><span class="s1">.requests.Session&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_pdf_does_not_exist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Session</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A PDF does not exist at the passed URL.&quot;&quot;&quot;</span>
+        <span class="n">mock_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">)</span>
+        <span class="n">Session</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">get</span><span class="o">=</span><span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">return_value</span><span class="o">=</span><span class="n">mock_response</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="n">pdf</span><span class="o">.</span><span class="n">DoesNotExist</span><span class="p">):</span>
+                <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="s1">&#39;1234.56789&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TestRetrieve.test_pdf_returns_error"><a class="viewcode-back" href="../../../../fulltext/fulltext.services.tests.test_pdf.html#fulltext.services.tests.test_pdf.TestRetrieve.test_pdf_returns_error">[docs]</a>    <span class="nd">@mock</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{service.__name__}</span><span class="s1">.requests.Session&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">test_pdf_returns_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Session</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;An unexpected status was returned.&quot;&quot;&quot;</span>
+        <span class="n">mock_response</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_403_FORBIDDEN</span><span class="p">)</span>
+        <span class="n">Session</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span>
+            <span class="n">get</span><span class="o">=</span><span class="n">mock</span><span class="o">.</span><span class="n">MagicMock</span><span class="p">(</span><span class="n">return_value</span><span class="o">=</span><span class="n">mock_response</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">():</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">IOError</span><span class="p">):</span>
+                <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="s1">&#39;1234.56789&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">arXiv Fulltext Extraction Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../fulltext/fulltext.html">fulltext package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv.org.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

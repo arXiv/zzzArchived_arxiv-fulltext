@@ -36,6 +36,62 @@
   <div class="section" id="module-fulltext.worker">
 <span id="fulltext-worker-module"></span><h1>fulltext.worker module<a class="headerlink" href="#module-fulltext.worker" title="Permalink to this headline">¶</a></h1>
 <p>Initialize the Celery application.</p>
+<dl class="function">
+<dt id="fulltext.worker.get_secrets">
+<code class="descclassname">fulltext.worker.</code><code class="descname">get_secrets</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/worker.html#get_secrets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.worker.get_secrets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Collect any required secrets from Vault.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fulltext.worker.get_secrets_manager">
+<code class="descclassname">fulltext.worker.</code><code class="descname">get_secrets_manager</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/worker.html#get_secrets_manager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.worker.get_secrets_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get or create a <code class="xref py py-class docutils literal notranslate"><span class="pre">ConfigManager</span></code> for this app.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConfigManager</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fulltext.worker.pull_image">
+<code class="descclassname">fulltext.worker.</code><code class="descname">pull_image</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/worker.html#pull_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.worker.pull_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the dind host pull the fulltext extractor image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fulltext.worker.verify_secrets_up_to_date">
+<code class="descclassname">fulltext.worker.</code><code class="descname">verify_secrets_up_to_date</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/worker.html#verify_secrets_up_to_date"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.worker.verify_secrets_up_to_date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Verify that any required secrets from Vault are up to date.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 
 

@@ -44,14 +44,28 @@
 </dd></dl>
 
 <dl class="function">
-<dt id="fulltext.routes.extract_fulltext">
-<code class="descclassname">fulltext.routes.</code><code class="descname">extract_fulltext</code><span class="sig-paren">(</span><em>paper_id</em>, <em>id_type='arxiv'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#extract_fulltext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.extract_fulltext" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle requests for reference extraction.</p>
+<dt id="fulltext.routes.extract">
+<code class="descclassname">fulltext.routes.</code><code class="descname">extract</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#extract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle requests for fulltext extraction.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#tuple" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="fulltext.routes.make_authorizer">
+<code class="descclassname">fulltext.routes.</code><code class="descname">make_authorizer</code><span class="sig-paren">(</span><em>scope</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#make_authorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.make_authorizer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make an authorizer function for injection into a controller.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Callable" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</td>
 </tr>
 </tbody>
 </table>
@@ -72,22 +86,22 @@
 </dd></dl>
 
 <dl class="function">
-<dt id="fulltext.routes.retrieve">
-<code class="descclassname">fulltext.routes.</code><code class="descname">retrieve</code><span class="sig-paren">(</span><em>paper_id</em>, <em>version=None</em>, <em>content_format='plain'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#retrieve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.retrieve" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve full-text content for an arXiv paper.</p>
+<dt id="fulltext.routes.resource_id">
+<code class="descclassname">fulltext.routes.</code><code class="descname">resource_id</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#resource_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.resource_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the resource ID for an endpoint.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#tuple" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="function">
-<dt id="fulltext.routes.retrieve_submission">
-<code class="descclassname">fulltext.routes.</code><code class="descname">retrieve_submission</code><span class="sig-paren">(</span><em>paper_id</em>, <em>version=None</em>, <em>content_format='plain'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#retrieve_submission"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.retrieve_submission" title="Permalink to this definition">¶</a></dt>
+<dt id="fulltext.routes.retrieve">
+<code class="descclassname">fulltext.routes.</code><code class="descname">retrieve</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em>, <em>version=None</em>, <em>content_fmt='plain'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#retrieve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.retrieve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve full-text content for an arXiv paper.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -101,8 +115,8 @@
 
 <dl class="function">
 <dt id="fulltext.routes.task_status">
-<code class="descclassname">fulltext.routes.</code><code class="descname">task_status</code><span class="sig-paren">(</span><em>task_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#task_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.task_status" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the status of a reference extraction task.</p>
+<code class="descclassname">fulltext.routes.</code><code class="descname">task_status</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em>, <em>version=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#task_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.task_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the status of a text extraction task.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />

@@ -6,6 +6,13 @@ fulltext.process package
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    fulltext.process.tests
+
 Submodules
 ----------
 

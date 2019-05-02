@@ -46,8 +46,8 @@
 
 <dl class="class">
 <dt id="fulltext.agent.consumer.FulltextRecordProcessor">
-<em class="property">class </em><code class="descclassname">fulltext.agent.consumer.</code><code class="descname">FulltextRecordProcessor</code><span class="sig-paren">(</span><em>stream_name=''</em>, <em>shard_id=''</em>, <em>access_key=''</em>, <em>secret_key=''</em>, <em>region=''</em>, <em>checkpointer=None</em>, <em>back_off=5</em>, <em>batch_size=50</em>, <em>endpoint=None</em>, <em>verify=True</em>, <em>duration=None</em>, <em>start_type='AT_TIMESTAMP'</em>, <em>start_at='2018-08-03T14:17:13'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/agent/consumer.html#FulltextRecordProcessor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.agent.consumer.FulltextRecordProcessor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">arxiv.base.agent.BaseConsumer</span></code></p>
+<em class="property">class </em><code class="descclassname">fulltext.agent.consumer.</code><code class="descname">FulltextRecordProcessor</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/agent/consumer.html#FulltextRecordProcessor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.agent.consumer.FulltextRecordProcessor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">arxiv.integration.kinesis.consumer.BaseConsumer</span></code></p>
 <p>Consumes <code class="docutils literal notranslate"><span class="pre">PDFIsAvailable</span></code> notifications, creates extraction tasks.</p>
 <dl class="method">
 <dt id="fulltext.agent.consumer.FulltextRecordProcessor.process_record">
@@ -77,10 +77,43 @@ documents failed.</p>
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="fulltext.agent.consumer.FulltextRecordProcessor.process_records">
+<code class="descname">process_records</code><span class="sig-paren">(</span><em>start</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/agent/consumer.html#FulltextRecordProcessor.process_records"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.agent.consumer.FulltextRecordProcessor.process_records" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update secrets before getting a new batch of records.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#int" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="fulltext.agent.consumer.FulltextRecordProcessor.sleep">
-<code class="descname">sleep</code><em class="property"> = 0.1</em><a class="headerlink" href="#fulltext.agent.consumer.FulltextRecordProcessor.sleep" title="Permalink to this definition">¶</a></dt>
+<code class="descname">sleep</code><em class="property"> = 0.2</em><a class="headerlink" href="#fulltext.agent.consumer.FulltextRecordProcessor.sleep" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.agent.consumer.FulltextRecordProcessor.sleep_after_credentials">
+<code class="descname">sleep_after_credentials</code><em class="property"> = 10</em><a class="headerlink" href="#fulltext.agent.consumer.FulltextRecordProcessor.sleep_after_credentials" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="fulltext.agent.consumer.FulltextRecordProcessor.update_secrets">
+<code class="descname">update_secrets</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/agent/consumer.html#FulltextRecordProcessor.update_secrets"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.agent.consumer.FulltextRecordProcessor.update_secrets" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update any secrets that are out of date.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 </dd></dl>
 

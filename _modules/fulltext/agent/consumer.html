@@ -35,20 +35,26 @@
   <h1>Source code for fulltext.agent.consumer</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Provides a record processor for PDFIsAvailable notifications.&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">boto3</span>
+<span class="kn">from</span> <span class="nn">botocore.exceptions</span> <span class="k">import</span> <span class="n">WaiterError</span><span class="p">,</span> <span class="n">NoCredentialsError</span><span class="p">,</span> \
+    <span class="n">PartialCredentialsError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">,</span> <span class="n">ClientError</span>
 
 <span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">url_for</span>
 
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
-<span class="kn">from</span> <span class="nn">arxiv.base.agent</span> <span class="k">import</span> <span class="n">BaseConsumer</span>
+<span class="kn">from</span> <span class="nn">arxiv.integration.kinesis.consumer</span> <span class="k">import</span> <span class="n">BaseConsumer</span><span class="p">,</span> <span class="n">RestartProcessing</span>
+<span class="kn">from</span> <span class="nn">arxiv.vault.manager</span> <span class="k">import</span> <span class="n">ConfigManager</span>
 
-<span class="kn">from</span> <span class="nn">fulltext.extract</span> <span class="k">import</span> <span class="n">extract_fulltext</span>
+<span class="kn">from</span> <span class="nn">retry.api</span> <span class="k">import</span> <span class="n">retry_call</span>
+
+<span class="kn">from</span> <span class="nn">fulltext.extract</span> <span class="k">import</span> <span class="n">extract</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="c1"># logger.propagate = True</span>
 
 
 <div class="viewcode-block" id="BadMessage"><a class="viewcode-back" href="../../../fulltext/fulltext.agent.consumer.html#fulltext.agent.consumer.BadMessage">[docs]</a><span class="k">class</span> <span class="nc">BadMessage</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
@@ -58,7 +64,40 @@
 <div class="viewcode-block" id="FulltextRecordProcessor"><a class="viewcode-back" href="../../../fulltext/fulltext.agent.consumer.html#fulltext.agent.consumer.FulltextRecordProcessor">[docs]</a><span class="k">class</span> <span class="nc">FulltextRecordProcessor</span><span class="p">(</span><span class="n">BaseConsumer</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Consumes ``PDFIsAvailable`` notifications, creates extraction tasks.&quot;&quot;&quot;</span>
 
-    <span class="n">sleep</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">sleep</span> <span class="o">=</span> <span class="mf">0.2</span>
+    <span class="n">sleep_after_credentials</span> <span class="o">=</span> <span class="mi">10</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a secrets manager before starting.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FulltextRecordProcessor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;VAULT_ENABLED&#39;</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Vault enabled; getting secrets&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_secrets</span> <span class="o">=</span> <span class="n">ConfigManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_secrets</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_access_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AWS_ACCESS_KEY_ID&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_secret_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AWS_SECRET_ACCESS_KEY&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FulltextRecordProcessor.update_secrets"><a class="viewcode-back" href="../../../fulltext/fulltext.agent.consumer.html#fulltext.agent.consumer.FulltextRecordProcessor.update_secrets">[docs]</a>    <span class="k">def</span> <span class="nf">update_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Update any secrets that are out of date.&quot;&quot;&quot;</span>
+        <span class="n">got_new_secrets</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_secrets</span><span class="o">.</span><span class="n">yield_secrets</span><span class="p">():</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">!=</span> <span class="n">value</span><span class="p">:</span>
+                <span class="n">got_new_secrets</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_access_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AWS_ACCESS_KEY_ID&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_secret_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AWS_SECRET_ACCESS_KEY&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">got_new_secrets</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Got new secrets&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">got_new_secrets</span></div>
+
+<div class="viewcode-block" id="FulltextRecordProcessor.process_records"><a class="viewcode-back" href="../../../fulltext/fulltext.agent.consumer.html#fulltext.agent.consumer.FulltextRecordProcessor.process_records">[docs]</a>    <span class="k">def</span> <span class="nf">process_records</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Update secrets before getting a new batch of records.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;VAULT_ENABLED&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_secrets</span><span class="p">():</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sleep_after_credentials</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">RestartProcessing</span><span class="p">(</span><span class="s1">&#39;Got fresh credentials&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">FulltextRecordProcessor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">process_records</span><span class="p">(</span><span class="n">start</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="FulltextRecordProcessor.process_record"><a class="viewcode-back" href="../../../fulltext/fulltext.agent.consumer.html#fulltext.agent.consumer.FulltextRecordProcessor.process_record">[docs]</a>    <span class="k">def</span> <span class="nf">process_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -90,7 +129,7 @@
 
         <span class="n">arxiv_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">deserialized</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;document_id&#39;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Processing notification for </span><span class="si">{arxiv_id}</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="n">extract_fulltext</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="n">arxiv_id</span><span class="p">,</span> <span class="n">url_for</span><span class="p">(</span><span class="s1">&#39;pdf&#39;</span><span class="p">,</span> <span class="n">paper_id</span><span class="o">=</span><span class="n">arxiv_id</span><span class="p">))</span></div></div>
+        <span class="n">extract</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="n">arxiv_id</span><span class="p">,</span> <span class="n">url_for</span><span class="p">(</span><span class="s1">&#39;pdf&#39;</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="n">arxiv_id</span><span class="p">))</span></div></div>
 </pre></div>
 
           </div>

@@ -1,15 +1,7 @@
-fulltext.services.store package
-===============================
+fulltext.services.store module
+==============================
 
 .. automodule:: fulltext.services.store
     :members:
     :undoc-members:
     :show-inheritance:
-
-Submodules
-----------
-
-.. toctree::
-
-   fulltext.services.store.tests
-

@@ -36,10 +36,24 @@
 <span></span><span class="sd">&quot;&quot;&quot;Application factory for fulltext service components.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">werkzeug.routing</span> <span class="k">import</span> <span class="n">BaseConverter</span><span class="p">,</span> <span class="n">ValidationError</span>
 <span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">Flask</span>
+
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">Base</span>
+<span class="kn">from</span> <span class="nn">arxiv.users.auth</span> <span class="k">import</span> <span class="n">Auth</span>
+<span class="kn">from</span> <span class="nn">arxiv.users</span> <span class="k">import</span> <span class="n">auth</span>
+<span class="kn">from</span> <span class="nn">arxiv.base.middleware</span> <span class="k">import</span> <span class="n">wrap</span><span class="p">,</span> <span class="n">request_logs</span>
+<span class="kn">from</span> <span class="nn">arxiv</span> <span class="k">import</span> <span class="n">vault</span>
 <span class="kn">from</span> <span class="nn">fulltext.celery</span> <span class="k">import</span> <span class="n">celery_app</span>
-<span class="kn">from</span> <span class="nn">fulltext.services</span> <span class="k">import</span> <span class="n">store</span><span class="p">,</span> <span class="n">pdf</span>
+<span class="kn">from</span> <span class="nn">fulltext.services</span> <span class="k">import</span> <span class="n">store</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">compiler</span>
+
+
+<div class="viewcode-block" id="SubmissionSourceConverter"><a class="viewcode-back" href="../../fulltext/fulltext.factory.html#fulltext.factory.SubmissionSourceConverter">[docs]</a><span class="k">class</span> <span class="nc">SubmissionSourceConverter</span><span class="p">(</span><span class="n">BaseConverter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Route converter for submission source identifiers.&quot;&quot;&quot;</span>
+
+    <span class="n">regex</span> <span class="o">=</span> <span class="s1">&#39;[^/][0-9]+/[^/\?#]+&#39;</span></div>
 
 
 <div class="viewcode-block" id="create_web_app"><a class="viewcode-back" href="../../fulltext/fulltext.factory.html#fulltext.factory.create_web_app">[docs]</a><span class="k">def</span> <span class="nf">create_web_app</span><span class="p">():</span>
@@ -47,13 +61,21 @@
     <span class="kn">from</span> <span class="nn">fulltext</span> <span class="k">import</span> <span class="n">routes</span>
     <span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="s1">&#39;fulltext&#39;</span><span class="p">)</span>
     <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">from_pyfile</span><span class="p">(</span><span class="s1">&#39;config.py&#39;</span><span class="p">)</span>
-    <span class="c1"># logging.getLogger(&#39;boto&#39;).setLevel(logging.DEBUG)</span>
-    <span class="c1"># logging.getLogger(&#39;boto3&#39;).setLevel(logging.DEBUG)</span>
-    <span class="c1"># logging.getLogger(&#39;botocore&#39;).setLevel(logging.DEBUG)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">url_map</span><span class="o">.</span><span class="n">converters</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SubmissionSourceConverter</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;boto&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;boto3&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;botocore&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
     <span class="n">Base</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+    <span class="n">Auth</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
     <span class="n">app</span><span class="o">.</span><span class="n">register_blueprint</span><span class="p">(</span><span class="n">routes</span><span class="o">.</span><span class="n">blueprint</span><span class="p">)</span>
-    <span class="n">store</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
-    <span class="n">pdf</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+    <span class="n">store</span><span class="o">.</span><span class="n">Storage</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+    <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+    <span class="n">compiler</span><span class="o">.</span><span class="n">Compiler</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+    <span class="n">middleware</span> <span class="o">=</span> <span class="p">[</span><span class="n">auth</span><span class="o">.</span><span class="n">middleware</span><span class="o">.</span><span class="n">AuthMiddleware</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;VAULT_ENABLED&#39;</span><span class="p">]:</span>
+        <span class="n">middleware</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">vault</span><span class="o">.</span><span class="n">middleware</span><span class="o">.</span><span class="n">VaultMiddleware</span><span class="p">)</span>
+    <span class="n">wrap</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">middleware</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">app</span></div>
 
@@ -67,8 +89,9 @@
     <span class="n">flask_app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="s1">&#39;fulltext&#39;</span><span class="p">)</span>
     <span class="n">flask_app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">from_pyfile</span><span class="p">(</span><span class="s1">&#39;config.py&#39;</span><span class="p">)</span>
 
-    <span class="n">store</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">flask_app</span><span class="p">)</span>
-    <span class="n">pdf</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">flask_app</span><span class="p">)</span>
+    <span class="n">store</span><span class="o">.</span><span class="n">Storage</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">flask_app</span><span class="p">)</span>
+    <span class="n">pdf</span><span class="o">.</span><span class="n">CanonicalPDF</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">flask_app</span><span class="p">)</span>
+    <span class="n">compiler</span><span class="o">.</span><span class="n">Compiler</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">flask_app</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">flask_app</span></div>
 </pre></div>
 

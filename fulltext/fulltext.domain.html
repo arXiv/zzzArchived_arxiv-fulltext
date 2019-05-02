@@ -1,0 +1,235 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>fulltext.domain module &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="fulltext.extract module" href="fulltext.extract.html" />
+    <link rel="prev" title="fulltext.controllers module" href="fulltext.controllers.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-fulltext.domain">
+<span id="fulltext-domain-module"></span><h1>fulltext.domain module<a class="headerlink" href="#module-fulltext.domain" title="Permalink to this headline">¶</a></h1>
+<p>Domain classes for fulltext extraction service.</p>
+<dl class="class">
+<dt id="fulltext.domain.Extraction">
+<em class="property">class </em><code class="descclassname">fulltext.domain.</code><code class="descname">Extraction</code><a class="reference internal" href="../_modules/fulltext/domain.html#Extraction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.domain.Extraction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#tuple" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></p>
+<p>Metadata about an extraction.</p>
+<dl class="class">
+<dt id="fulltext.domain.Extraction.Status">
+<em class="property">class </em><code class="descname">Status</code><a class="reference internal" href="../_modules/fulltext/domain.html#Extraction.Status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.domain.Extraction.Status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/enum.html#enum.Enum" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>Task Status.</p>
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.Status.FAILED">
+<code class="descname">FAILED</code><em class="property"> = 'failed'</em><a class="headerlink" href="#fulltext.domain.Extraction.Status.FAILED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.Status.IN_PROGRESS">
+<code class="descname">IN_PROGRESS</code><em class="property"> = 'in_progress'</em><a class="headerlink" href="#fulltext.domain.Extraction.Status.IN_PROGRESS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.Status.SUCCEEDED">
+<code class="descname">SUCCEEDED</code><em class="property"> = 'succeeded'</em><a class="headerlink" href="#fulltext.domain.Extraction.Status.SUCCEEDED" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.bucket">
+<code class="descname">bucket</code><a class="headerlink" href="#fulltext.domain.Extraction.bucket" title="Permalink to this definition">¶</a></dt>
+<dd><p>The bucket or collection to which the extraction belongs.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.completed">
+<code class="descname">completed</code><a class="headerlink" href="#fulltext.domain.Extraction.completed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine whether the task is in a completed states.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.content">
+<code class="descname">content</code><a class="headerlink" href="#fulltext.domain.Extraction.content" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extraction content, in the specified <code class="xref py py-attr docutils literal notranslate"><span class="pre">format</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.domain.Extraction.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/domain.html#Extraction.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.domain.Extraction.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new <a class="reference internal" href="#fulltext.domain.Extraction" title="fulltext.domain.Extraction"><code class="xref py py-class docutils literal notranslate"><span class="pre">Extraction</span></code></a> with updated values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#fulltext.domain.Extraction" title="fulltext.domain.Extraction"><code class="xref py py-class docutils literal notranslate"><span class="pre">Extraction</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.ended">
+<code class="descname">ended</code><a class="headerlink" href="#fulltext.domain.Extraction.ended" title="Permalink to this definition">¶</a></dt>
+<dd><p>The datetime when the extraction was completed.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.exception">
+<code class="descname">exception</code><a class="headerlink" href="#fulltext.domain.Extraction.exception" title="Permalink to this definition">¶</a></dt>
+<dd><p>An exception raised during a failed task.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.identifier">
+<code class="descname">identifier</code><a class="headerlink" href="#fulltext.domain.Extraction.identifier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identifier of the document from which the extraction was generated.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.owner">
+<code class="descname">owner</code><a class="headerlink" href="#fulltext.domain.Extraction.owner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Owner of the resource.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.started">
+<code class="descname">started</code><a class="headerlink" href="#fulltext.domain.Extraction.started" title="Permalink to this definition">¶</a></dt>
+<dd><p>The datetime when the extraction was created.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.status">
+<code class="descname">status</code><a class="headerlink" href="#fulltext.domain.Extraction.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Status of the extraction task.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.task_id">
+<code class="descname">task_id</code><a class="headerlink" href="#fulltext.domain.Extraction.task_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>The identifier of the running task.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="fulltext.domain.Extraction.to_dict">
+<code class="descname">to_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/domain.html#Extraction.to_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.domain.Extraction.to_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a dict representation of this placeholder.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#dict" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="fulltext.domain.Extraction.version">
+<code class="descname">version</code><a class="headerlink" href="#fulltext.domain.Extraction.version" title="Permalink to this definition">¶</a></dt>
+<dd><p>The version of the extractor that generated the product.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">arXiv Fulltext Extraction Service</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../architecture.html">Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="fulltext.html">fulltext package</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="fulltext.html#subpackages">Subpackages</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="fulltext.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="fulltext.html">fulltext package</a><ul>
+      <li>Previous: <a href="fulltext.controllers.html" title="previous chapter">fulltext.controllers module</a></li>
+      <li>Next: <a href="fulltext.extract.html" title="next chapter">fulltext.extract module</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, arXiv.org.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../_sources/fulltext/fulltext.domain.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -16,8 +16,8 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="fulltext.celery module" href="fulltext.celery.html" />
-    <link rel="prev" title="fulltext.services.store.tests module" href="fulltext.services.store.tests.html" />
+    <link rel="next" title="fulltext.services.store module" href="fulltext.services.store.html" />
+    <link rel="prev" title="fulltext.services.compiler module" href="fulltext.services.compiler.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -38,39 +38,31 @@
 <span id="fulltext-services-pdf-module"></span><h1>fulltext.services.pdf module<a class="headerlink" href="#module-fulltext.services.pdf" title="Permalink to this headline">¶</a></h1>
 <p>Service integration for PDF retrieval.</p>
 <dl class="class">
-<dt id="fulltext.services.pdf.RetrievePDFSession">
-<em class="property">class </em><code class="descclassname">fulltext.services.pdf.</code><code class="descname">RetrievePDFSession</code><span class="sig-paren">(</span><em>whitelist</em>, <em>scheme='https'</em>, <em>verify_cert=True</em>, <em>headers={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#RetrievePDFSession"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.RetrievePDFSession" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dt id="fulltext.services.pdf.CanonicalPDF">
+<em class="property">class </em><code class="descclassname">fulltext.services.pdf.</code><code class="descname">CanonicalPDF</code><span class="sig-paren">(</span><em>verify=True</em>, <em>headers={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#CanonicalPDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.CanonicalPDF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">arxiv.integration.api.service.HTTPIntegration</span></code></p>
 <p>Provides an interface to get PDFs.</p>
+<dl class="class">
+<dt id="fulltext.services.pdf.CanonicalPDF.Meta">
+<em class="property">class </em><code class="descname">Meta</code><a class="reference internal" href="../_modules/fulltext/services/pdf.html#CanonicalPDF.Meta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.CanonicalPDF.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Configuration for <a class="reference internal" href="#fulltext.services.pdf.CanonicalPDF" title="fulltext.services.pdf.CanonicalPDF"><code class="xref py py-class docutils literal notranslate"><span class="pre">CanonicalPDF</span></code></a>.</p>
+<dl class="attribute">
+<dt id="fulltext.services.pdf.CanonicalPDF.Meta.service_name">
+<code class="descname">service_name</code><em class="property"> = 'canonical'</em><a class="headerlink" href="#fulltext.services.pdf.CanonicalPDF.Meta.service_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <dl class="method">
-<dt id="fulltext.services.pdf.RetrievePDFSession.exists">
-<code class="descname">exists</code><span class="sig-paren">(</span><em>target</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#RetrievePDFSession.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.RetrievePDFSession.exists" title="Permalink to this definition">¶</a></dt>
+<dt id="fulltext.services.pdf.CanonicalPDF.exists">
+<code class="descname">exists</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#CanonicalPDF.exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.CanonicalPDF.exists" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine whether or not a target URL is available (HEAD request).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>target</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – The full URL for the PDF.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="fulltext.services.pdf.RetrievePDFSession.is_valid_url">
-<code class="descname">is_valid_url</code><span class="sig-paren">(</span><em>url</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#RetrievePDFSession.is_valid_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.RetrievePDFSession.is_valid_url" title="Permalink to this definition">¶</a></dt>
-<dd><p>Evaluate whether or not a URL is acceptible for retrieval.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>url</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Location of a document.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>identifier</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – arXiv identifier for which a PDF is required.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
 </tr>
@@ -83,17 +75,14 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="fulltext.services.pdf.RetrievePDFSession.retrieve">
-<code class="descname">retrieve</code><span class="sig-paren">(</span><em>target</em>, <em>document_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#RetrievePDFSession.retrieve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.RetrievePDFSession.retrieve" title="Permalink to this definition">¶</a></dt>
+<dt id="fulltext.services.pdf.CanonicalPDF.retrieve">
+<code class="descname">retrieve</code><span class="sig-paren">(</span><em>sleep=5</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#CanonicalPDF.retrieve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.CanonicalPDF.retrieve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve PDFs of published papers from the core arXiv document store.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>target</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – The full URL for the PDF.</li>
-<li><strong>document_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – The identifier associated with the PDF.</li>
-</ul>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>identifier</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – arXiv identifier for which a PDF is required.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Path to (temporary) PDF.</p>
@@ -117,111 +106,18 @@
 
 </dd></dl>
 
-<dl class="function">
-<dt id="fulltext.services.pdf.current_session">
-<code class="descclassname">fulltext.services.pdf.</code><code class="descname">current_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#current_session"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.current_session" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get/create <a class="reference internal" href="#fulltext.services.pdf.RetrievePDFSession" title="fulltext.services.pdf.RetrievePDFSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">RetrievePDFSession</span></code></a> for this context.</p>
+<dl class="exception">
+<dt id="fulltext.services.pdf.DoesNotExist">
+<em class="property">exception </em><code class="descclassname">fulltext.services.pdf.</code><code class="descname">DoesNotExist</code><a class="reference internal" href="../_modules/fulltext/services/pdf.html#DoesNotExist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.DoesNotExist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#RuntimeError" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></a></p>
+<p>A request was made for a non-existant PDF.</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="fulltext.services.pdf.exists">
-<code class="descclassname">fulltext.services.pdf.</code><code class="descname">exists</code><span class="sig-paren">(</span><em>self</em>, <em>target</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.exists" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine whether or not a target URL is available (HEAD request).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>target</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – The full URL for the PDF.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="fulltext.services.pdf.get_session">
-<code class="descclassname">fulltext.services.pdf.</code><code class="descname">get_session</code><span class="sig-paren">(</span><em>app=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#get_session"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.get_session" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create a new <a class="reference internal" href="#fulltext.services.pdf.RetrievePDFSession" title="fulltext.services.pdf.RetrievePDFSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">RetrievePDFSession</span></code></a>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#fulltext.services.pdf.RetrievePDFSession" title="fulltext.services.pdf.RetrievePDFSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">RetrievePDFSession</span></code></a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="fulltext.services.pdf.init_app">
-<code class="descclassname">fulltext.services.pdf.</code><code class="descname">init_app</code><span class="sig-paren">(</span><em>app=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#init_app"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.init_app" title="Permalink to this definition">¶</a></dt>
-<dd><p>Configure an application instance.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="fulltext.services.pdf.is_valid_url">
-<code class="descclassname">fulltext.services.pdf.</code><code class="descname">is_valid_url</code><span class="sig-paren">(</span><em>self</em>, <em>url</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#is_valid_url"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.is_valid_url" title="Permalink to this definition">¶</a></dt>
-<dd><p>Evaluate whether or not a URL is acceptible for retrieval.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>url</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – Location of a document.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)">bool</a></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="fulltext.services.pdf.retrieve">
-<code class="descclassname">fulltext.services.pdf.</code><code class="descname">retrieve</code><span class="sig-paren">(</span><em>self</em>, <em>target</em>, <em>document_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/services/pdf.html#retrieve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.retrieve" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve PDFs of published papers from the core arXiv document store.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>target</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – The full URL for the PDF.</li>
-<li><strong>document_id</strong> (<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – The identifier associated with the PDF.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Path to (temporary) PDF.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)">str</a></p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first simple">
-<li><a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#ValueError" title="(in Python v3.6)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> – If a disallowed or otherwise invalid URL is passed.</li>
-<li><a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#IOError" title="(in Python v3.6)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">IOError</span></code></a> – When there is a problem retrieving the resource at <code class="docutils literal notranslate"><span class="pre">target</span></code>.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
-</td>
-</tr>
-</tbody>
-</table>
+<dl class="exception">
+<dt id="fulltext.services.pdf.InvalidURL">
+<em class="property">exception </em><code class="descclassname">fulltext.services.pdf.</code><code class="descname">InvalidURL</code><a class="reference internal" href="../_modules/fulltext/services/pdf.html#InvalidURL"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.services.pdf.InvalidURL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3.6/library/exceptions.html#ValueError" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></a></p>
+<p>A request was made for a URL that is not allowed.</p>
 </dd></dl>
 
 </div>
@@ -259,8 +155,8 @@
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="fulltext.html">fulltext package</a><ul>
   <li><a href="fulltext.services.html">fulltext.services package</a><ul>
-      <li>Previous: <a href="fulltext.services.store.tests.html" title="previous chapter">fulltext.services.store.tests module</a></li>
-      <li>Next: <a href="fulltext.celery.html" title="next chapter">fulltext.celery module</a></li>
+      <li>Previous: <a href="fulltext.services.compiler.html" title="previous chapter">fulltext.services.compiler module</a></li>
+      <li>Next: <a href="fulltext.services.store.html" title="next chapter">fulltext.services.store module</a></li>
   </ul></li>
   </ul></li>
   </ul></li>
