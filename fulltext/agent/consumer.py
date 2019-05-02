@@ -84,7 +84,7 @@ class FulltextRecordProcessor(BaseConsumer):
 
         """
         time.sleep(self.sleep)
-        logger.debug(f'Processing record {record["SequenceNumber"]}')
+        logger.debug(f'Processing record %s', record["SequenceNumber"])
         try:
             deserialized = json.loads(record['Data'].decode('utf-8'))
         except json.decoder.JSONDecodeError as e:
@@ -93,5 +93,5 @@ class FulltextRecordProcessor(BaseConsumer):
             raise BadMessage('Could not deserialize payload')
 
         arxiv_id: str = deserialized.get('document_id')
-        logger.info(f'Processing notification for {arxiv_id}')
+        logger.info(f'Processing notification for %s', arxiv_id)
         extract.delay(arxiv_id, url_for('pdf', identifier=arxiv_id))

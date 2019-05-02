@@ -1,9 +1,8 @@
 """Filesystem-based storage for plain text extraction."""
 
-from typing import Tuple, Optional, Dict, Union, List, Any
+from typing import Optional
 import os
 import json
-from functools import wraps
 from datetime import datetime
 from pytz import UTC
 from backports.datetime_fromisoformat import MonkeyPatch
@@ -48,10 +47,10 @@ class Storage(metaclass=MetaIntegration):
     def _paper_path(self, identifier: str, bucket: str) -> str:
         return os.path.join(self._volume, bucket, identifier[:4], identifier)
 
-    def _path(self, identifier: str, version: str, content_format: str,
+    def _path(self, identifier: str, version: str, content_fmt: str,
               bucket: str) -> str:
         return os.path.join(self._paper_path(identifier, bucket),
-                            version, content_format)
+                            version, content_fmt)
 
     def _meta_path(self, identifier: str, version: str, bucket: str) -> str:
         return os.path.join(self._paper_path(identifier, bucket),
@@ -91,23 +90,22 @@ class Storage(metaclass=MetaIntegration):
 
     def ready(self) -> bool:
         """Check whether the storage volume is available."""
-        # TODO: read/write check?
         return os.path.exists(self._volume)
 
     def store(self, extraction: Extraction,
-              content_format: Optional[str] = None) -> None:
+              content_fmt: Optional[str] = None) -> None:
         """Store an :class:`.Extraction`."""
-        logger.debug('Store content format %s: %s', content_format,
+        logger.debug('Store content format %s: %s', content_fmt,
                      extraction.content is not None)
-        if content_format is not None and extraction.content is not None:
+        if content_fmt is not None and extraction.content is not None:
             logger.debug('Store content for %s', extraction.identifier)
             content_path = self._path(extraction.identifier,
                                       extraction.version,
-                                      content_format, extraction.bucket)
+                                      content_fmt, extraction.bucket)
             logger.debug('Content path: %s', content_path)
             self.make_paths(content_path)
             logger.debug('Store %s content for %s',
-                         content_format, extraction.identifier)
+                         content_fmt, extraction.identifier)
             try:
                 with open(content_path, 'wb') as f:
                     f.write(extraction.content.encode('utf-8'))
@@ -129,16 +127,16 @@ class Storage(metaclass=MetaIntegration):
             raise StorageFailed("Could not store content") from e
 
     def retrieve(self, identifier: str, version: Optional[str] = None,
-                 content_format: str = SupportedFormats.PLAIN,
+                 content_fmt: str = SupportedFormats.PLAIN,
                  bucket: str = SupportedBuckets.ARXIV,
                  meta_only: bool = False) -> Extraction:
         """Retrieve an :class:`.Extraction`."""
         content: Optional[bytes] = None
-        logger.debug('Retrieve %s (v%s) for %s from %s', content_format,
+        logger.debug('Retrieve %s (v%s) for %s from %s', content_fmt,
                      version, identifier, bucket)
         if version is None:
             version = self._latest_version(identifier, bucket)
-        content_path = self._path(identifier, version, content_format, bucket)
+        content_path = self._path(identifier, version, content_fmt, bucket)
         try:
             with open(self._meta_path(identifier, version, bucket)) as f:
                 meta = json.load(f)
@@ -160,7 +158,7 @@ class Storage(metaclass=MetaIntegration):
                 # If the content is not here, it is likely because the
                 # extraction is still in progress.
                 logger.info('No %s content found for %s (extractor version '
-                            '%s) in bucket %s', content_format, identifier,
+                            '%s) in bucket %s', content_fmt, identifier,
                             version, bucket)
         assert meta['bucket'] == bucket
         return Extraction(content=content, **meta)

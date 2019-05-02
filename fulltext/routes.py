@@ -102,7 +102,7 @@ def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
         authorizer = None
 
     data, code, headers = controllers.retrieve(identifier, id_type, version,
-                                               content_format=content_fmt,
+                                               content_fmt=content_fmt,
                                                authorizer=authorizer)
     if content_type == 'text/plain':
         response_data = Response(data['content'], content_type='text/plain')

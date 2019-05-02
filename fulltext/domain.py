@@ -59,11 +59,11 @@ class Extraction(NamedTuple):
         """Create a new :class:`.Extraction` with updated values."""
         data = self.to_dict()
         data.update(kwargs)
-        if type(data['status']) is str:
+        if isinstance(data['status'], str):
             data['status'] = Extraction.Status(data['status'])
-        if type(data['started']) is str:
+        if isinstance(data['started'], str):
             data['started'] = datetime.fromisoformat(data['started'])
-        if type(data['ended']) is str:
+        if isinstance(data['ended'], str):
             data['ended'] = datetime.fromisoformat(data['ended'])
         return Extraction(**data)
 

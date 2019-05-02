@@ -33,17 +33,37 @@ class TestConvertToPSV(TestCase):
             'truthfully speaking we could have released scipy',
             'long time ago so',
             'i happy we do it now at long last',
-            'the project has long history and during the years it has matured also as software project',
-            'believe it has well proved its merit to warrant version number starting with unity',
-            'since its conception years ago scipy has largely been written by and for scientists to provide box of basic tools that they need',
-            'over time the set of people active in its development has undergone some rotation and we have evolved towards somewhat more systematic approach to development',
-            'regardless this underlying drive has stayed the same and think it will also continue propelling the project forward in future',
+            'the project has long history and during the years it has matured'
+            ' also as software project',
+            'believe it has well proved its merit to warrant version number'
+            ' starting with unity',
+            'since its conception years ago scipy has largely been written by'
+            ' and for scientists to provide box of basic tools that they need',
+            'over time the set of people active in its development has'
+            ' undergone some rotation and we have evolved towards somewhat'
+            ' more systematic approach to development',
+            'regardless this underlying drive has stayed the same and think it'
+            ' will also continue propelling the project forward in future',
             'this is all good since not long after',
             'comes']
         self.assertEqual(expected, psv.tidy_txt_from_pdf(text))
 
     def test_to_psv(self):
-        expected = """pauli virtanen is scipy benevolent dictator for life bdfl he says truthfully speaking we could have released scipy long time ago so i happy we do it now at long last the project has long history and during the years it has matured also as software project believe it has well proved its merit to warrant version number starting with unity since its conception years ago scipy has largely been written by and for scientists to provide box of basic tools that they need over time the set of people active in its development has undergone some rotation and we have evolved towards somewhat more systematic approach to development regardless this underlying drive has stayed the same and think it will also continue propelling the project forward in future this is all good since not long after comes"""
+        expected = (
+            "pauli virtanen is scipy benevolent dictator for life bdfl"
+            " he says truthfully speaking we could have released scipy long"
+            " time ago so i happy we do it now at long last the project has"
+            " long history and during the years it has matured also as"
+            " software project believe it has well proved its merit to warrant"
+            " version number starting with unity since its conception years"
+            " ago scipy has largely been written by and for scientists to"
+            " provide box of basic tools that they need over time the set of"
+            " people active in its development has undergone some rotation and"
+            " we have evolved towards somewhat more systematic approach to"
+            " development regardless this underlying drive has stayed the same"
+            " and think it will also continue propelling the project forward"
+            " in future this is all good since not long after comes"
+        )
         self.assertEqual(psv.normalize_text_psv(PAULI), expected)
 
 

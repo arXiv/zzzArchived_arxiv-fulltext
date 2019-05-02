@@ -5,17 +5,13 @@ The compiler is responsible for building PDF, DVI, and other goodies from
 LaTeX sources. This is where we obtain the submission PDF from which to
 extract text.
 """
-from typing import Tuple, Mapping, Optional
+from typing import Tuple, Optional
 import os
 import tempfile
-import json
-import io
-import re
 from urllib.parse import urlparse
 
 from arxiv.base import logging
 from arxiv.integration.api import status, service, exceptions
-from arxiv.integration.api.exceptions import *
 
 logger = logging.getLogger(__name__)
 

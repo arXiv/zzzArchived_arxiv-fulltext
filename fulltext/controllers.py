@@ -29,14 +29,15 @@ Authorizer = Callable[[str, Optional[str]], bool]
 
 def service_status() -> Response:
     """Handle a request for the status of this service."""
-    if store.Storage.ready():   # This is the critical upstream integration.
+    # This is the critical upstream integration.
+    if store.Storage.current_session().ready():
         return {}, status.OK, {}
     raise InternalServerError('Failed readiness check')
 
 
 def retrieve(identifier: str, id_type: str = SupportedBuckets.ARXIV,
              version: Optional[str] = None,
-             content_format: str = SupportedFormats.PLAIN,
+             content_fmt: str = SupportedFormats.PLAIN,
              authorizer: Optional[Authorizer] = None) -> Response:
     """
     Handle request for full-text content for an arXiv e-print.
@@ -49,7 +50,7 @@ def retrieve(identifier: str, id_type: str = SupportedBuckets.ARXIV,
         The type of identifier that is `identifier`.
     version : str or None
         If provided, the desired extraction version.
-    content_format : str
+    content_fmt : str
         The desired content format (default: `plain`).
 
     Returns
@@ -59,12 +60,12 @@ def retrieve(identifier: str, id_type: str = SupportedBuckets.ARXIV,
     """
     if id_type not in SupportedBuckets:
         raise NotFound('Unrecognized identifier')
-    if content_format not in SupportedFormats:
+    if content_fmt not in SupportedFormats:
         raise NotFound('Unsupported format')
 
+    storage = store.Storage.current_session()
     try:
-        product = store.Storage.retrieve(identifier, version, content_format,
-                                         id_type)
+        product = storage.retrieve(identifier, version, content_fmt, id_type)
     except IOError as e:
         raise InternalServerError('Could not connect to backend') from e
     except store.DoesNotExist:
@@ -92,6 +93,10 @@ def extract(id_type: str, identifier: str, token: str, force: bool = False,
     if id_type not in SupportedBuckets:
         raise NotFound('Unsupported identifier')
 
+    canonical = pdf.CanonicalPDF.current_session()
+    storage = store.Storage.current_session()
+    compilations = compiler.Compiler.current_session()
+
     if not force:
         # If an extraction product or task already exists for this paper,
         # redirect. Don't do the same work twice for a given version of the
@@ -99,8 +104,8 @@ def extract(id_type: str, identifier: str, token: str, force: bool = False,
         logger.debug('Check for an existing product or task')
         product: Optional[Extraction] = None
         try:
-            product = store.Storage.retrieve(identifier, bucket=id_type,
-                                             meta_only=True)
+            product = storage.retrieve(identifier, bucket=id_type,
+                                       meta_only=True)
         except IOError as e:
             raise InternalServerError('Could not connect to backend') from e
         except store.DoesNotExist:
@@ -117,15 +122,14 @@ def extract(id_type: str, identifier: str, token: str, force: bool = False,
     # waiting until the async task fails. At the same time, we'll also grab
     # the owner (if there is one) so that we can authorize the request.
     owner: Optional[str] = None
-    if id_type == SupportedBuckets.ARXIV \
-            and not pdf.CanonicalPDF.exists(identifier):
+    if id_type == SupportedBuckets.ARXIV and not canonical.exists(identifier):
         logger.debug('No PDF for this resource exists')
         raise NotFound('No such document')
     elif id_type == SupportedBuckets.SUBMISSION:
         try:
-            owner = compiler.Compiler.owner(identifier, token)
+            owner = compilations.owner(identifier, token)
             logger.debug('Got owner %s', owner)
-        except compiler.NotFound as e:
+        except compiler.exceptions.NotFound as e:
             logger.debug('Compiler returned 404 Not Found for %s', identifier)
             raise NotFound('No such document') from e
 
@@ -157,9 +161,10 @@ def get_task_status(identifier: str, id_type: str = SupportedBuckets.ARXIV,
         logger.debug('unsupported identifier type %s', id_type)
         raise NotFound('Unsupported identifier')
 
+    storage = store.Storage.current_session()
     try:
-        product = store.Storage.retrieve(identifier, version, bucket=id_type,
-                                         meta_only=True)
+        product = storage.retrieve(identifier, version, bucket=id_type,
+                                   meta_only=True)
     except IOError as e:
         logger.error('could not connect to storage backend')
         raise InternalServerError('Could not connect to backend') from e
@@ -218,7 +223,7 @@ def _task_redirect(task: Extraction, product: Extraction) -> Response:
     if task.status is Extraction.Status.IN_PROGRESS:
         data.update(TASK_IN_PROGRESS)
     elif task.status is Extraction.Status.FAILED:
-        logger.error('%s: failed task: %s' % (task.task_id, task.result))
+        logger.error('%s: failed task: %s', task.task_id, task.result)
         data.update({'reason': str(task.result)})
     elif task.status is Extraction.Status.SUCCEEDED:
         logger.debug('Task for %s is already complete', task.identifier)

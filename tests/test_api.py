@@ -81,7 +81,7 @@ class TestApplication(TestCase):
         f'{extract.__name__}.docker.DockerClient.return_value.containers.run'
     )
     @mock.patch(f'{service.__name__}.requests.Session')
-    def text_extraction_fails(self, Session, mock_docker_run):
+    def text_extraction_fails(self, session, mock_docker_run):
         """Extraction of an e-print fails."""
         # Mock the responses to HEAD and GET requests for the e-print PDF.
         mock_response = mock.MagicMock()
@@ -89,8 +89,8 @@ class TestApplication(TestCase):
         mock_response.headers = {'Content-Type': 'application/pdf'}
         with open(pdf_path, 'rb') as f:
             mock_response.content = f.read()    # Return a real PDF.
-        Session.return_value.head.return_value.status_code = status.OK
-        Session.return_value.get.return_value = mock_response
+        session.return_value.head.return_value.status_code = status.OK
+        session.return_value.get.return_value = mock_response
 
         token = generate_token('1234', 'foo@user.com', 'foouser',
                                scope=[scopes.READ_COMPILE,
@@ -170,7 +170,7 @@ class TestApplication(TestCase):
                          "Redirects to task status endpoint")
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_request_extraction(self, Session):
+    def test_request_extraction(self, session):
         """Request extraction of an (announced) arXiv e-print."""
         # Mock the responses to HEAD and GET requests for the e-print PDF.
         mock_response = mock.MagicMock()
@@ -178,8 +178,8 @@ class TestApplication(TestCase):
         mock_response.headers = {'Content-Type': 'application/pdf'}
         with open(pdf_path, 'rb') as f:
             mock_response.content = f.read()    # Return a real PDF.
-        Session.return_value.head.return_value.status_code = status.OK
-        Session.return_value.get.return_value = mock_response
+        session.return_value.head.return_value.status_code = status.OK
+        session.return_value.get.return_value = mock_response
 
         token = generate_token('1234', 'foo@user.com', 'foouser',
                                scope=[scopes.READ_COMPILE,
@@ -328,7 +328,7 @@ class TestApplication(TestCase):
                              "Authentication is required to view status")
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_request_extraction_of_submission(self, Session):
+    def test_request_extraction_of_submission(self, session):
         """Request extraction of a submission."""
         user_id = '1234'
         # Mock the responses to HEAD and GET requests for the e-print PDF.
@@ -340,10 +340,10 @@ class TestApplication(TestCase):
                                  'ARXIV-OWNER': user_id}
         with open(pdf_path, 'rb') as f:
             mock_response.content = f.read()    # Return a real PDF.
-        Session.return_value.head.return_value.status_code = status.OK
-        Session.return_value.head.return_value.headers \
+        session.return_value.head.return_value.status_code = status.OK
+        session.return_value.head.return_value.headers \
             = {'ARXIV-OWNER': user_id}
-        Session.return_value.get.return_value = mock_response
+        session.return_value.get.return_value = mock_response
 
         token = generate_token(user_id, 'foo@user.com', 'foouser',
                                scope=[scopes.READ_COMPILE,

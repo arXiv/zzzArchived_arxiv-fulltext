@@ -33,7 +33,7 @@ def create_web_app():
     Base(app)
     Auth(app)
     app.register_blueprint(routes.blueprint)
-    store.Storage.init_app(app)
+    store.Storage.current_session().init_app(app)
     pdf.CanonicalPDF.init_app(app)
     compiler.Compiler.init_app(app)
 
@@ -54,7 +54,7 @@ def create_worker_app():
     flask_app = Flask('fulltext')
     flask_app.config.from_pyfile('config.py')
 
-    store.Storage.init_app(flask_app)
+    store.Storage.current_session().init_app(flask_app)
     pdf.CanonicalPDF.init_app(flask_app)
     compiler.Compiler.init_app(flask_app)
     return flask_app

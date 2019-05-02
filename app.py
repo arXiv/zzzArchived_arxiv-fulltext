@@ -3,4 +3,4 @@ from fulltext.services import store
 
 app = create_web_app()
 with app.app_context():
-    store.Storage.create_bucket()
+    store.Storage.current_session().create_bucket()

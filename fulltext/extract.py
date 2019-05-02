@@ -4,19 +4,16 @@ import os
 from typing import Tuple, Optional, Dict
 from datetime import datetime
 from pytz import UTC
-from json import dumps
 import shutil
-import subprocess
-import shlex
-import tempfile
 
 from flask import current_app
 from celery.result import AsyncResult
 from celery.signals import after_task_publish
+
 import docker
 from docker.errors import ContainerError, APIError
 
-from arxiv.base.globals import get_application_config, get_application_global
+from arxiv.base.globals import get_application_config
 from arxiv.base import logging
 
 from fulltext.celery import celery_app
@@ -66,12 +63,13 @@ def create_extraction_task(identifier: str, id_type: str,
     """
     logger.debug('Create extraction task with %s, %s', identifier, id_type)
     version = get_version()
+    storage = store.Storage.current_session()
     try:
         _task_id = task_id(identifier, id_type, version)
         # Create this ahead of time so that the API is immediately consistent,
         # even if it takes a little while for the extraction task to start
         # in the worker.
-        store.Storage.store(Extraction(
+        storage.store(Extraction(
             identifier=identifier,
             version=version,
             started=datetime.now(UTC),
@@ -83,7 +81,7 @@ def create_extraction_task(identifier: str, id_type: str,
         # Dispatch the extraction task.
         extract.apply_async((identifier, id_type, version), {'token': token},
                             task_id=_task_id)
-        logger.info('extract: started processing as %s' % _task_id)
+        logger.info('extract: started processing as %s', _task_id)
     except Exception as e:
         logger.debug(e)
         raise TaskCreationFailed('Failed to create task: %s', e) from e
@@ -164,23 +162,27 @@ def extract(identifier: str, id_type: str, version: str,
     """Perform text extraction for a single arXiv document."""
     logger.debug('Perform extraction for %s in bucket %s with version %s',
                  identifier, id_type, version)
+
+    canonical = pdf.CanonicalPDF.current_session()
+    storage = store.Storage.current_session()
+    compilations = compiler.Compiler.current_session()
+
     try:
         if id_type == SupportedBuckets.ARXIV:
-            pdf_path = pdf.CanonicalPDF.retrieve(identifier)
+            pdf_path = canonical.retrieve(identifier)
         elif id_type == SupportedBuckets.SUBMISSION:
-            pdf_path, owner = compiler.Compiler.retrieve(identifier, token)
+            pdf_path, owner = compilations.retrieve(identifier, token)
         else:
             RuntimeError('Unsupported identifier')
-        extraction = store.Storage.retrieve(identifier, version,
-                                            bucket=id_type,
-                                            meta_only=True)
+        extraction = storage.retrieve(identifier, version, bucket=id_type,
+                                      meta_only=True)
         content = do_extraction(pdf_path)
         assert content is not None
     except Exception as e:
-        logger.error('Failed to process %s: %s' % (identifier, e))
-        store.Storage.store(extraction.copy(status=Extraction.Status.FAILED,
-                            ended=datetime.now(UTC),
-                            exception=str(e)))
+        logger.error('Failed to process %s: %s', identifier, e)
+        storage.store(extraction.copy(status=Extraction.Status.FAILED,
+                                      ended=datetime.now(UTC),
+                                      exception=str(e)))
         raise e
     finally:
         os.remove(pdf_path)    # Cleanup.
@@ -188,9 +190,9 @@ def extract(identifier: str, id_type: str, version: str,
     extraction = extraction.copy(status=Extraction.Status.SUCCEEDED,
                                  ended=datetime.now(UTC),
                                  content=content)
-    store.Storage.store(extraction, 'plain')
+    storage.store(extraction, 'plain')
     extraction = extraction.copy(content=psv.normalize_text_psv(content))
-    store.Storage.store(extraction, 'psv')
+    storage.store(extraction, 'psv')
     result = extraction.to_dict()
     result.pop('content')
     return result
@@ -219,7 +221,7 @@ def do_extraction(filename: str, cleanup: bool = False,
         Raw XML response from FullText.
 
     """
-    logger.info('Attempting text extraction for %s' % filename)
+    logger.info('Attempting text extraction for %s', filename)
     start_time = datetime.now()
 
     # This is the path in this container/env where PDFs are stored.
@@ -244,7 +246,7 @@ def do_extraction(filename: str, cleanup: bool = False,
     stub, ext = os.path.splitext(os.path.basename(filename))
     pdfpath = os.path.join(workdir, name)
     shutil.copyfile(filename, pdfpath)
-    logger.info('Copied %s to %s' % (filename, pdfpath))
+    logger.info('Copied %s to %s', filename, pdfpath)
 
     try:
         client = docker.DockerClient(docker_host)
@@ -263,5 +265,5 @@ def do_extraction(filename: str, cleanup: bool = False,
     os.remove(out.replace('.txt', '.pdf2txt'))
     os.remove(out)    # Cleanup.
     duration = (start_time - datetime.now()).microseconds
-    logger.info(f'Finished extraction for {filename} in {duration} ms')
+    logger.info(f'Finished extraction for %s in %s ms', filename, duration)
     return content

@@ -1,18 +1,13 @@
 """Service integration for PDF retrieval."""
 
-from typing import List
-from functools import wraps
-import requests
 import os
 import tempfile
 import time
-from urllib.parse import urlparse
 
-from requests.packages.urllib3.util.retry import Retry
+import requests
 
 from arxiv.base import logging
 from arxiv.integration.api import status, service
-from arxiv.base.globals import get_application_config, get_application_global
 
 
 class InvalidURL(ValueError):
@@ -52,7 +47,7 @@ class CanonicalPDF(service.HTTPIntegration):
                                allow_redirects=True)
         if r.status_code == status.OK:
             return True
-        elif r.status_code == status.NOT_FOUND:
+        if r.status_code == status.NOT_FOUND:
             return False
         raise IOError(f'Unexpected response status code: {r.status_code}')
 
@@ -81,9 +76,9 @@ class CanonicalPDF(service.HTTPIntegration):
         target = self._path(f'/pdf/{identifier}')
         pdf_response = self._session.get(target)
         if pdf_response.status_code == status.NOT_FOUND:
-            logger.info('Could not retrieve PDF for %s' % identifier)
+            logger.info('Could not retrieve PDF for %s', identifier)
             raise DoesNotExist('No such resource')
-        elif pdf_response.status_code != requests.codes.ok:
+        if pdf_response.status_code != status.OK:
             raise IOError('%s: unexpected status for PDF: %i' %
                           (identifier, pdf_response.status_code))
 
@@ -100,7 +95,7 @@ class CanonicalPDF(service.HTTPIntegration):
                 time.sleep(sleep)
                 retries -= 1
                 pdf_response = self._session.get(target)
-                if pdf_response.status_code != requests.codes.ok:
+                if pdf_response.status_code != status.OK:
                     raise IOError('%s: unexpected status for PDF: %i' %
                                   (identifier, pdf_response.status_code))
 
