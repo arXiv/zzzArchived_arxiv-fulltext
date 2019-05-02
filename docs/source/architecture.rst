@@ -35,12 +35,14 @@ service retrieves the paper and performs the extraction.
 Containers
 ----------
 A web application implemented in Flask handles HTTP requests for
-extractions. When the application cannot find a suitable extraction to fulfill
-the request, or if re-extraction is forced via a POST request, it creates a
+extractions. Extraction can be requested via POST request, which creates a
 task for a worker process on a Redis queue (using Celery).
 
 The worker process monitors the Redis queue, and does the work of retrieving
-PDFs, performing extractions, and storing the results.
+PDFs, performing extractions, and storing the results. A Docker-in-Docker
+container is deployed as a side-car to the worker; the worker performs
+extraction by running the ``arxiv/fulltext-extractor`` image in the dind
+container.
 
 Extractions are stored on a network filesystem, and organized by submission or
 e-print ID and extractor version. When an extraction task is created, a

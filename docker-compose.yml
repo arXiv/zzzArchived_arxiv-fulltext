@@ -19,6 +19,24 @@ services:
   #   environment:
   #     USE_SSL: 'true'
   #     DEBUG: 'true'
+  plaintext-dind:
+    image: docker:18-dind
+    container_name: plaintext-dind
+    networks:
+      - plaintext-test
+    # resources:
+    #   requests:
+    #     memory: "50Mi"
+    #     cpu: "250m"
+    #   limits:
+    #     memory: "100Mi"
+    #     cpu: "300m"
+    privileged: true
+    volumes:
+    # - docker:/var/lib/docker
+    # - docker-run:/var/run
+    - pdfs:/pdfs
+
   plaintext-worker:
     build:
       context: .
@@ -27,14 +45,21 @@ services:
       REDIS_ENDPOINT: "plaintext-test-redis:6379"
       AWS_ACCESS_KEY_ID: "foo"
       AWS_SECRET_ACCESS_KEY: "bar"
-      KINESIS_VERIFY: ""
-      KINESIS_ENDPOINT: "plaintext-test-redis:4568"
+      # KINESIS_VERIFY: ""
+      # KINESIS_ENDPOINT: "plaintext-test-redis:4568"
       LOGLEVEL: 10
+      CANONICAL_ENDPOINT: "http://mock-arxiv:8000"
+      CANONICAL_VERIFY: 0
+      COMPILER_ENDPOINT: "http://mock-arxiv:8000/compiler"
+      COMPILER_VERIFY: 0
+      DOCKER_HOST: "tcp://plaintext-dind:2375"
     networks:
       - plaintext-test
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp/pdfs:/pdfs
+      # - docker:/var/lib/docker
+      # - docker-run:/var/run
+      - pdfs:/pdfs
+      - data:/data
     depends_on:
       - plaintext-test-redis
       - plaintext-api
@@ -44,20 +69,37 @@ services:
       context: .
       dockerfile: Dockerfile-api
     container_name: plaintext-api
-    command: --http-socket :8000 -M -t 3000 --manage-script-name --processes 8 --threads 1 --async 100 --ugreen  --mount /=wsgi.py --logformat "%(addr) %(addr) - %(user_id)|%(session_id) [%(rtime)] [%(uagent)] \"%(method) %(uri) %(proto)\" %(status) %(size) %(micros) %(ttfb)"
     environment:
       REDIS_ENDPOINT: "plaintext-test-redis:6379"
       AWS_ACCESS_KEY_ID: "foo"
       AWS_SECRET_ACCESS_KEY: "bar"
-      KINESIS_VERIFY: ""
-      KINESIS_ENDPOINT: "plaintext-test-redis:4568"
+      # KINESIS_VERIFY: ""
+      # KINESIS_ENDPOINT: "plaintext-test-redis:4568"
       LOGLEVEL: 10
+      JWT_SECRET: foosecret
+      CANONICAL_ENDPOINT: "http://mock-arxiv:8000"
+      CANONICAL_VERIFY: 0
+      COMPILER_ENDPOINT: "http://mock-arxiv:8000/compiler"
+      COMPILER_VERIFY: 0
+    volumes:
+      - data:/data
     ports:
       - "8000:8000"
     networks:
       - plaintext-test
     depends_on:
       - plaintext-test-redis
+
+  mock-arxiv:
+    image: arxiv/mock-arxiv
+    build:
+      context: .
+      dockerfile: Dockerfile-mock
+    container_name: mock-arxiv
+    environment:
+      JWT_SECRET: foosecret
+    networks:
+      - plaintext-test
   # plaintext-agent:
   #   build:
   #     context: .
@@ -87,3 +129,9 @@ services:
 
 networks:
   plaintext-test:
+
+volumes:
+  pdfs:
+  data:
+  docker:
+  docker-run:

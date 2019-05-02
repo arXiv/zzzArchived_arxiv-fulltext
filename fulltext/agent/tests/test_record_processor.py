@@ -18,17 +18,17 @@ class TestIndexPaper(TestCase):
 
     @mock.patch('boto3.client')
     @mock.patch(f'{consumer.__name__}.url_for')
-    @mock.patch(f'{consumer.__name__}.extract_fulltext')
+    @mock.patch(f'{consumer.__name__}.extract')
     def test_notify(self, mock_task, mock_url_for, mock_client_factory):
         """The arXiv paper has only one version."""
         mock_client = mock.MagicMock()
         mock_waiter = mock.MagicMock()
         mock_client.get_waiter.return_value = mock_waiter
         mock_client_factory.return_value = mock_client
-        paper_id = '1602.00123v4'
-        mock_url_for.return_value = f'http://foo/{paper_id}'
-        data = json.dumps({'document_id': paper_id}).encode('utf-8')
+        identifier = '1602.00123v4'
+        mock_url_for.return_value = f'http://foo/{identifier}'
+        data = json.dumps({'document_id': identifier}).encode('utf-8')
         record = {'SequenceNumber': 'foo123', 'Data': data}
         processor = consumer.FulltextRecordProcessor(*self.args, config={})
         processor.process_record(record)
-        self.assertTrue(mock_task.delay.called_with(paper_id, 'http://foo'))
+        self.assertTrue(mock_task.delay.called_with(identifier, 'http://foo'))

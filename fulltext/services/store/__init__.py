@@ -1,19 +1,23 @@
 """Filesystem-based storage for plain text extraction."""
 
-from typing import Tuple, Optional, Dict, Union, List
+from typing import Tuple, Optional, Dict, Union, List, Any
 import os
+import json
 from functools import wraps
 from datetime import datetime
 from pytz import UTC
+from backports.datetime_fromisoformat import MonkeyPatch
 
 from flask import Flask
 
+from arxiv.integration.meta import MetaIntegration
 from arxiv.base.globals import get_application_global, get_application_config
 from arxiv.base import logging
 
-from ...domain import ExtractionProduct
+from ...domain import Extraction
 
 logger = logging.getLogger(__name__)
+MonkeyPatch.patch_fromisoformat()
 
 
 class ConfigurationError(RuntimeError):
@@ -28,10 +32,10 @@ class StorageFailed(RuntimeError):
     """Could not store content."""
 
 
-class Storage:
+class Storage(metaclass=MetaIntegration):
     """Provides storage integration."""
 
-    def __init__(self, volume: str, version: str) -> None:
+    def __init__(self, volume: str) -> None:
         """Check and set the storage volume."""
         if not os.path.exists(volume):
             try:
@@ -40,40 +44,44 @@ class Storage:
                 raise ConfigurationError("Cannot create storage volume") from e
 
         self._volume = volume
-        self._version = version
-        logger.debug('Storage with volume %s, version: %s', volume, version)
 
-    def _paper_path(self, paper_id: str, bucket: str) -> str:
-        return os.path.join(self._volume, bucket, paper_id[:4], paper_id)
+    def _paper_path(self, identifier: str, bucket: str) -> str:
+        return os.path.join(self._volume, bucket, identifier[:4], identifier)
 
-    def _path(self, paper_id: str, version: str, content_format: str,
+    def _path(self, identifier: str, version: str, content_format: str,
               bucket: str) -> str:
-        return os.path.join(self._paper_path(paper_id, bucket),
+        return os.path.join(self._paper_path(identifier, bucket),
                             version, content_format)
+
+    def _meta_path(self, identifier: str, version: str, bucket: str) -> str:
+        return os.path.join(self._paper_path(identifier, bucket),
+                            version, 'meta.json')
 
     def _creation_time(self, path: str) -> datetime:
         return datetime.fromtimestamp(os.path.getmtime(path), tz=UTC)
 
-    def _latest_version(self, paper_id: str, bucket: str = 'arxiv') -> str:
+    def _latest_version(self, identifier: str, bucket: str = 'arxiv') -> str:
         def _try_float(value: str) -> float:
             try:
                 return float(value)
             except ValueError:
                 return 0.0
         try:
-            paths = os.listdir(self._paper_path(paper_id, bucket))
+            paths = os.listdir(self._paper_path(identifier, bucket))
         except FileNotFoundError as e:
             raise DoesNotExist("No extractions found") from e
         versions = sorted([p for p in paths if not p.startswith('.')],
                           key=_try_float)
         if not versions:
-            raise DoesNotExist(f'No versions found for {paper_id} in {bucket}')
+            raise DoesNotExist(f'No versions for {identifier} in {bucket}')
         return versions[-1]
 
     @staticmethod
     def make_paths(path: str) -> None:
+        """Create any missing directories containing terminal ``path``."""
         parent, _ = os.path.split(path)
         if not os.path.exists(parent):
+            logger.debug('Make paths to %s', parent)
             os.makedirs(parent)
 
     def ready(self) -> bool:
@@ -81,98 +89,94 @@ class Storage:
         # TODO: read/write check?
         return os.path.exists(self._volume)
 
-    def store(self, paper_id: str, content: bytes,
-              version: Optional[str] = None, content_format: str = 'plain',
-              bucket: str = 'arxiv') -> None:
-        if version is None:
-            version = self._version
+    def store(self, extraction: Extraction,
+              content_format: Optional[str] = None) -> None:
+        """Store an :class:`.Extraction`."""
+        if content_format is not None and extraction.content is not None:
+            content_path = self._path(extraction.identifier,
+                                      extraction.version,
+                                      content_format, extraction.bucket)
+            logger.debug('Content path: %s', content_path)
+            self.make_paths(content_path)
+            logger.debug('Store %s content for %s',
+                         content_format, extraction.identifier)
+            try:
+                with open(content_path, 'wb') as f:
+                    f.write(extraction.content.encode('utf-8'))
+            except IOError as e:
+                raise StorageFailed("Could not store content") from e
 
-        content_path = self._path(paper_id, version, content_format, bucket)
-        logger.debug('Store for paper %s, format %s, in bucket %s, at: %s',
-                     paper_id, content_format, bucket, content_path)
-        self.make_paths(content_path)
-        try:
-            with open(content_path, 'wb') as f:
-                f.write(content)
+        # Store metadata separately.
+        meta = extraction.to_dict()
+        meta.pop('content')
+        meta_path = self._meta_path(extraction.identifier, extraction.version,
+                                    extraction.bucket)
+        logger.debug('Meta path: %s', meta_path)
+        self.make_paths(meta_path)
+        try:    # Write metadata record.
+            with open(meta_path, 'w') as f:
+                json.dump(meta, f)
         except IOError as e:
             raise StorageFailed("Could not store content") from e
 
-    def retrieve(self, paper_id: str, version: Optional[str] = None,
-                 content_format: str = 'plain', bucket: str = 'arxiv') \
-            -> ExtractionProduct:
+    def retrieve(self, identifier: str, version: Optional[str] = None,
+                 content_format: str = 'plain', bucket: str = 'arxiv',
+                 meta_only: bool = False) -> Extraction:
+        """Retrieve an :class:`.Extraction`."""
+        content: Optional[bytes] = None
         if version is None:
-            version = self._latest_version(paper_id, bucket)
-        content_path = self._path(paper_id, version, content_format, bucket)
+            version = self._latest_version(identifier, bucket)
+        content_path = self._path(identifier, version, content_format, bucket)
         try:
-            with open(content_path, 'rb') as f:
-                content = f.read()
+            with open(self._meta_path(identifier, version, bucket)) as f:
+                meta = json.load(f)
+            if 'started' in meta and meta['started']:
+                meta['started'] = datetime.fromisoformat(meta['started'])
+            if 'ended' in meta and meta['ended']:
+                meta['ended'] = datetime.fromisoformat(meta['ended'])
+            meta['status'] = Extraction.Status(meta['status'])
         except FileNotFoundError as e:
             raise DoesNotExist("No such resource") from e
-        return ExtractionProduct(**{
-            'paper_id': paper_id,
-            'content': content,
-            'version': version,
-            'format': content_format,
-            'created': self._creation_time(content_path)
-        })
 
-    def exists(self, paper_id: str, version: Optional[str] = None,
+        # Get the extraction content.
+        if not meta_only:
+            try:
+                with open(content_path, 'rb') as f:
+                    content = f.read()
+
+            except FileNotFoundError:
+                # If the content is not here, it is likely because the
+                # extraction is still in progress.
+                logger.info('No %s content found for %s (extractor version '
+                            '%s) in bucket %s', content_format, identifier,
+                            version, bucket)
+        return Extraction(content=content, **meta)
+
+    def exists(self, identifier: str, version: Optional[str] = None,
                content_format: str = 'plain', bucket: str = 'arxiv') -> bool:
-        content_path = self._path(paper_id, version, content_format, bucket)
+        """Check whether an extraction exists."""
+        logger.debug('PDF exists? %s', identifier)
+        content_path = self._path(identifier, version, content_format, bucket)
         return os.path.exists(content_path)
 
+    @classmethod
+    def init_app(cls, app: Flask) -> None:
+        """Set defaults for required configuration parameters."""
+        app.config.setdefault('STORAGE_VOLUME', '/tmp/storage')
 
-@wraps(Storage.store)
-def store(paper_id: str, content: bytes,
-          version: Optional[str] = None, content_format: str = 'plain',
-          bucket: str = 'arxiv') -> None:
-    """Store fulltext content."""
-    return current_instance().store(paper_id, content, version, content_format,
-                                    bucket)
+    @classmethod
+    def create_session(cls) -> 'Storage':
+        """Create a new :class:`.Storage` instance."""
+        config = get_application_config()
+        volume = config.get('STORAGE_VOLUME', '/tmp/storage')
+        return cls(volume)
 
-
-@wraps(Storage.retrieve)
-def retrieve(paper_id: str, version: Optional[str] = None,
-             content_format: str = 'plain', bucket: str = 'arxiv') \
-        -> ExtractionProduct:
-    """Retrieve fulltext content."""
-    return current_instance().retrieve(
-        paper_id, version, content_format, bucket
-    )
-
-
-@wraps(Storage.exists)
-def exists(paper_id: str, version: Optional[str] = None,
-           content_format: str = 'plain', bucket: str = 'arxiv') -> bool:
-    """Check if fulltext content exists."""
-    return current_instance().exists(paper_id, version, content_format, bucket)
-
-
-@wraps(Storage.ready)
-def ready() -> bool:
-    """Determine whether the store is ready to handle requests."""
-    return current_instance().ready()
-
-
-def init_app(app: Flask) -> None:
-    """Set defaults for required configuration parameters."""
-    app.config.setdefault('STORAGE_VOLUME', '/tmp/storage')
-    app.config.setdefault('VERSION', '0.0')
-
-
-def create_instance() -> Storage:
-    """Create a new :class:`.Storage` instance."""
-    config = get_application_config()
-    volume = config.get('STORAGE_VOLUME', '/tmp/storage')
-    version = config.get('VERSION', '0.0')
-    return Storage(volume, version)
-
-
-def current_instance() -> Storage:
-    """Get the current :class:`.Storage` instance for this application."""
-    g = get_application_global()
-    if g is None:
-        return create_instance()
-    if 'store' not in g:
-        g.store = create_instance()
-    return g.store
+    @classmethod
+    def current_session(cls) -> 'Storage':
+        """Get the current :class:`.Storage` instance for this application."""
+        g = get_application_global()
+        if g is None:
+            return cls.create_session()
+        if 'store' not in g:
+            g.store = cls.create_session()
+        return g.store

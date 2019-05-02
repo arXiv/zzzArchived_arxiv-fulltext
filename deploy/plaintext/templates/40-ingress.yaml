@@ -27,5 +27,5 @@ spec:
       paths:
       - path: "{{ default "/plaintext" .Values.subPath }}"
         backend:
-          serviceName: "{{ .Values.name }}"
+          serviceName: "plaintext-api"
           servicePort: 80

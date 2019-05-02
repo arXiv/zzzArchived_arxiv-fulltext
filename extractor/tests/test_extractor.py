@@ -12,7 +12,7 @@ DOCKER_REGISTRY = os.environ.get('DOCKER_REGISTRY', '')
 class TestExtractorE2E(TestCase):
     """Ensure that the extractor can be built, and performs as expected."""
 
-    def test_extract_fulltext(self):
+    def test_extract(self):
         pdf_filename = '1702.07336.pdf'
         basepath, _ = os.path.split(os.path.abspath(__file__))
         pdf_path = tempfile.mkdtemp()

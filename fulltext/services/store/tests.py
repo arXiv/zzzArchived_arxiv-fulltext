@@ -13,7 +13,7 @@ from ...domain import ExtractionProduct
 
 
 class TestStore(TestCase):
-    """Test storing content with :func:`.store.store`."""
+    """Test storing content with :func:`.store.Storage.store`."""
 
     def setUp(self):
         """Get a temporary storage volume."""
@@ -30,12 +30,12 @@ class TestStore(TestCase):
         bucket = 'fulltext'
         mock_get_config.return_value = {
             'STORAGE_VOLUME': self.storage_volume,
-            'VERSION': version,
+            'EXTRACTOR_VERSION': version,
         }
         content = b'foocontent'
-        paper_id = '1234.5678v9'
-        store.store(paper_id, content, bucket=bucket)
-        key = f'{paper_id[:4]}/{paper_id}/{version}/plain'
+        identifier = '1234.5678v9'
+        store.Storage.store(identifier, content, bucket=bucket)
+        key = f'{identifier[:4]}/{identifier}/{version}/plain'
         content_path = os.path.join(self.storage_volume, bucket, key)
         self.assertTrue(os.path.exists(content_path))
         with open(content_path, 'rb') as f:
@@ -44,21 +44,21 @@ class TestStore(TestCase):
     @mock.patch(f'{store.__name__}.get_application_config')
     def test_retrieve_version(self, mock_get_config):
         """Retrieve content for a specific extraction version."""
-        paper_id = '1234.5678v9'
+        identifier = '1234.5678v9'
         version = '1.3'
         bucket = 'fulltext'
 
         mock_get_config.return_value = {
             'STORAGE_VOLUME': self.storage_volume,
-            'VERSION': version
+            'EXTRACTOR_VERSION': version
         }
 
         keys = [
-            f'{paper_id[:4]}/{paper_id}/0.1/plain',
-            f'{paper_id[:4]}/{paper_id}/0.5/plain',
-            f'{paper_id[:4]}/{paper_id}/1.3/plain',
-            f'{paper_id[:4]}/{paper_id}/2.1/plain',
-            f'{paper_id[:4]}/{paper_id}/classic/plain'
+            f'{identifier[:4]}/{identifier}/0.1/plain',
+            f'{identifier[:4]}/{identifier}/0.5/plain',
+            f'{identifier[:4]}/{identifier}/1.3/plain',
+            f'{identifier[:4]}/{identifier}/2.1/plain',
+            f'{identifier[:4]}/{identifier}/classic/plain'
         ]
         for key in keys:
             content_path = os.path.join(self.storage_volume, bucket, key)
@@ -68,34 +68,34 @@ class TestStore(TestCase):
             with open(content_path, 'wb') as f:
                 f.write(key.encode('utf-8'))
 
-        key = f'{paper_id[:4]}/{paper_id}/{version}/plain'
+        key = f'{identifier[:4]}/{identifier}/{version}/plain'
         content_path = os.path.join(self.storage_volume, bucket, key)
-        product = store.retrieve(paper_id, version, bucket=bucket)
+        product = store.Storage.(identifier, version, bucket=bucket)
 
         self.assertIsInstance(product, ExtractionProduct)
-        self.assertEqual(product.paper_id, paper_id)
+        self.assertEqual(product.identifier, identifier)
         self.assertEqual(
             product.content,
-            f'{paper_id[:4]}/{paper_id}/1.3/plain'.encode('utf-8')
+            f'{identifier[:4]}/{identifier}/1.3/plain'.encode('utf-8')
         )
         self.assertEqual(product.version, version)
 
     @mock.patch(f'{store.__name__}.get_application_config')
     def test_retrieve_latest(self, mock_get_config):
         """Retrieve content for the latest extraction."""
-        paper_id = '1234.5678v9'
+        identifier = '1234.5678v9'
         bucket = 'fulltext'
         version = '1.3'
         mock_get_config.return_value = {
             'STORAGE_VOLUME': self.storage_volume,
-            'VERSION': version
+            'EXTRACTOR_VERSION': version
         }
         keys = [
-            f'{paper_id[:4]}/{paper_id}/0.1/plain',
-            f'{paper_id[:4]}/{paper_id}/0.5/plain',
-            f'{paper_id[:4]}/{paper_id}/1.3/plain',
-            f'{paper_id[:4]}/{paper_id}/2.1/plain',
-            f'{paper_id[:4]}/{paper_id}/classic/plain'
+            f'{identifier[:4]}/{identifier}/0.1/plain',
+            f'{identifier[:4]}/{identifier}/0.5/plain',
+            f'{identifier[:4]}/{identifier}/1.3/plain',
+            f'{identifier[:4]}/{identifier}/2.1/plain',
+            f'{identifier[:4]}/{identifier}/classic/plain'
         ]
         for key in keys:
             content_path = os.path.join(self.storage_volume, bucket, key)
@@ -105,28 +105,28 @@ class TestStore(TestCase):
             with open(content_path, 'wb') as f:
                 f.write(key.encode('utf-8'))
 
-        product = store.retrieve(paper_id, bucket=bucket)
+        product = store.Storage.(identifier, bucket=bucket)
 
         self.assertIsInstance(product, ExtractionProduct)
-        self.assertEqual(product.paper_id, paper_id)
+        self.assertEqual(product.identifier, identifier)
         self.assertEqual(
             product.content,
-            f'{paper_id[:4]}/{paper_id}/2.1/plain'.encode('utf-8')
+            f'{identifier[:4]}/{identifier}/2.1/plain'.encode('utf-8')
         )
         self.assertEqual(product.version, '2.1')
 
     @mock.patch(f'{store.__name__}.get_application_config')
     def test_retrieve_classic(self, mock_get_config):
         """Retrieve classic version when none else are available."""
-        paper_id = '1234.5678v9'
+        identifier = '1234.5678v9'
         bucket = 'fulltext'
         version = '1.3'
 
         mock_get_config.return_value = {
             'STORAGE_VOLUME': self.storage_volume,
-            'VERSION': version
+            'EXTRACTOR_VERSION': version
         }
-        keys = [f'{paper_id[:4]}/{paper_id}/classic/plain']
+        keys = [f'{identifier[:4]}/{identifier}/classic/plain']
         for key in keys:
             content_path = os.path.join(self.storage_volume, bucket, key)
             parent, _ = os.path.split(content_path)
@@ -135,12 +135,12 @@ class TestStore(TestCase):
             with open(content_path, 'wb') as f:
                 f.write(key.encode('utf-8'))
 
-        product = store.retrieve(paper_id, bucket=bucket)
+        product = store.Storage.(identifier, bucket=bucket)
         self.assertIsInstance(product, ExtractionProduct)
-        self.assertEqual(product.paper_id, paper_id)
+        self.assertEqual(product.identifier, identifier)
         self.assertEqual(
             product.content,
-            f'{paper_id[:4]}/{paper_id}/classic/plain'.encode('utf-8')
+            f'{identifier[:4]}/{identifier}/classic/plain'.encode('utf-8')
         )
         self.assertEqual(product.version, 'classic')
         self.assertEqual(product.version, 'classic')
@@ -148,13 +148,13 @@ class TestStore(TestCase):
     @mock.patch(f'{store.__name__}.get_application_config')
     def test_no_extractions(self, mock_get_config):
         """No extractions exist for the paper."""
-        paper_id = '1234.5678v9'
+        identifier = '1234.5678v9'
         version = '1.3'
         bucket = 'fulltext'
         mock_get_config.return_value = {
             'STORAGE_VOLUME': self.storage_volume,
-            'VERSION': version
+            'EXTRACTOR_VERSION': version
         }
 
         with self.assertRaises(store.DoesNotExist):
-            store.retrieve(paper_id, bucket=bucket)
+            store.Storage.(identifier, bucket=bucket)

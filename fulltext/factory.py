@@ -1,14 +1,24 @@
 """Application factory for fulltext service components."""
 
 import logging
+import re
+
+from werkzeug.routing import BaseConverter, ValidationError
 from flask import Flask
+
 from arxiv.base import Base
 from arxiv.users.auth import Auth
 from arxiv.users import auth
 from arxiv.base.middleware import wrap, request_logs
 from arxiv import vault
 from fulltext.celery import celery_app
-from fulltext.services import store, pdf
+from fulltext.services import store, pdf, compiler
+
+
+class SubmissionSourceConverter(BaseConverter):
+    """Route converter for submission source identifiers."""
+
+    regex = '[^/][0-9]+/[^/\?#]+'
 
 
 def create_web_app():
@@ -16,15 +26,16 @@ def create_web_app():
     from fulltext import routes
     app = Flask('fulltext')
     app.config.from_pyfile('config.py')
-    print(app.config)
+    app.url_map.converters['source'] = SubmissionSourceConverter
     logging.getLogger('boto').setLevel(logging.DEBUG)
     logging.getLogger('boto3').setLevel(logging.DEBUG)
     logging.getLogger('botocore').setLevel(logging.DEBUG)
     Base(app)
     Auth(app)
     app.register_blueprint(routes.blueprint)
-    store.init_app(app)
-    pdf.init_app(app)
+    store.Storage.init_app(app)
+    pdf.CanonicalPDF.init_app(app)
+    compiler.Compiler.init_app(app)
 
     middleware = [auth.middleware.AuthMiddleware]
     if app.config['VAULT_ENABLED']:
@@ -43,6 +54,7 @@ def create_worker_app():
     flask_app = Flask('fulltext')
     flask_app.config.from_pyfile('config.py')
 
-    store.init_app(flask_app)
-    pdf.init_app(flask_app)
+    store.Storage.init_app(flask_app)
+    pdf.CanonicalPDF.init_app(flask_app)
+    compiler.Compiler.init_app(flask_app)
     return flask_app

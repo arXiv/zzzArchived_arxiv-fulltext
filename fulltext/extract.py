@@ -3,24 +3,30 @@
 import os
 from typing import Tuple, Optional, Dict
 from datetime import datetime
+from pytz import UTC
+from json import dumps
 import shutil
 import subprocess
 import shlex
 import tempfile
+
 from flask import current_app
 from celery.result import AsyncResult
-from fulltext.celery import celery_app
 from celery.signals import after_task_publish
+import docker
+from docker.errors import ContainerError, APIError
 
 from arxiv.base.globals import get_application_config, get_application_global
 from arxiv.base import logging
 
-from fulltext.services import store, pdf
+from fulltext.celery import celery_app
+from fulltext.services import store, pdf, compiler
 from fulltext.process import psv
-
-from .domain import ExtractionPlaceholder, ExtractionTask
+from .domain import Extraction
 
 logger = logging.getLogger(__name__)
+ARXIV = 'arxiv'
+SUBMISSION = 'submission'
 
 
 class NoSuchTask(RuntimeError):
@@ -32,22 +38,22 @@ class TaskCreationFailed(RuntimeError):
 
 
 def get_version() -> str:
-    return get_application_config().get('VERSION', '-1.0')
+    return get_application_config().get('EXTRACTOR_VERSION', '-1.0')
 
 
-def task_id(paper_id: str, id_type: str, version: Optional[str] = None) -> str:
-    if version is None:
-        version = get_version()
-    return f"{id_type}::{paper_id}::{version}"
+def task_id(identifier: str, id_type: str, version: str) -> str:
+    return f"{id_type}::{identifier}::{version}"
 
 
-def create_extraction_task(paper_id: str, pdf_url: str, id_type: str) -> str:
+def create_extraction_task(identifier: str, id_type: str,
+                           owner: Optional[str] = None,
+                           token: Optional[str] = None) -> str:
     """
     Create a new extraction task.
 
     Parameters
     ----------
-    paper_id : str
+    identifier : str
         Unique identifier for the paper being extracted. Usually an arXiv ID.
     pdf_url : str
         The full URL for the PDF from which text will be extracted.
@@ -58,29 +64,38 @@ def create_extraction_task(paper_id: str, pdf_url: str, id_type: str) -> str:
     -------
     str
         The identifier for the created extraction task.
+
     """
+    logger.debug('Create extraction task with %s, %s', identifier, id_type)
+    version = get_version()
     try:
-        result = extract_fulltext.apply_async(
-            (paper_id, pdf_url),
-            dict(id_type=id_type),
-            task_id=task_id(paper_id, id_type)
-        )
-        logger.info('extract: started processing as %s' % result.task_id)
-        placeholder = ExtractionPlaceholder(task_id=result.task_id)
-        store.store(paper_id, placeholder, bucket=id_type)
+        _task_id = task_id(identifier, id_type, version)
+        extract.apply_async((identifier, id_type, version), {'token': token},
+                            task_id=_task_id)
+        logger.info('extract: started processing as %s' % _task_id)
+        store.Storage.store(Extraction(
+            identifier=identifier,
+            version=version,
+            started=datetime.now(UTC),
+            bucket=id_type,
+            owner=owner,
+            task_id=_task_id,
+            status=Extraction.Status.IN_PROGRESS,
+        ))
     except Exception as e:
+        logger.debug(e)
         raise TaskCreationFailed('Failed to create task: %s', e) from e
-    return result.task_id
+    return _task_id
 
 
-def get_extraction_task(paper_id: str, id_type: str,
-                        version: Optional[str] = None) -> ExtractionTask:
+def get_extraction_task(identifier: str, id_type: str,
+                        version: Optional[str] = None) -> Extraction:
     """
     Get the status of an extraction task.
 
     Parameters
     ----------
-    paper_id : str
+    identifier : str
         Unique identifier for the paper being extracted. Usually an arXiv ID.
     id_type : str
         Either 'arxiv' or 'submission'.
@@ -90,34 +105,39 @@ def get_extraction_task(paper_id: str, id_type: str,
 
     Returns
     -------
-    :class:`ExtractionTask`
+    :class:`Extraction`
 
     """
-    result = extract_fulltext.AsyncResult(task_id(paper_id, id_type, version))
-    data = {}
+    _task_id = task_id(identifier, id_type, version)
+    result = extract.AsyncResult(_task_id)
+    data = {
+        'task_id': task_id,
+        'version': version,
+        'identifer': identifier,
+        'bucket': id_type
+    }
     if result.status == 'PENDING':
         raise NoSuchTask('No such task')
     elif result.status in ['SENT', 'STARTED', 'RETRY']:
-        data['status'] = ExtractionTask.Statuses.IN_PROGRESS
+        data['status'] = Extraction.Status.IN_PROGRESS
     elif result.status == 'FAILURE':
-        data['status'] = ExtractionTask.Statuses.FAILED
+        data['status'] = Extraction.Status.FAILED
         data['result']: str = result.result
     elif result.status == 'SUCCESS':
-        data['status'] = ExtractionTask.Statuses.SUCCEEDED
-        _result: Dist[str, str] = result.result
-        data['paper_id'] = _result['paper_id']
-        data['id_type'] = _result['id_type']
-    return ExtractionTask(task_id=task_id(paper_id, id_type, version), **data)
+        data['status'] = Extraction.Status.SUCCEEDED
+        _result: Dict[str, str] = result.result
+        data['owner'] = _result['owner']
+    return Extraction(**data)
 
 
-def extraction_task_exists(paper_id: str, id_type: str,
+def extraction_task_exists(identifier: str, id_type: str,
                            version: Optional[str] = None) -> bool:
     """
     Check whether an extraction task exists.
 
     Parameters
     ----------
-    paper_id : str
+    identifier : str
         Unique identifier for the paper being extracted. Usually an arXiv ID.
     id_type : str
         Either 'arxiv' or 'submission'.
@@ -130,53 +150,45 @@ def extraction_task_exists(paper_id: str, id_type: str,
     bool
 
     """
-    result = extract_fulltext.AsyncResult(task_id(paper_id, id_type, version))
+    logger.debug('task exists? %s, %s, %s', identifier, id_type, version)
+    result = extract.AsyncResult(task_id(identifier, id_type, version))
     return result.status != 'PENDING'   # 'PENDING' => non-existant.
 
 
 @celery_app.task
-def extract_fulltext(document_id: str, pdf_url: str, id_type: str = 'arxiv') \
-        -> Dict[str, str]:
-    """Perform fulltext extraction for a single arXiv document."""
-    logger.info('Retrieving PDF for %s' % document_id)
-    start_time = datetime.now()
+def extract(identifier: str, id_type: str, version: str,
+            owner: Optional[str] = None,
+            token: Optional[str] = None) -> Dict[str, str]:
+    """Perform text extraction for a single arXiv document."""
+
     try:
-        # Retrieve PDF from arXiv central document store.
-        try:
-            pdf_path = pdf.retrieve(pdf_url, document_id)
-        except pdf.DoesNotExist as e:
-            raise RuntimeError('%s: no PDF available' % document_id) from e
-        except pdf.InvalidURL as e:
-            raise RuntimeError('%s: URL not allowed' % document_id) from e
-        logger.info('%s: retrieved PDF' % document_id)
-
-        logger.info('Attempting text extraction for %s' % document_id)
+        if id_type == ARXIV:
+            pdf_path = pdf.CanonicalPDF.retrieve(identifier)
+        elif id_type == SUBMISSION:
+            pdf_path, owner = compiler.Compiler.retrieve(identifier, token)
+        else:
+            RuntimeError('Unsupported identifier')
+        extraction = store.Storage.retrieve(identifier, version,
+                                            bucket=id_type,
+                                            meta_only=True)
         content = do_extraction(pdf_path)
-        logger.info('Text extraction for %s succeeded with %i chars' %
-                    (document_id, len(content)))
-        try:
-            store.store(document_id, content, bucket=id_type)
-        except RuntimeError as e:   # TODO: flesh out exception states.
-            raise
-        duration = (start_time - datetime.now()).microseconds
-        logger.info(f'Finished extraction for {document_id} in {duration} ms')
-
-        psv_content = psv.normalize_text_psv(content)
-        try:
-            store.store(document_id, psv_content, content_format='psv',
-                        bucket=id_type)
-        except RuntimeError as e:   # TODO: flesh out exception states.
-            raise
-        logger.info(f'Stored PSV normalized content for {document_id}')
-
+    except Exception as e:
+        logger.error('Failed to process %s: %s' % (identifier, e))
+        store.Storage.store(extraction.copy(status=Extraction.Status.FAILED,
+                            ended=datetime.now(UTC),
+                            exception=str(e)))
+        raise e
+    finally:
         os.remove(pdf_path)    # Cleanup.
 
-    except Exception as e:
-        logger.error('Failed to process %s: %s' % (document_id, e))
-        placeholder = ExtractionPlaceholder(exception=str(e))
-        store.store(document_id, placeholder)
-        raise e
-    return {'paper_id': document_id, 'id_type': id_type}
+    extraction = extraction.copy(status=Extraction.Status.SUCCEEDED,
+                                 ended=datetime.now(UTC))
+    store.Storage.store(extraction, 'plain')
+    extraction = extraction.copy(content=psv.normalize_text_psv(content))
+    store.Storage.store(extraction, 'psv')
+    result = extraction.to_dict()
+    result.pop('content')
+    return result
 
 
 @after_task_publish.connect
@@ -200,11 +212,18 @@ def do_extraction(filename: str, cleanup: bool = False,
     -------
     str
         Raw XML response from FullText.
+
     """
+    logger.info('Attempting text extraction for %s' % filename)
+    start_time = datetime.now()
     workdir = current_app.config.get('WORKDIR', '/tmp/pdfs')
 
     if image is None:
-        image = current_app.config['FULLTEXT_DOCKER_IMAGE']
+        image_name = current_app.config['FULLTEXT_DOCKER_IMAGE']
+        image_tag = current_app.config['EXTRACTOR_VERSION']
+        image = f'{image_name}:{image_tag}'
+
+    docker_host = current_app.config['DOCKER_HOST']
 
     fldr, name = os.path.split(filename)
     stub, ext = os.path.splitext(os.path.basename(filename))
@@ -214,9 +233,11 @@ def do_extraction(filename: str, cleanup: bool = False,
     logger.info(str(os.listdir(workdir)))
 
     try:
-        run_docker(image, [[workdir, '/pdfs']],
-                   args='/pdfs/%s' % name)
-    except subprocess.CalledProcessError as e:
+        client = docker.DockerClient(docker_host)
+        client.images.pull(image)       # Just in case the dind went away.
+        volumes = {'/pdfs': {'bind': '/pdfs', 'mode': 'rw'}}
+        client.containers.run(image, f'/pdfs/{name}', volumes=volumes)
+    except (ContainerError, APIError) as e:
         raise RuntimeError('Fulltext failed: %s' % filename) from e
 
     out = os.path.join(workdir, '{}.txt'.format(stub))
@@ -227,45 +248,6 @@ def do_extraction(filename: str, cleanup: bool = False,
         content = f.read().decode('utf-8')
     os.remove(out.replace('.txt', '.pdf2txt'))
     os.remove(out)    # Cleanup.
+    duration = (start_time - datetime.now()).microseconds
+    logger.info(f'Finished extraction for {filename} in {duration} ms')
     return content
-
-
-def run_docker(image: str, volumes: list = [], ports: list = [],
-               args: str = '', daemon: bool = False) -> Tuple[str, str]:
-    """
-    Run a generic docker image.
-
-    In our uses, we wish to set the userid to that of running process (getuid)
-    by default. Additionally, we do not expose any ports for running services
-    making this a rather simple function.
-
-    Parameters
-    ----------
-    image : str
-        Name of the docker image in the format 'repository/name:tag'
-
-    volumes : list of tuple of str
-        List of volumes to mount in the format [host_dir, container_dir].
-
-    args : str
-        Arguments to the image's run cmd (set by Dockerfile CMD)
-
-    daemon : boolean
-        If True, launches the task to be run forever
-    """
-    # we are only running strings formatted by us, so let's build the command
-    # then split it so that it can be run by subprocess
-    opt_user = '-u {}'.format(os.getuid())
-    opt_volumes = ' '.join(['-v {}:{}'.format(hd, cd) for hd, cd in volumes])
-    opt_ports = ' '.join(['-p {}:{}'.format(hp, cp) for hp, cp in ports])
-    cmd = 'docker run --rm {} {} {} {} {}'.format(
-        opt_user, opt_ports, opt_volumes, image, args
-    )
-    result = subprocess.run(cmd, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, shell=True)
-    if result.returncode:
-        logger.error(f"Docker image call '{cmd}' exited {result.returncode}")
-        logger.error(f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}")
-        result.check_returncode()
-
-    return result

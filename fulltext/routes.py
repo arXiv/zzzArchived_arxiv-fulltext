@@ -1,14 +1,60 @@
 """Provides the blueprint for the fulltext API."""
 
-from typing import Optional
+from typing import Optional, Callable
 from flask import request, Blueprint, Response
-from werkzeug.exceptions import NotAcceptable, BadRequest
+from werkzeug.exceptions import NotAcceptable, BadRequest, NotFound
 from flask.json import jsonify
 from arxiv import status
-from arxiv.users import auth
+from arxiv.users.domain import Session, Scope
+from arxiv.users.auth import scopes
+from arxiv.users.auth.decorators import scoped
+from arxiv.base import logging
 from fulltext import controllers
 
+logger = logging.getLogger(__name__)
+
+ARXIV = 'arxiv'
+SUBMISSION = 'submission'
+ARXIV_PREFIX = '/<id_type>/<arxiv:identifier>'
+SUBMISSION_PREFIX = '/<id_type>/<source:identifier>'
+
 blueprint = Blueprint('fulltext', __name__, url_prefix='')
+#
+#
+# def authorizer(session: Session, id_type: str, identifier: str,
+#                *args, **kwargs) -> bool:
+#     if id_type == SUBMISSION:
+#         try:
+#             source_id, checksum = identifier.split('/', 1)
+#         except ValueError:
+#             raise NotFound('Unsupported identifier')
+#         return session.is_authorized(scopes.READ_UPLOAD, source_id)
+#     return True
+
+
+def make_authorizer(scope: Scope) -> Callable[[str, str], bool]:
+    """Make an authorizer function for injection into a controller."""
+
+    def inner(identifier: str, owner_id: str) -> bool:
+        """Check whether the session is authorized for a specific resource."""
+        logger.debug('Authorize for %s owned by %s', identifier, owner_id)
+        logger.debug('Client user id is %s', request.auth.user.user_id)
+        try:
+            source_id, checksum = identifier.split('/', 1)
+        except ValueError as e:
+            logger.debug('Bad identifier? %s', e)
+            raise NotFound('Unsupported identifier') from e
+        return (request.auth.is_authorized(scope, source_id)
+                or (request.auth.user
+                    and str(request.auth.user.user_id) == owner_id))
+    return inner
+
+
+def resource_id(id_type: str, identifier: str, *args, **kwargs) -> str:
+    """Get the resource ID for an endpoint."""
+    if id_type == SUBMISSION:
+        return identifier.split('/', 1)
+    return identifier
 
 
 def best_match(available, default):
@@ -18,99 +64,85 @@ def best_match(available, default):
     return request.accept_mimetypes.best_match(available)
 
 
-@blueprint.route('/status', methods=['GET'])
+@blueprint.route('/status')
 def ok() -> tuple:
     """Provide current integration status information for health checks."""
     data, code, headers = controllers.service_status()
     return jsonify(data), code, headers
 
 
-@blueprint.route('/<arxiv:paper_id>', methods=['POST'])
-@auth.decorators.scoped(auth.scopes.CREATE_FULLTEXT)
-def extract_fulltext(paper_id: str) -> tuple:
+@blueprint.route(ARXIV_PREFIX, methods=['POST'])
+@blueprint.route(SUBMISSION_PREFIX, methods=['POST'])
+@scoped(scopes.CREATE_FULLTEXT, resource=resource_id)
+def extract(id_type: str, identifier: str) -> tuple:
     """Handle requests for fulltext extraction."""
-    data, code, headers = controllers.extract(paper_id)
+    force = request.args.get('force', False)
+    token = request.environ['token']
+
+    # Authorization is required to work with submissions.
+    if id_type == SUBMISSION:
+        authorizer = make_authorizer(scopes.READ_COMPILE)
+    else:
+        authorizer = None
+
+    data, code, headers = \
+        controllers.extract(id_type, identifier, token, force=force,
+                            authorizer=authorizer)
     return jsonify(data), code, headers
 
 
-@blueprint.route('/submission/<paper_id>', methods=['POST'])
-@auth.decorators.scoped(auth.scopes.CREATE_FULLTEXT)
-def extract_fulltext_from_submission(paper_id: str) -> tuple:
-    """Handle requests for fulltext extraction for submissions."""
-    data, code, headers = controllers.extract(paper_id, id_type='submission')
-    return jsonify(data), code, headers
-
-
-@blueprint.route('/<arxiv:paper_id>/version/<version>/format/<content_format>',
-                 methods=['GET'])
-@blueprint.route('/<arxiv:paper_id>/version/<version>', methods=['GET'])
-@blueprint.route('/<arxiv:paper_id>/format/<content_format>', methods=['GET'])
-@blueprint.route('/<arxiv:paper_id>', methods=['GET'])
-@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
-def retrieve(paper_id: str, version: Optional[str] = None,
-             content_format: str = "plain") -> tuple:
+@blueprint.route(ARXIV_PREFIX + '/version/<version>/format/<content_fmt>')
+@blueprint.route(ARXIV_PREFIX + '/version/<version>')
+@blueprint.route(ARXIV_PREFIX + '/format/<content_fmt>')
+@blueprint.route(ARXIV_PREFIX)
+@blueprint.route(SUBMISSION_PREFIX + '/version/<version>/format/<content_fmt>')
+@blueprint.route(SUBMISSION_PREFIX + '/version/<version>')
+@blueprint.route(SUBMISSION_PREFIX + '/format/<content_fmt>')
+@blueprint.route(SUBMISSION_PREFIX)
+@scoped(scopes.READ_FULLTEXT, resource=resource_id)
+def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
+             content_fmt: str = "plain") -> tuple:
     """Retrieve full-text content for an arXiv paper."""
-    if paper_id is None:
-        raise BadRequest('paper_id missing in request')
+    if identifier is None:
+        raise BadRequest('identifier missing in request')
     available = ['application/json', 'text/plain']
     content_type = best_match(available, 'application/json')
-    data, status_code, headers = controllers.retrieve(
-        paper_id,
-        content_type,
-        id_type='arxiv',
-        content_format=content_format
-    )
 
+    # Authorization is required to work with submissions.
+    if id_type == SUBMISSION:
+        authorizer = make_authorizer(scopes.READ_COMPILE)
+    else:
+        authorizer = None
+
+    data, code, headers = controllers.retrieve(identifier, id_type,
+                                               content_format=content_fmt,
+                                               authorizer=authorizer)
     if content_type == 'text/plain':
         response_data = Response(data['content'], content_type='text/plain')
     elif content_type == 'application/json':
-        data['content'] = data['content'].decode('utf-8')
+        if 'content' in data:
+            data['content'] = data['content'].decode('utf-8')
         response_data = jsonify(data)
     else:
         raise NotAcceptable('unsupported content type')
-    return response_data, status_code, headers
+    return response_data, code, headers
 
 
-@blueprint.route('/submission/<paper_id>/version/<version>/format/<content_format>', methods=['GET'])
-@blueprint.route('/submission/<paper_id>/version/<version>', methods=['GET'])
-@blueprint.route('/submission/<paper_id>/format/<content_format>', methods=['GET'])
-@blueprint.route('/submission/<paper_id>', methods=['GET'])
-@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
-def retrieve_submission(paper_id: str, version: Optional[str] = None,
-                        content_format: str = "plain") -> tuple:
-    """Retrieve full-text content for an arXiv paper."""
-    available = ['application/json', 'text/plain']
-    content_type = best_match(available, 'application/json')
-    data, status_code, headers = controllers.retrieve(paper_id, content_type,
-                                                      id_type='submission')
-    if content_type == 'text/plain':
-        response_data = Response(data, content_type='text/plain')
-    elif content_type == 'application/json':
-        data['content'] = data['content'].decode('utf-8')
-        response_data = jsonify(data)
+@blueprint.route(ARXIV_PREFIX + '/version/<version>/status')
+@blueprint.route(ARXIV_PREFIX + '/status')
+@blueprint.route(SUBMISSION_PREFIX + '/version/<version>/status')
+@blueprint.route(SUBMISSION_PREFIX + '/status')
+@scoped(scopes.READ_FULLTEXT, resource=resource_id)
+def task_status(id_type: str, identifier: str,
+                version: Optional[str] = None) -> tuple:
+    """Get the status of a text extraction task."""
+    # Authorization is required to work with submissions.
+    if id_type == SUBMISSION:
+        authorizer = make_authorizer(scopes.READ_COMPILE)
     else:
-        raise NotAcceptable('unsupported content type')
-    return response_data, status_code, headers
+        authorizer = None
 
-
-@blueprint.route('/<arxiv:paper_id>/version/<version>/status', methods=['GET'])
-@blueprint.route('/<arxiv:paper_id>/status', methods=['GET'])
-@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
-def task_status(paper_id: str, version: Optional[str] = None) -> tuple:
-    """Get the status of a text extraction task."""
-    data, code, headers = controllers.get_task_status(paper_id,
-                                                      version=version)
-    return jsonify(data), code, headers
-
-
-@blueprint.route('/submission/<arxiv:paper_id>/version/<version>/status',
-                 methods=['GET'])
-@blueprint.route('/submission/<arxiv:paper_id>/status', methods=['GET'])
-@auth.decorators.scoped(auth.scopes.READ_FULLTEXT)
-def submission_task_status(paper_id: str, version: Optional[str] = None) \
-        -> tuple:
-    """Get the status of a text extraction task."""
-    data, code, headers = controllers.get_task_status(paper_id,
-                                                      id_type='submission',
-                                                      version=version)
+    data, code, headers = controllers.get_task_status(identifier, id_type,
+                                                      version=version,
+                                                      authorizer=authorizer)
     return jsonify(data), code, headers

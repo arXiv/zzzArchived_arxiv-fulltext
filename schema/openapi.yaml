@@ -9,7 +9,7 @@ info:
     name: MIT
 
 paths:
-  /{paper_id}:
+  /{identifier}:
     get:
       operationId: getLatestExtraction
       summary: |
@@ -33,7 +33,7 @@ paths:
                 type: string
 
     post:
-      operationId: forceExtraction
+      operationId: requestExtraction
       responses:
         '202':
           description: |
@@ -50,7 +50,7 @@ paths:
           description: |
             Forbidden. Client or user is not authorized to force extraction.
 
-  /{paper_id}/format/{format}:
+  /{identifier}/format/{format}:
     get:
       operationId: getLatestExtractionByFormat
       summary: |
@@ -65,7 +65,7 @@ paths:
         '404':
           description: The requested format does not exist.
 
-  /{paper_id}/version/{extractor_version}:
+  /{identifier}/version/{extractor_version}:
     get:
       operationId: getExtractionByVersion
       summary: |
@@ -81,7 +81,7 @@ paths:
         '404':
           description: The requested version does not exist.
 
-  /{paper_id}/version/{extractor_version}/format/{format}:
+  /{identifier}/version/{extractor_version}/format/{format}:
     get:
       operationId: getExtractionByVersionAndFormat
       summary: |
@@ -97,9 +97,9 @@ paths:
         '404':
           description: The requested version + format does not exist.
 
-  /{paper_id}/status:
+  /{identifier}/status:
     get:
-      operationId: getExtractionTaskStatus
+      operationId: getExtractionStatus
       summary: |
         Get the current status of an extraction task. If the extraction task
         has completed successfully, redirects to the resulting fulltext
@@ -127,9 +127,9 @@ paths:
         '404':
           description: The requested task does not exist.
 
-  /{paper_id}/version/{extractor_version}/status:
+  /{identifier}/version/{extractor_version}/status:
     get:
-      operationId: getExtractionTaskStatusByVersion
+      operationId: getExtractionStatusByVersion
       summary: |
         Get the current status of an extraction task. If the extraction task
         has completed successfully, redirects to the resulting fulltext
@@ -181,7 +181,7 @@ paths:
                 type: string
 
     post:
-      operationId: ForceSubmissionExtraction
+      operationId: requestSubmissionExtraction
       responses:
         '202':
           description: |
@@ -247,7 +247,7 @@ paths:
 
   /submission/{submission_id}/status:
     get:
-      operationId: getSubmissionExtractionTaskStatus
+      operationId: getSubmissionExtractionStatus
       summary: |
         Get the current status of an extraction task. If the extraction task
         has completed successfully, redirects to the resulting fulltext
@@ -277,7 +277,7 @@ paths:
 
   /submission/{submission_id}/version/{extractor_version}/status:
     get:
-      operationId: getSubmissionExtractionTaskStatusByVersion
+      operationId: getSubmissionExtractionStatusByVersion
       summary: |
         Get the current status of an extraction task. If the extraction task
         has completed successfully, redirects to the resulting fulltext

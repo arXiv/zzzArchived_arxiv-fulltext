@@ -204,12 +204,16 @@ AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 
-SOURCE_WHITELIST = os.environ.get('SOURCE_WHITELIST',
-                                  'arxiv.org,export.arxiv.org')
-
-
 FULLTEXT_DOCKER_IMAGE = os.environ.get('FULLTEXT_DOCKER_IMAGE',
-                                       'arxiv/fulltext-extractor:0.3')
+                                       'arxiv/fulltext-extractor')
+EXTRACTOR_VERSION = '0.3'
+"""
+The extractor version, used to sign extracted fulltext.
+
+This should only be incremented when the extraction process itself changes,
+not when the API of this web application changes.
+"""
+DOCKER_HOST = os.environ.get('DOCKER_HOST', 'tcp://localhost:2375')
 
 # Settings for the indexing agent.
 KINESIS_ENDPOINT = os.environ.get('KINESIS_ENDPOINT')
@@ -235,19 +239,9 @@ KINESIS_SLEEP = os.environ.get('KINESIS_SLEEP', '0.1')
 
 REDIS_ENDPOINT = os.environ.get('REDIS_ENDPOINT')
 
-BASE_SERVER = 'arxiv.org'
-URLS = [
-    ('submission_pdf', '/pdf/<submission_id>', BASE_SERVER),
-    ('pdf', '/pdf/<paper_id>', BASE_SERVER)
-]
-
-VERSION = '0.3'
-"""
-The extractor version, used to sign extracted fulltext.
-
-This should only be incremented when the extraction process itself changes,
-not when the API of this web application changes.
-"""
+BASE_SERVER = os.environ.get('BASE_SERVER', 'arxiv.org')
+URLS = []
+EXTERNAL_URL_SCHEME = os.environ.get('EXTERNAL_URL_SCHEME', 'https')
 
 WORKDIR = os.environ.get('WORKDIR', '/tmp')
 STORAGE_VOLUME = os.environ.get('STORAGE_VOLUME', '/data')
@@ -266,10 +260,17 @@ VAULT_REQUESTS = [
      'mount_point': f'secret{NS_AFFIX}/',
      'path': 'jwt',
      'key': 'jwt-secret',
-     'minimum_ttl': 60},
+     'minimum_ttl': 3600},
     {'type': 'aws',
      'name': 'AWS_S3_CREDENTIAL',
      'mount_point': f'aws{NS_AFFIX}/',
      'role': os.environ.get('VAULT_CREDENTIAL')}
 ]
 LOGLEVEL = int(os.environ.get('LOGLEVEL', '40'))
+
+COMPILER_ENDPOINT = os.environ.get('COMPILER_ENDPOINT', 'http://foohost:1234')
+COMPILER_VERIFY = bool(int(os.environ.get('COMPILER_VERIFY', '0')))
+CANONICAL_ENDPOINT = os.environ.get('CANONICAL_ENDPOINT', 'https://arxiv.org')
+CANONICAL_VERIFY = bool(int(os.environ.get('CANONICAL_VERIFY', '1')))
+
+AUTH_UPDATED_SESSION_REF = True     # Session is at request.auth

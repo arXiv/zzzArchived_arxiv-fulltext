@@ -1,16 +1,19 @@
-from typing import Optional, Tuple, Dict, Any
-from werkzeug.exceptions import NotFound, InternalServerError, BadRequest, \
-    NotAcceptable, BadRequest
-from arxiv.base import logging
-from arxiv import status
+"""API controllers."""
 
-from .domain import ExtractionPlaceholder, ExtractionTask, ExtractionProduct
-from fulltext.services import store, pdf
-from fulltext.extract import create_extraction_task, get_extraction_task, \
-    extraction_task_exists, get_version, NoSuchTask, TaskCreationFailed
+from typing import Optional, Tuple, Dict, Any, Callable
+from http import HTTPStatus as status
+
 from flask import url_for
 from celery import current_app
+from werkzeug.exceptions import NotFound, InternalServerError, BadRequest, \
+    NotAcceptable
 
+from arxiv.base import logging
+
+from .services import store, pdf, compiler
+from .extract import create_extraction_task, get_extraction_task, \
+    extraction_task_exists, get_version, NoSuchTask, TaskCreationFailed
+from .domain import Extraction
 
 logger = logging.getLogger(__name__)
 
@@ -19,34 +22,34 @@ ALREADY_EXISTS = {'reason': 'extraction already exists'}
 TASK_IN_PROGRESS = {'status': 'in progress'}
 TASK_FAILED = {'status': 'failed'}
 TASK_COMPLETE = {'status': 'complete'}
-HTTP_202_ACCEPTED = 202
-HTTP_303_SEE_OTHER = 303
-HTTP_400_BAD_REQUEST = 400
-HTTP_404_NOT_FOUND = 404
-HTTP_500_INTERNAL_SERVER_ERROR = 500
+
+ARXIV = 'arxiv'
+SUBMISSION = 'submission'
 
 Response = Tuple[Dict[str, Any], int, Dict[str, Any]]
+Authorizer = Callable[[str, Optional[str]], bool]
 
 
 def service_status() -> Response:
     """Handle a request for the status of this service."""
-    if store.ready():   # This is the critical upstream integration.
-        return {}, status.HTTP_200_OK, {}
+    if store.Storage.ready():   # This is the critical upstream integration.
+        return {}, status.OK, {}
     raise InternalServerError('Failed readiness check')
 
 
-def retrieve(paper_id: str, id_type: str = 'arxiv',
+def retrieve(identifier: str, id_type: str = 'arxiv',
              version: Optional[str] = None,
-             content_format: str = 'plain') -> Response:
+             content_format: str = 'plain',
+             authorizer: Optional[Authorizer] = None) -> Response:
     """
-    Handle request for full-text content for an arXiv paper.
+    Handle request for full-text content for an arXiv e-print.
 
     Parameters
     ----------
-    paper_id : str
+    identifier : str
         Identifier for an arXiv resource, usually a published e-print.
     id_type : str
-        The type of identifier that is `paper_id`.
+        The type of identifier that is `identifier`.
     version : str or None
         If provided, the desired extraction version.
     content_format : str
@@ -55,96 +58,164 @@ def retrieve(paper_id: str, id_type: str = 'arxiv',
     Returns
     -------
     tuple
-    """
-    try:
-        product = store.retrieve(paper_id, version=version,
-                                 content_format=content_format,
-                                 bucket=id_type)
 
+    """
+    if id_type not in [ARXIV, SUBMISSION]:
+        raise NotFound('Unrecognized identifier')
+
+    try:
+        product = store.Storage.retrieve(identifier, version, content_format,
+                                         id_type)
     except IOError as e:
         raise InternalServerError('Could not connect to backend') from e
-    except store.DoesNotExist as e:
-        # Check whether there is a task in progress for this paper.
-        if extraction_task_exists(paper_id, id_type, version):
-            if id_type == 'arxiv':
-                status_endpoint = 'fulltext.task_status'
-            elif id_type == 'submission':
-                status_endpoint = 'fulltext.submission_task_status'
-            headers = {'Location': url_for(status_endpoint, paper_id=paper_id)}
-            return TASK_IN_PROGRESS, status.HTTP_303_SEE_OTHER, headers
+    except store.DoesNotExist:
+        # If there is only metadata, we should still get a response from
+        # the store. So if we hit DoesNotExist there really is nothing to see
+        # here folks, move along.
         raise NotFound('No such extraction')
-    except Exception as e:
-        raise InternalServerError(f'Unhandled exception: {e}') from e
-    return product.to_dict(), status.HTTP_200_OK, {}
+
+    # Make sure that the client is authorized to work with this resource before
+    # doing anything else.
+    if authorizer and not authorizer(identifier, product.owner):
+        raise NotFound('No such extraction')
+
+    if product.content is None \
+            and product.status is Extraction.Status.IN_PROGRESS:
+        target = url_for('fulltext.task_status', identifier=identifier,
+                         id_type=id_type)
+        return TASK_IN_PROGRESS, status.SEE_OTHER, {'Location': target}
+    return product.to_dict(), status.OK, {}
 
 
-def extract(paper_id: str, id_type: str = 'arxiv') -> Response:
+def extract(id_type: str, identifier: str, token: str, force: bool = False,
+            authorizer: Optional[Authorizer] = None) -> Response:
     """Handle a request to force text extraction."""
-    logger.info('extract: got paper_id: %s' % paper_id)
-    if id_type == 'arxiv':
-        status_endpoint = 'fulltext.task_status'
-    elif id_type == 'submission':
-        status_endpoint = 'fulltext.submission_task_status'
-    else:
-        raise NotFound('No such identifier')
+    if id_type not in [ARXIV, SUBMISSION]:
+        raise NotFound('Unsupported identifier')
 
-    # If an extraction task already exists for this paper, redirect. Don't
-    # create the same task twice.
-    if extraction_task_exists(paper_id, id_type):
-        status_code = status.HTTP_303_SEE_OTHER
-
-    # Otherwise, we have a task to create.
-    else:
-        # Before creating an extraction task, check that the intended document
-        # even exists. This gives the client a clear failure now, rather than
-        # waiting until the async task fails.
-        if id_type == 'arxiv':
-            pdf_url = url_for('pdf', paper_id=paper_id)
-        elif id_type == 'submission':
-            pdf_url = url_for('submission_pdf', submission_id=paper_id)
-        else:
-            raise NotFound('Invalid identifier')
-        if not pdf.exists(pdf_url):
-            raise NotFound('No such document')
-
-        status_code = status.HTTP_202_ACCEPTED
+    if not force:
+        # If an extraction product or task already exists for this paper,
+        # redirect. Don't do the same work twice for a given version of the
+        # extractor.
+        product: Optional[Extraction] = None
         try:
-            create_extraction_task(paper_id, pdf_url, id_type)
-        except TaskCreationFailed as e:
-            raise InternalServerError('Could not start extraction') from e
+            product = store.Storage.retrieve(identifier, bucket=id_type,
+                                             meta_only=True)
+        except IOError as e:
+            raise InternalServerError('Could not connect to backend') from e
+        except store.DoesNotExist:
+            pass
 
-    headers = {'Location': url_for(status_endpoint, paper_id=paper_id)}
-    return ACCEPTED, status_code, headers
+        if product is not None:
+            # Redirect to either the task status endpoint or the finished
+            # extraction product.
+            return _redirect(product, authorizer)
 
+    logger.debug('No existing task nor extraction for %s', identifier)
+    # Before creating an extraction task, check that the intended document
+    # even exists. This gives the client a clear failure now, rather than
+    # waiting until the async task fails. At the same time, we'll also grab
+    # the owner (if there is one) so that we can authorize the request.
+    owner: Optional[str] = None
+    if id_type == ARXIV and not pdf.CanonicalPDF.exists(identifier):
+        raise NotFound('No such document')
+    elif id_type == SUBMISSION:
+        try:
+            owner = compiler.Compiler.owner(identifier, token)
+            logger.debug('Got owner %s', owner)
+        except compiler.NotFound as e:
+            logger.debug('Compiler returned 404 Not Found for %s', identifier)
+            raise NotFound('No such document') from e
 
-def get_task_status(paper_id: str, id_type: str = 'arxiv',
-                    version: Optional[str] = None) -> Response:
-    """Check the status of an extraction request."""
-    logger.debug('%s: Get status for paper' % paper_id)
+    # Make sure that the client is authorized to work with this resource.
+    # The route may have passed in an authorizer function that works with
+    # the auth API to authorize the request.
+    if authorizer is not None and not authorizer(identifier, owner):
+        logger.debug('Client is not authorized to work with this resource')
+        # Pretend that the resource does not even exist.
+        raise NotFound('No such document')
 
     try:
-        task = get_extraction_task(paper_id, id_type, version)
+        logger.debug('Create a new extraction task with %s, %s',
+                     identifier, id_type)
+        create_extraction_task(identifier, id_type, owner, token)
+    except TaskCreationFailed as e:
+        raise InternalServerError('Could not start extraction') from e
+    target = url_for('fulltext.task_status', identifier=identifier,
+                     id_type=id_type)
+    return ACCEPTED, status.ACCEPTED, {'Location': target}
+
+
+def get_task_status(identifier: str, id_type: str = 'arxiv',
+                    version: Optional[str] = None,
+                    authorizer: Optional[Authorizer] = None) -> Response:
+    """Check the status of an extraction request."""
+    logger.debug('%s: Get status for paper' % identifier)
+    if id_type not in [ARXIV, SUBMISSION]:
+        raise NotFound('Unsupported identifier')
+
+    try:
+        product = store.Storage.retrieve(identifier, version, id_type,
+                                         meta_only=True)
+    except IOError as e:
+        raise InternalServerError('Could not connect to backend') from e
+    except store.DoesNotExist:
+        # If there is only metadata, we should still get a response from
+        # the store. So if we hit DoesNotExist there really is nothing to see
+        # here folks, move along.
+        raise NotFound('No such task')
+
+    # Make sure that the client is authorized to work with this resource before
+    # doing anything else.
+    if authorizer and not authorizer(identifier, product.owner):
+        raise NotFound('No such task')
+
+    if product.status is Extraction.Status.SUCCEEDED:
+        logger.debug('Task for %s is already complete', identifier)
+        target = url_for('fulltext.retrieve', identifier=identifier,
+                         id_type=id_type)
+        return TASK_COMPLETE, status.SEE_OTHER, {'Location': target}
+
+    try:
+        task = get_extraction_task(identifier, id_type, version)
     except NoSuchTask as e:
         raise NotFound('No such task') from e
+    return _task_redirect(task)
 
-    logger.debug('%s: got task: %s' % (task.task_id, task))
-    if task.status is ExtractionTask.Statuses.IN_PROGRESS:
-        return TASK_IN_PROGRESS, status.HTTP_200_OK, {}
-    elif task.status is ExtractionTask.Statuses.FAILED:
+
+def _redirect(extraction: Extraction, authorizer: Authorizer) -> Response:
+    # Make sure that the client is authorized to work with this
+    # resource before redirecting.
+    if authorizer and not authorizer(extraction.identifier, extraction.owner):
+        logger.debug('Requester is not authorized')
+        raise NotFound('No such extraction')
+
+    if extraction.status is Extraction.Status.IN_PROGRESS:
+        logger.debug('Extraction in progress')
+        target = url_for('fulltext.task_status',
+                         identifier=extraction.identifier,
+                         id_type=extraction.bucket)
+        data = {'reason': 'extraction in progress'}
+    else:
+        logger.debug('Extraction already completed')
+        target = url_for('fulltext.retrieve',
+                         identifier=extraction.identifier,
+                         id_type=extraction.bucket)
+        data = {'reason': 'extraction already complete'}
+    return data, status.SEE_OTHER, {'Location': target}
+
+
+def _task_redirect(task: Extraction) -> Response:
+    if task.status is Extraction.Status.IN_PROGRESS:
+        return TASK_IN_PROGRESS, status.OK, {}
+    elif task.status is Extraction.Status.FAILED:
         logger.error('%s: failed task: %s' % (task.task_id, task.result))
         reason = TASK_FAILED
-        reason.update({'reason': task.result})
-        return reason, status.HTTP_200_OK, {}
-    elif task.status is ExtractionTask.Statuses.SUCCEEDED:
-        logger.debug('Retrieved result successfully, paper_id: %s',
-                     task.paper_id)
-        if task.id_type == 'arxiv':
-            target = url_for('fulltext.retrieve', paper_id=task.paper_id)
-        elif task.id_type == 'submission':
-            target = url_for('fulltext.retrieve_submission',
-                             paper_id=task.paper_id)
-        else:
-            raise NotFound('No such identifier')
-        headers = {'Location': target}
-        return TASK_COMPLETE, status.HTTP_303_SEE_OTHER, headers
-    raise NotFound('task not found')
+        reason.update({'reason': str(task.result)})
+        return reason, status.OK, {}
+    elif task.status is Extraction.Status.SUCCEEDED:
+        logger.debug('Task for %s is already complete', task.identifier)
+        target = url_for('fulltext.retrieve', identifier=task.identifier,
+                         id_type=task.bucket)
+        return TASK_COMPLETE, status.SEE_OTHER, {'Location': target}
+    raise InternalServerError('Unexpected state')
