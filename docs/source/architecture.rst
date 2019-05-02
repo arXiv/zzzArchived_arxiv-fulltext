@@ -88,3 +88,17 @@ from the main application.
 
 Authentication & Authorization
 ------------------------------
+The ``fulltext:create`` scope is required to request new extractions. The
+``fulltext:read`` scope is required to access extracted plain text. The latter
+will be more common with external API consumers, whereas ``fulltext:create``
+is primarily intended for other services.
+
+To extract text from submissions, the ``compile:read`` scope is also required.
+
+Whereas announced e-prints require no special ownership privileges, submissions
+are more protected. The compiler service (from whence we obtain PDFs for
+submissions from which to extract text) publishes the identity of the resource
+owner (their user ID) via the ``ARXIV-OWNER`` header. The plaintext extraction
+service must implement authorization checks to ensure that only the owner (or a
+delegate with global or explicit privileges for that resource) may request
+extraction and access the status/results of the extraction.

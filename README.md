@@ -85,6 +85,15 @@ take a little longer than usual.
 The latest documentation can be found at
 https://arxiv.github.io/arxiv-fulltext.
 
+### Building
+
+```bash
+sphinx-apidoc -o docs/source/fulltext/ -e -f -M fulltext *test*/*
+cd docs/
+make html SPHINXBUILD=$(pipenv --venv)/bin/sphinx-build
+```
+
+
 ## License
 
 See [LICENSE](./LICENSE).

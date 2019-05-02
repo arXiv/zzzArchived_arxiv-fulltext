@@ -20,9 +20,14 @@
 #
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.append(os.path.abspath('..'))
 sys.path.append(os.path.abspath('../..'))
+
+from fulltext.factory import create_web_app
+app = create_web_app()
+app.app_context().push()
 
 # -- General configuration ------------------------------------------------
 

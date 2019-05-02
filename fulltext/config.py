@@ -6,6 +6,7 @@ Docstrings are from the `Flask configuration documentation
 """
 import os
 import re
+import tempfile
 
 ON = 'yes'
 OFF = 'no'
@@ -102,9 +103,9 @@ disables it entirely.
 
 SERVER_NAME = os.environ.get('FULLTEXT_SERVER_NAME', None)
 """
-the name and port number of the server. Required for subdomain support (e.g.:
+the name and port number of the server. Required for subdomain support (e.g.
 'myapp.dev:5000') Note that localhost does not support subdomains so setting
-this to "localhost" does not help. Setting a SERVER_NAME also by default
+this to "localhost" does not help. Setting a ``SERVER_NAME`` also by default
 enables URL generation without a request context but with an application
 context.
 """
@@ -204,8 +205,7 @@ AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
 AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
 
-EXTRACTOR_IMAGE = os.environ.get('EXTRACTOR_IMAGE',
-                                       'arxiv/fulltext-extractor')
+EXTRACTOR_IMAGE = os.environ.get('EXTRACTOR_IMAGE', 'arxiv/fulltext-extractor')
 EXTRACTOR_VERSION = '0.3'
 """
 The extractor version, used to sign extracted fulltext.
@@ -244,7 +244,7 @@ URLS = []
 EXTERNAL_URL_SCHEME = os.environ.get('EXTERNAL_URL_SCHEME', 'https')
 
 WORKDIR = os.environ.get('WORKDIR', '/tmp')
-STORAGE_VOLUME = os.environ.get('STORAGE_VOLUME', '/data')
+STORAGE_VOLUME = os.environ.get('STORAGE_VOLUME', tempfile.mkdtemp())
 
 VAULT_ENABLED = bool(int(os.environ.get('VAULT_ENABLED', '0')))
 NAMESPACE = os.environ.get('NAMESPACE')

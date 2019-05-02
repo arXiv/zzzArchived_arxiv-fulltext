@@ -24,6 +24,7 @@ Submodules
    fulltext.celeryconfig
    fulltext.config
    fulltext.controllers
+   fulltext.domain
    fulltext.extract
    fulltext.factory
    fulltext.routes
