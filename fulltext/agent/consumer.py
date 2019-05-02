@@ -32,7 +32,7 @@ class FulltextRecordProcessor(BaseConsumer):
     sleep = 0.2
     sleep_after_credentials = 10
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize a secrets manager before starting."""
         self._config = kwargs.pop('config', {})
         super(FulltextRecordProcessor, self).__init__(*args, **kwargs)
@@ -62,7 +62,9 @@ class FulltextRecordProcessor(BaseConsumer):
         if self._config.get('VAULT_ENABLED') and self.update_secrets():
             time.sleep(self.sleep_after_credentials)
             raise RestartProcessing('Got fresh credentials')
-        return super(FulltextRecordProcessor, self).process_records(start)
+        sup: Tuple[str, int] = \
+            super(FulltextRecordProcessor, self).process_records(start)
+        return sup
 
     def process_record(self, record: dict) -> None:
         """

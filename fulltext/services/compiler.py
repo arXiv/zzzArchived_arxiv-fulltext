@@ -32,14 +32,15 @@ class Compiler(service.HTTPIntegration):
 
     def get_service_status(self) -> dict:
         """Get the status of the compiler service."""
-        return self.json('get', 'status')[0]
+        _stat: dict = self.json('get', 'status')[0]
+        return _stat
 
     def exists(self, identifier: str, token: str) -> bool:
         """Check whether a compilation product exists."""
         endpoint = f'/{identifier}/pdf/product'
         try:
             response = self.request('head', endpoint, token, stream=True)
-            return response.status_code == status.OK
+            return bool(response.status_code == status.OK)
         except exceptions.NotFound:
             return False
 
@@ -47,7 +48,8 @@ class Compiler(service.HTTPIntegration):
         """Get the owner of a compilation product."""
         endpoint = f'/{identifier}/pdf/product'
         response = self.request('head', endpoint, token, stream=True)
-        return response.headers.get('ARXIV-OWNER', None)
+        owner: Optional[str] = response.headers.get('ARXIV-OWNER', None)
+        return owner
 
     def retrieve(self, identifier: str, token: str) \
             -> Tuple[str, Optional[str]]:

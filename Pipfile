@@ -29,7 +29,7 @@ docker = "*"
 
 [dev-packages]
 nose2 = "*"
-mypy = "*"
+mypy = "==0.701"
 pydocstyle = "*"
 pylint = "*"
 coverage = "*"

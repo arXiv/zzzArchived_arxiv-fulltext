@@ -107,8 +107,8 @@ class Storage(metaclass=MetaIntegration):
             logger.debug('Store %s content for %s',
                          content_fmt, extraction.identifier)
             try:
-                with open(content_path, 'wb') as f:
-                    f.write(extraction.content.encode('utf-8'))
+                with open(content_path, 'wb') as content_fp:
+                    content_fp.write(extraction.content.encode('utf-8'))
             except IOError as e:
                 raise StorageFailed("Could not store content") from e
 
@@ -121,8 +121,8 @@ class Storage(metaclass=MetaIntegration):
                      extraction.identifier, meta_path)
         self.make_paths(meta_path)
         try:    # Write metadata record.
-            with open(meta_path, 'w') as f:
-                json.dump(meta, f)
+            with open(meta_path, 'w') as meta_fp:
+                json.dump(meta, meta_fp)
         except IOError as e:
             raise StorageFailed("Could not store content") from e
 
@@ -131,19 +131,21 @@ class Storage(metaclass=MetaIntegration):
                  bucket: str = SupportedBuckets.ARXIV,
                  meta_only: bool = False) -> Extraction:
         """Retrieve an :class:`.Extraction`."""
-        content: Optional[bytes] = None
+        content: Optional[str] = None
         logger.debug('Retrieve %s (v%s) for %s from %s', content_fmt,
                      version, identifier, bucket)
         if version is None:
             version = self._latest_version(identifier, bucket)
         content_path = self._path(identifier, version, content_fmt, bucket)
         try:
-            with open(self._meta_path(identifier, version, bucket)) as f:
-                meta = json.load(f)
+            with open(self._meta_path(identifier, version, bucket)) as meta_fp:
+                meta = json.load(meta_fp)
+
+            # mypy does not know about fromisoformat yet, apparently.
             if 'started' in meta and meta['started']:
-                meta['started'] = datetime.fromisoformat(meta['started'])
+                meta['started'] = datetime.fromisoformat(meta['started'])   # type: ignore
             if 'ended' in meta and meta['ended']:
-                meta['ended'] = datetime.fromisoformat(meta['ended'])
+                meta['ended'] = datetime.fromisoformat(meta['ended'])   # type: ignore
             meta['status'] = Extraction.Status(meta['status'])
         except FileNotFoundError as e:
             raise DoesNotExist("No such resource") from e
@@ -151,8 +153,8 @@ class Storage(metaclass=MetaIntegration):
         # Get the extraction content.
         if not meta_only:
             try:
-                with open(content_path, 'rb') as f:
-                    content = f.read()
+                with open(content_path, 'rb') as content_fp:
+                    content = content_fp.read().decode('utf-8')
 
             except FileNotFoundError:
                 # If the content is not here, it is likely because the
@@ -183,4 +185,5 @@ class Storage(metaclass=MetaIntegration):
             return cls.create_session()
         if 'store' not in g:
             g.store = cls.create_session()
-        return g.store
+        instance: 'Storage' = g.store
+        return instance

@@ -11,8 +11,7 @@ from werkzeug.exceptions import NotFound, InternalServerError, BadRequest, \
 from arxiv.base import logging
 
 from .services import store, pdf, compiler
-from .extract import create_extraction_task, get_extraction_task, \
-    extraction_task_exists, get_version, NoSuchTask, TaskCreationFailed
+from . import extract
 from .domain import Extraction, SupportedFormats, SupportedBuckets
 
 logger = logging.getLogger(__name__)
@@ -87,8 +86,9 @@ def retrieve(identifier: str, id_type: str = SupportedBuckets.ARXIV,
     return product.to_dict(), status.OK, {}
 
 
-def extract(id_type: str, identifier: str, token: str, force: bool = False,
-            authorizer: Optional[Authorizer] = None) -> Response:
+def start_extraction(id_type: str, identifier: str, token: str,
+                     force: bool = False,
+                     authorizer: Optional[Authorizer] = None) -> Response:
     """Handle a request to force text extraction."""
     if id_type not in SupportedBuckets:
         raise NotFound('Unsupported identifier')
@@ -144,8 +144,8 @@ def extract(id_type: str, identifier: str, token: str, force: bool = False,
     try:
         logger.debug('Create a new extraction task with %s, %s',
                      identifier, id_type)
-        create_extraction_task(identifier, id_type, owner, token)
-    except TaskCreationFailed as e:
+        extract.create_task(identifier, id_type, owner, token)
+    except extract.TaskCreationFailed as e:
         raise InternalServerError('Could not start extraction') from e
     target = url_for('fulltext.task_status', identifier=identifier,
                      id_type=id_type)
@@ -187,14 +187,17 @@ def get_task_status(identifier: str, id_type: str = SupportedBuckets.ARXIV,
                          id_type=id_type)
         return product.to_dict(), status.SEE_OTHER, {'Location': target}
 
+    if version is None:
+        version = extract.get_version()
     try:
-        task = get_extraction_task(identifier, id_type, version)
-    except NoSuchTask as e:
+        task = extract.get_task(identifier, id_type, version)
+    except extract.NoSuchTask as e:
         raise NotFound('No such task') from e
     return _task_redirect(task, product)
 
 
-def _redirect(extraction: Extraction, authorizer: Authorizer) -> Response:
+def _redirect(extraction: Extraction,
+              authorizer: Optional[Authorizer]) -> Response:
     # Make sure that the client is authorized to work with this
     # resource before redirecting.
     if authorizer and not authorizer(extraction.identifier, extraction.owner):
@@ -223,8 +226,8 @@ def _task_redirect(task: Extraction, product: Extraction) -> Response:
     if task.status is Extraction.Status.IN_PROGRESS:
         data.update(TASK_IN_PROGRESS)
     elif task.status is Extraction.Status.FAILED:
-        logger.error('%s: failed task: %s', task.task_id, task.result)
-        data.update({'reason': str(task.result)})
+        logger.error('%s: failed task: %s', task.task_id, task.exception)
+        data.update({'reason': str(task.exception)})
     elif task.status is Extraction.Status.SUCCEEDED:
         logger.debug('Task for %s is already complete', task.identifier)
         target = url_for('fulltext.retrieve', identifier=task.identifier,

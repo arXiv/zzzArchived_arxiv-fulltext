@@ -4,6 +4,7 @@ Flask configuration.
 Docstrings are from the `Flask configuration documentation
 <http://flask.pocoo.org/docs/0.12/config/>`_.
 """
+from typing import List, Tuple
 import os
 import re
 import tempfile
@@ -240,7 +241,7 @@ KINESIS_SLEEP = os.environ.get('KINESIS_SLEEP', '0.1')
 REDIS_ENDPOINT = os.environ.get('REDIS_ENDPOINT')
 
 BASE_SERVER = os.environ.get('BASE_SERVER', 'arxiv.org')
-URLS = []
+URLS: List[Tuple[str, str, str]] = []
 EXTERNAL_URL_SCHEME = os.environ.get('EXTERNAL_URL_SCHEME', 'https')
 
 WORKDIR = os.environ.get('WORKDIR', '/tmp')

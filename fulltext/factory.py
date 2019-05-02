@@ -21,7 +21,7 @@ class SubmissionSourceConverter(BaseConverter):
     regex = '[^/][0-9]+/[^/\?#]+'
 
 
-def create_web_app():
+def create_web_app() -> Flask:
     """Initialize an instance of the web application."""
     from fulltext import routes
     app = Flask('fulltext')
@@ -45,7 +45,7 @@ def create_web_app():
     return app
 
 
-def create_worker_app():
+def create_worker_app() -> Flask:
     """Initialize an instance of the worker application."""
     logging.getLogger('boto').setLevel(logging.ERROR)
     logging.getLogger('boto3').setLevel(logging.ERROR)

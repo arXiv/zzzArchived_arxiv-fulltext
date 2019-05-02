@@ -12,7 +12,7 @@ MonkeyPatch.patch_fromisoformat()
 class Extraction(NamedTuple):
     """Metadata about an extraction."""
 
-    class Status(Enum):
+    class Status(Enum):   # type: ignore
         """Task Status."""
 
         IN_PROGRESS = 'in_progress'
@@ -37,8 +37,8 @@ class Extraction(NamedTuple):
     """The identifier of the running task."""
     status: 'Extraction.Status' = Status.IN_PROGRESS
     """Status of the extraction task."""
-    content: Optional[bytes] = None
-    """Extraction content, in the specified :attr:`.format`."""
+    content: Optional[str] = None
+    """Extraction content."""
 
     def to_dict(self) -> dict:
         """Generate a dict representation of this placeholder."""
@@ -55,20 +55,21 @@ class Extraction(NamedTuple):
             'bucket': self.bucket
         }
 
-    def copy(self, **kwargs) -> 'Extraction':
+    def copy(self, **kwargs: Any) -> 'Extraction':
         """Create a new :class:`.Extraction` with updated values."""
         data = self.to_dict()
         data.update(kwargs)
+        # mypy does not know about fromisoformat yet, apparently.
         if isinstance(data['status'], str):
             data['status'] = Extraction.Status(data['status'])
         if isinstance(data['started'], str):
-            data['started'] = datetime.fromisoformat(data['started'])
+            data['started'] = datetime.fromisoformat(data['started'])   # type: ignore
         if isinstance(data['ended'], str):
-            data['ended'] = datetime.fromisoformat(data['ended'])
+            data['ended'] = datetime.fromisoformat(data['ended'])   # type: ignore
         return Extraction(**data)
 
     @property
-    def completed(self):
+    def completed(self) -> bool:
         """Determine whether the task is in a completed states."""
         return self.status in [self.Status.SUCCEEDED, self.Status.FAILED]
 

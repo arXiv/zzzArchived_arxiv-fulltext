@@ -1,7 +1,7 @@
 """Provides asynchronous task for fulltext extraction."""
 
 import os
-from typing import Tuple, Optional, Dict
+from typing import Tuple, Optional, Dict, Any
 from datetime import datetime
 from pytz import UTC
 import shutil
@@ -33,16 +33,18 @@ class TaskCreationFailed(RuntimeError):
 
 
 def get_version() -> str:
-    return get_application_config().get('EXTRACTOR_VERSION', '-1.0')
+    """Get the current version of the extractor."""
+    version: str = get_application_config().get('EXTRACTOR_VERSION', '-1.0')
+    return version
 
 
 def task_id(identifier: str, id_type: str, version: str) -> str:
+    """Make a task ID for an extraction."""
     return f"{id_type}::{identifier}::{version}"
 
 
-def create_extraction_task(identifier: str, id_type: str,
-                           owner: Optional[str] = None,
-                           token: Optional[str] = None) -> str:
+def create_task(identifier: str, id_type: str, owner: Optional[str] = None,
+                token: Optional[str] = None) -> str:
     """
     Create a new extraction task.
 
@@ -88,8 +90,7 @@ def create_extraction_task(identifier: str, id_type: str,
     return _task_id
 
 
-def get_extraction_task(identifier: str, id_type: str,
-                        version: Optional[str] = None) -> Extraction:
+def get_task(identifier: str, id_type: str, version: str) -> Extraction:
     """
     Get the status of an extraction task.
 
@@ -100,8 +101,7 @@ def get_extraction_task(identifier: str, id_type: str,
     id_type : str
         Either 'arxiv' or 'submission'.
     version : str
-        Extractor version (optional). Will use the current version if not
-        provided.
+        Extractor version.
 
     Returns
     -------
@@ -110,49 +110,29 @@ def get_extraction_task(identifier: str, id_type: str,
     """
     _task_id = task_id(identifier, id_type, version)
     result = extract.AsyncResult(_task_id)
-    data = {
-        'task_id': task_id,
-        'version': version,
-        'identifer': identifier,
-        'bucket': id_type
-    }
+    exception: Optional[str] = None
+    owner: Optional[str] = None
     if result.status == 'PENDING':
         raise NoSuchTask('No such task')
     elif result.status in ['SENT', 'STARTED', 'RETRY']:
-        data['status'] = Extraction.Status.IN_PROGRESS
+        _status = Extraction.Status.IN_PROGRESS
     elif result.status == 'FAILURE':
-        data['status'] = Extraction.Status.FAILED
-        data['result']: str = result.result
+        _status = Extraction.Status.FAILED
+        exception = str(result.result)
     elif result.status == 'SUCCESS':
-        data['status'] = Extraction.Status.SUCCEEDED
-        _result: Dict[str, str] = result.result
-        data['owner'] = _result['owner']
-    return Extraction(**data)
-
-
-def extraction_task_exists(identifier: str, id_type: str,
-                           version: Optional[str] = None) -> bool:
-    """
-    Check whether an extraction task exists.
-
-    Parameters
-    ----------
-    identifier : str
-        Unique identifier for the paper being extracted. Usually an arXiv ID.
-    id_type : str
-        Either 'arxiv' or 'submission'.
-    version : str
-        Extractor version (optional). Will use the current version if not
-        provided.
-
-    Returns
-    -------
-    bool
-
-    """
-    logger.debug('task exists? %s, %s, %s', identifier, id_type, version)
-    result = extract.AsyncResult(task_id(identifier, id_type, version))
-    return result.status != 'PENDING'   # 'PENDING' => non-existant.
+        _status = Extraction.Status.SUCCEEDED
+        owner = str(result.result['owner'])
+    else:
+        raise RuntimeError('Unexpected state')
+    return Extraction(
+        identifier=identifier,
+        bucket=id_type,
+        task_id=_task_id,
+        version=version,
+        status=_status,
+        exception=exception,
+        owner=owner
+    )
 
 
 @celery_app.task
@@ -199,11 +179,14 @@ def extract(identifier: str, id_type: str, version: str,
 
 
 @after_task_publish.connect
-def update_sent_state(sender=None, headers=None, body=None, **kwargs):
+def update_sent_state(sender: Optional[str] = None,
+                      headers: Optional[Dict[str, str]] = None,
+                      body: Any = None, **kwargs: Any) -> None:
     """Set state to SENT, so that we can tell whether a task exists."""
     task = celery_app.tasks.get(sender)
     backend = task.backend if task else celery_app.backend
-    backend.store_result(headers['id'], None, "SENT")
+    if headers is not None:
+        backend.store_result(headers['id'], None, "SENT")
 
 
 def do_extraction(filename: str, cleanup: bool = False,

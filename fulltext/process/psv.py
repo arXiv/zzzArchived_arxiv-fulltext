@@ -54,9 +54,9 @@ def process_text(txt: str) -> Tuple[str, str]:
     lines = [l+'\n' for l in re.split(r'[\x0a-\x0d]+', txt)]
 
     psv, ref = split_on_references(lines)
-    psv = '\n'.join(tidy_txt_from_pdf(psv))
-    ref = '\n'.join(tidy_txt_from_pdf(ref))
-    return psv, ref
+    psv_composed = '\n'.join(tidy_txt_from_pdf(psv))
+    ref_composed = '\n'.join(tidy_txt_from_pdf(ref))
+    return psv_composed, ref_composed
 
 
 def tidy_txt_from_pdf(lines: List[str]) -> List[str]:
@@ -179,7 +179,7 @@ def _remove_Numbers(line: str) -> str:
     return line
 
 
-def _remove_Abbrev(line):
+def _remove_Abbrev(line: str) -> str:
     """
     Remove abbreviation #.#.#. #.#. #. (e.g. U.S., U.S.A., ...)
     Abbreviations often cause problems when separating sentences.
@@ -190,7 +190,7 @@ def _remove_Abbrev(line):
     return line
 
 
-def _remove_SingleAlphabet(line):
+def _remove_SingleAlphabet(line: str) -> str:
     """ Remove single characters: [b-zB-Z] """
     line = re.subn(r'\s[a-zA-Z]\s', ' ', line)[0]
     line = re.subn(r'\s[a-zA-Z]\s', ' ', line)[0]
@@ -198,24 +198,24 @@ def _remove_SingleAlphabet(line):
     return line
 
 
-def _remove_ExtraSpaces(line):
+def _remove_ExtraSpaces(line: str) -> str:
     """ Remove extra spaces """
     line = re.subn(r'\s+', ' ', line)[0]
     line = re.subn(r'^\s+', '', line)[0]
     return line
 
 
-def _split_sentence(lines):
+def _split_sentence(lines: List[str]) -> List[str]:
     """ Split sentences using the ". " as the delimiter """
-    out = []
+    out: List[str] = []
     for line in lines:
         out.extend(re.split(r'\.\s', line))
     return out
 
 
-def _clean_sentence(lines):
+def _clean_sentence(lines: List[str]) -> List[str]:
     """ Remove non-alphabet from the sentences. Convert to lower-case """
-    out = []
+    out: List[str] = []
     for line in lines:
         # continue if the line does not have any words
         if not re.match(r'\w', line):
@@ -237,7 +237,8 @@ def _clean_sentence(lines):
     return out
 
 
-def split_on_references(lines, max_refs_fraction=0.5):
+def split_on_references(lines: List[str], max_refs_fraction: float = 0.5) \
+        -> Tuple[List[str], List[str]]:
     """
     Mark the start of the references by looking for the last occurrence
     of the word "Reference" or "Bibliography"
@@ -246,7 +247,8 @@ def split_on_references(lines, max_refs_fraction=0.5):
         r'^[^a-zA-Z]*(Reference[s]?|Bibliography)[\W]*$', flags=re.IGNORECASE
     )
 
-    psv, ref = [], []
+    psv: List[str] = []
+    ref: List[str] = []
     line_num = 0
     last_refs = 0
 
@@ -275,7 +277,7 @@ def split_on_references(lines, max_refs_fraction=0.5):
     return psv, ref
 
 
-def _recover_accents(txt):
+def _recover_accents(txt: str) -> str:
     """
     Hack to try to recover plain text with accents removed from various
     outputs from xpdf pdf->txt which garble accented characters into multi-byte
