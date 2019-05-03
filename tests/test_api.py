@@ -34,7 +34,7 @@ class TestApplication(TestCase):
     - We are running the asynchronous parts synchronously in this process
       (so there is no Redis task queue involved).
     - We are running the extractor image on the host Docker service, rather
-      than in a dind container.
+      than in a DinD container.
 
     Otherwise, this does real extraction with the real extractor image.
     """
