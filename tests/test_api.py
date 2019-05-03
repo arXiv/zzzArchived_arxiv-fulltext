@@ -27,7 +27,7 @@ class TestApplication(TestCase):
     """
     End-to-end tests for the entire application.
 
-    The only difference between these tests and a production scenario are that:
+    The differences between these tests and a production scenario are that:
 
     - We are running this locally, and not in containers.
     - We are mocking the PDF endpoints (e.g. compiler service).
