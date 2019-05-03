@@ -245,6 +245,7 @@ URLS: List[Tuple[str, str, str]] = []
 EXTERNAL_URL_SCHEME = os.environ.get('EXTERNAL_URL_SCHEME', 'https')
 
 WORKDIR = os.environ.get('WORKDIR', '/tmp')
+MOUNTDIR = os.environ.get('MOUNTDIR', tempfile.mkdtemp())
 STORAGE_VOLUME = os.environ.get('STORAGE_VOLUME', tempfile.mkdtemp())
 
 VAULT_ENABLED = bool(int(os.environ.get('VAULT_ENABLED', '0')))
@@ -252,6 +253,7 @@ NAMESPACE = os.environ.get('NAMESPACE')
 KUBE_TOKEN = os.environ.get('KUBE_TOKEN', 'fookubetoken')
 VAULT_HOST = os.environ.get('VAULT_HOST', 'foovaulthost')
 VAULT_PORT = os.environ.get('VAULT_PORT', '1234')
+VAULT_SCHEME = os.environ.get('VAULT_SCHEME', 'https')
 VAULT_ROLE = os.environ.get('VAULT_ROLE', 'plaintext')
 VAULT_CERT = os.environ.get('VAULT_CERT')
 NS_AFFIX = '' if NAMESPACE == 'production' else f'-{NAMESPACE}'

@@ -53,6 +53,16 @@ services:
       COMPILER_ENDPOINT: "http://mock-arxiv:8000/compiler"
       COMPILER_VERIFY: 0
       DOCKER_HOST: "tcp://plaintext-dind:2375"
+
+      VAULT_ENABLED: "1"
+      NAMESPACE: "production"
+      KUBE_TOKEN: "fookubetoken"
+      VAULT_HOST: "mock-vault"
+      VAULT_PORT: "8200"
+      VAULT_ROLE: "plaintext"
+      VAULT_CREDENTIAL: "foocredential"
+      VAULT_SCHEME: "http"
+
     networks:
       - plaintext-test
     volumes:
@@ -81,6 +91,15 @@ services:
       CANONICAL_VERIFY: 0
       COMPILER_ENDPOINT: "http://mock-arxiv:8000/compiler"
       COMPILER_VERIFY: 0
+      VAULT_ENABLED: "1"
+      NAMESPACE: "production"
+      KUBE_TOKEN: "fookubetoken"
+      VAULT_HOST: "mock-vault"
+      VAULT_PORT: "8200"
+      VAULT_ROLE: "plaintext"
+      VAULT_CREDENTIAL: "foocredential"
+      VAULT_SCHEME: "http"
+
     volumes:
       - data:/data
     ports:
@@ -96,6 +115,17 @@ services:
       context: .
       dockerfile: Dockerfile-mock
     container_name: mock-arxiv
+    environment:
+      JWT_SECRET: foosecret
+    networks:
+      - plaintext-test
+
+  mock-vault:
+    image: arxiv/mock-vault
+    build:
+      context: .
+      dockerfile: Dockerfile-mock-vault
+    container_name: mock-vault
     environment:
       JWT_SECRET: foosecret
     networks:

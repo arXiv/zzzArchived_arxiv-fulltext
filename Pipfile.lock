@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "135a9e10f3db6e62f3876898a5683e1758badf359356f54cf874a2568db0aecb"
+            "sha256": "1bfca5b71a813c8807942a297da92fa88803ea2d4efb435014f542418e816531"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -39,10 +39,10 @@
         },
         "arxiv-vault": {
             "hashes": [
-                "sha256:af184b11aaf4419896e2f6c074c101304428453872c54228c2e37de74866b633"
+                "sha256:fd2904d414f63cd7b594cc727dc24586711b5c56d2cad8e23c9c601c847d02c6"
             ],
             "index": "pypi",
-            "version": "==0.1.0"
+            "version": "==0.1.1rc7"
         },
         "attrs": {
             "hashes": [
@@ -88,11 +88,11 @@
         },
         "botocore": {
             "hashes": [
-                "sha256:bab1762dddeca752f5e7fe8fb87dc27a1ef2da7498a98c2be3802547cbb182f4",
-                "sha256:e3120e6d36e06145ce1c6289776f4292805e5119c6f7077cb8782b8e573a01fd"
+                "sha256:60c40f8c51d308046c737c3f74c4dcf1681e884e6dc87fa2727db2d44f8b70f7",
+                "sha256:78b9413286c8fbcf094911584f63a81356b4539befec7be76887c6dcd66ace83"
             ],
             "index": "pypi",
-            "version": "==1.12.140"
+            "version": "==1.12.142"
         },
         "celery": {
             "hashes": [

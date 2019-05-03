@@ -21,7 +21,7 @@ ENV PATH "/opt/arxiv:${PATH}"
 
 ENV LC_ALL en_US.utf8
 ENV LANG en_US.utf8
-ENV LOGLEVEL 40
+ENV LOGLEVEL 10
 
 ENV ARXIV_HOME "https://arxiv.org"
 ENV STORAGE_VOLUME /data
@@ -34,4 +34,4 @@ VOLUME /data
 ENV WORKDIR /pdfs
 
 ENTRYPOINT ["pipenv", "run"]
-CMD ["celery", "worker", "-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=2"]
+CMD ["celery", "worker", "-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=1"]
