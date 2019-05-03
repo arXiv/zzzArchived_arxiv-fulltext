@@ -27,14 +27,14 @@ class TestApplication(TestCase):
     """
     End-to-end tests for the entire application.
 
-    The only difference between these tests and a production scenario are that:
+    The differences between these tests and a production scenario are that:
 
     - We are running this locally, and not in containers.
     - We are mocking the PDF endpoints (e.g. compiler service).
     - We are running the asynchronous parts synchronously in this process
       (so there is no Redis task queue involved).
     - We are running the extractor image on the host Docker service, rather
-      than in a dind container.
+      than in a DinD container.
 
     Otherwise, this does real extraction with the real extractor image.
     """
