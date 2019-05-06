@@ -123,7 +123,7 @@ def get_task(identifier: str, id_type: str, version: str) -> Extraction:
         _status = Extraction.Status.SUCCEEDED
         owner = str(result.result['owner'])
     else:
-        raise RuntimeError('Unexpected state')
+        raise RuntimeError(f'Unexpected state: {result.status}')
     return Extraction(
         identifier=identifier,
         bucket=id_type,
@@ -153,7 +153,7 @@ def extract(identifier: str, id_type: str, version: str,
         elif id_type == SupportedBuckets.SUBMISSION:
             pdf_path, owner = compilations.retrieve(identifier, token)
         else:
-            RuntimeError('Unsupported identifier')
+            RuntimeError(f'Unsupported identifier: {identifier} ({id_type})')
         extraction = storage.retrieve(identifier, version, bucket=id_type,
                                       meta_only=True)
         content = do_extraction(pdf_path)
