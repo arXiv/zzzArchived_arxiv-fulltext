@@ -6,6 +6,11 @@ used after announcement, to update quality assurance tools (e.g. overlap
 detection) and to make plain text content available to authorized API
 consumers.
 
+## Bulk access to arXiv e-prints
+
+See the [arXiv help pages](https://arxiv.org/help/bulk_data) for instructions
+about how to obtain access to arXiv e-prints in bulk.
+
 ## Quick start
 
 The minimal working service cluster requires the API application, the
