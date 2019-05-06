@@ -145,3 +145,21 @@ class TestConvertToPSVUnits(TestCase):
             "steak   sausage bacon beef ribs. "
         ]
         self.assertEqual(expected, psv._remove_WhiteSpace(raw))
+
+    def test_remove_whitespace_is_idempotent(self):
+        """Re-applying whitespace removal has no effect."""
+        raw = [
+            "Meatball\t pastrami chicken hamburger brisket ham hock capicola.",
+            "Shankle turkey tongue\n\nsirloin meatloaf corned beef tail strip",
+            "steak   sausage bacon beef ribs. "
+        ]
+        expected = [
+            "Meatball  pastrami chicken hamburger brisket ham hock capicola.",
+            "Shankle turkey tongue  sirloin meatloaf corned beef tail strip",
+            "steak   sausage bacon beef ribs. "
+        ]
+        self.assertEqual(expected, psv._remove_WhiteSpace(raw))
+        result = psv._remove_WhiteSpace(raw)
+        for _ in range(5):
+            result = psv._remove_WhiteSpace(result)
+            self.assertEqual(expected, result)
