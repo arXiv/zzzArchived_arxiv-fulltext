@@ -18,7 +18,6 @@ after_success:
 deploy:
 - provider: script
   script:
-    ./deploy/install_helm.sh &&
     ./deploy/make_and_push_images.sh api &&
     ./deploy/make_and_push_images.sh agent &&
     ./deploy/make_and_push_images.sh worker
