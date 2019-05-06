@@ -1,6 +1,6 @@
 # arxiv/fulltext-agent
 
-FROM arxiv/base:0.12.1
+FROM arxiv/base:0.15.6
 
 WORKDIR /opt/arxiv
 

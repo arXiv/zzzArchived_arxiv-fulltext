@@ -34,7 +34,8 @@ def service_status() -> Response:
     raise InternalServerError('Failed readiness check')
 
 
-def retrieve(identifier: str, id_type: str = SupportedBuckets.ARXIV,
+def retrieve(identifier: str,                                # arch: controller
+             id_type: str = SupportedBuckets.ARXIV,
              version: Optional[str] = None,
              content_fmt: str = SupportedFormats.PLAIN,
              authorizer: Optional[Authorizer] = None) -> Response:

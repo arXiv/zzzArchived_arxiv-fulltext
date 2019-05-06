@@ -9,7 +9,7 @@ from enum import Enum
 MonkeyPatch.patch_fromisoformat()
 
 
-class Extraction(NamedTuple):
+class Extraction(NamedTuple):    # arch: domain
     """Metadata about an extraction."""
 
     class Status(Enum):   # type: ignore
@@ -94,5 +94,7 @@ class _SupportedBuckets:
         return value in [self.ARXIV, self.SUBMISSION]
 
 
-SupportedFormats = _SupportedFormats()
-SupportedBuckets = _SupportedBuckets()
+SupportedFormats = _SupportedFormats()      # arch: domain
+SupportedBuckets = _SupportedBuckets()      # arch: domain
+
+SupportedFormats.PLAIN
