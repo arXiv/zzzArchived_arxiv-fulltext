@@ -50,8 +50,10 @@ You should pass this token as the value of the ``Authorization`` header in
 all requests to the API. For example:
 
 ```bash
-curl -XPOST -H "Authorization: [auth token]" http://127.0.0.1:8000/1802.00125
+curl -XPOST -H "Authorization: [auth token]" http://127.0.0.1:8000/arxiv/1802.00125
 ```
+
+This should return status `202` (Accepted) with the following JSON response: `{"reason": "fulltext extraction in process"}`
 
 **Note:** when you first start the cluster, the worker may take a little while
 to start up. This is because it is waiting for the dind container to pull down
