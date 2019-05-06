@@ -77,5 +77,5 @@ class Compiler(service.HTTPIntegration):
         _, pdf_path = tempfile.mkstemp(prefix=prefix, suffix='.pdf')
         with open(pdf_path, 'wb') as f:
             f.write(response.content)
-        os.chmod(pdf_path, 0o775)
+        os.chmod(pdf_path, 0o644)
         return pdf_path, response.headers.get('ARXIV-OWNER')

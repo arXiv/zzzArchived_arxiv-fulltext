@@ -102,5 +102,5 @@ class CanonicalPDF(service.HTTPIntegration):
         _, pdf_path = tempfile.mkstemp(prefix=identifier, suffix='.pdf')
         with open(pdf_path, 'wb') as f:
             f.write(pdf_response.content)
-        os.chmod(pdf_path, 0o775)
+        os.chmod(pdf_path, 0o644)
         return pdf_path
