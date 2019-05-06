@@ -214,9 +214,11 @@ def do_extraction(filename: str, cleanup: bool = False,
     # mounted at ``workdir`` in this container/env.
     mountdir = current_app.config['MOUNTDIR']
     # The result is something like:
-    #                  | <--- /{workdir} (this container)
-    # /{mountdir} (host) |
-    #                  | <--- /pdfs (extractor container)
+    #
+    #                       | <-- {workdir} (worker)
+    # [working volume] <--- |
+    #                       | <-- {mountdir} (dind) <-- /pdfs (extractor)
+    #
 
     if image is None:
         image_name = current_app.config['EXTRACTOR_IMAGE']

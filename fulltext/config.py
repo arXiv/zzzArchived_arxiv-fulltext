@@ -245,7 +245,8 @@ URLS: List[Tuple[str, str, str]] = []
 EXTERNAL_URL_SCHEME = os.environ.get('EXTERNAL_URL_SCHEME', 'https')
 
 WORKDIR = os.environ.get('WORKDIR', '/tmp')
-MOUNTDIR = os.environ.get('MOUNTDIR', tempfile.mkdtemp())
+MOUNTDIR = '/pdfs'
+"""Volume inside the docker host to be mounted at /pdfs in extractor."""
 STORAGE_VOLUME = os.environ.get('STORAGE_VOLUME', tempfile.mkdtemp())
 
 VAULT_ENABLED = bool(int(os.environ.get('VAULT_ENABLED', '0')))
