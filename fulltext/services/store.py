@@ -59,12 +59,16 @@ class Storage(metaclass=MetaIntegration):
     def _creation_time(self, path: str) -> datetime:
         return datetime.fromtimestamp(os.path.getmtime(path), tz=UTC)
 
+    # TODO: consider refactoring this to support full semantic versions, rather
+    # than only major.minor that can be expressed as a float. This package
+    # has decent support: https://pypi.org/project/semver/
     def _latest_version(self, identifier: str,
                         bucket: str = SupportedBuckets.ARXIV) -> str:
         def _try_float(value: str) -> float:
             try:
                 return float(value)
             except ValueError:
+                logger.debug(f"non-float version {value}")
                 return 0.0
         try:
             root_path = self._paper_path(identifier, bucket)
