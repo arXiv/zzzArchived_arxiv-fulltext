@@ -60,6 +60,14 @@ class FulltextRecordProcessor(BaseConsumer):
     def process_records(self, start: str) -> Tuple[str, int]:
         """Update secrets before getting a new batch of records."""
         if self._config.get('VAULT_ENABLED') and self.update_secrets():
+            # From the docs:
+            #
+            # > Unfortunately, IAM credentials are eventually consistent with
+            # > respect to other Amazon services. If you are planning on using
+            # > these credential in a pipeline, you may need to add a delay of
+            # > 5-10 seconds (or more) after fetching credentials before they
+            # > can be used successfully.
+            #  -- https://www.vaultproject.io/docs/secrets/aws/index.html#usage
             time.sleep(self.sleep_after_credentials)
             raise RestartProcessing('Got fresh credentials')
         sup: Tuple[str, int] = \
