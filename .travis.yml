@@ -28,7 +28,7 @@ deploy:
     ./deploy/make_and_push_images.sh api &&
     ./deploy/make_and_push_images.sh agent &&
     ./deploy/make_and_push_images.sh worker &&
-    ./deploy/install_helm.sh &&
+    ./deploy/install_helm.sh development &&
     ./deploy/publish_helm_chart.sh
   on:
     tags: true
