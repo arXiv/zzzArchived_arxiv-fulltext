@@ -44,6 +44,15 @@ class Storage(metaclass=MetaIntegration):
 
         self._volume = volume
 
+    def is_available(self) -> bool:
+        """Determine whether storage is available."""
+        try:
+            self._store(self._paper_path('test', 'test'), 'test')
+        except StorageFailed as e:
+            logger.error('Could not write: %s', e)
+            return False
+        return True
+
     def _paper_path(self, identifier: str, bucket: str) -> str:
         return os.path.join(self._volume, bucket, identifier[:4], identifier)
 
@@ -106,15 +115,7 @@ class Storage(metaclass=MetaIntegration):
             content_path = self._path(extraction.identifier,
                                       extraction.version,
                                       content_fmt, extraction.bucket)
-            logger.debug('Content path: %s', content_path)
-            self.make_paths(content_path)
-            logger.debug('Store %s content for %s',
-                         content_fmt, extraction.identifier)
-            try:
-                with open(content_path, 'wb') as content_fp:
-                    content_fp.write(extraction.content.encode('utf-8'))
-            except IOError as e:
-                raise StorageFailed("Could not store content") from e
+            self._store(content_path, extraction.content)
 
         # Store metadata separately.
         meta = extraction.to_dict()
@@ -123,10 +124,13 @@ class Storage(metaclass=MetaIntegration):
                                     extraction.bucket)
         logger.debug('Store metadata for %s at %s',
                      extraction.identifier, meta_path)
-        self.make_paths(meta_path)
+        self._store(meta_path, json.dumps(meta))
+
+    def _store(self, path: str, content: str) -> None:
+        self.make_paths(path)
         try:    # Write metadata record.
-            with open(meta_path, 'w') as meta_fp:
-                json.dump(meta, meta_fp)
+            with open(path, 'w') as f:
+                f.write(content)
         except IOError as e:
             raise StorageFailed("Could not store content") from e
 

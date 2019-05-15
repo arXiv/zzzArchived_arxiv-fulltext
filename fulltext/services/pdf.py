@@ -29,6 +29,11 @@ class CanonicalPDF(service.HTTPIntegration):
 
         service_name = "canonical"
 
+    def is_available(self) -> bool:
+        """Determine whether canonical PDFs are available."""
+        response = self._session.head(self._path(f'/'), allow_redirects=True)
+        return bool(response.status_code == status.OK)
+
     def exists(self, identifier: str) -> bool:
         """
         Determine whether or not a target URL is available (HEAD request).

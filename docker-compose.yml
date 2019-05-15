@@ -6,6 +6,8 @@ services:
     container_name: plaintext-test-redis
     networks:
       - plaintext-test
+    logging:
+      driver: none
     # ports:
     #   - "6379:6379"
   # plaintext-test-localstack:
@@ -24,6 +26,8 @@ services:
     container_name: plaintext-dind
     networks:
       - plaintext-test
+    logging:
+      driver: none
     # resources:
     #   requests:
     #     memory: "50Mi"
@@ -63,6 +67,9 @@ services:
       VAULT_CREDENTIAL: "foocredential"
       VAULT_SCHEME: "http"
 
+      WAIT_FOR_SERVICES: 1
+      WAIT_ON_STARTUP: 5
+
     networks:
       - plaintext-test
     volumes:
@@ -99,6 +106,9 @@ services:
       VAULT_ROLE: "plaintext"
       VAULT_CREDENTIAL: "foocredential"
       VAULT_SCHEME: "http"
+
+      WAIT_FOR_SERVICES: 1
+      WAIT_ON_STARTUP: 5
 
     volumes:
       - data:/data

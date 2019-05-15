@@ -278,3 +278,6 @@ CANONICAL_ENDPOINT = os.environ.get('CANONICAL_ENDPOINT', 'https://arxiv.org')
 CANONICAL_VERIFY = bool(int(os.environ.get('CANONICAL_VERIFY', '1')))
 
 AUTH_UPDATED_SESSION_REF = True     # Session is at request.auth
+
+WAIT_FOR_SERVICES = bool(int(os.environ.get('WAIT_FOR_SERVICES', '0')))
+WAIT_ON_STARTUP = int(os.environ.get('WAIT_ON_STARTUP', '0'))

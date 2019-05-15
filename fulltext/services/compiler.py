@@ -35,6 +35,10 @@ class Compiler(service.HTTPIntegration):
         _stat: dict = self.json('get', 'status')[0]
         return _stat
 
+    def is_available(self) -> bool:
+        """Determine whether the compiler service is available."""
+        return bool(self.request('get', '/status').status_code == status.OK)
+
     def exists(self, identifier: str, token: str) -> bool:
         """Check whether a compilation product exists."""
         endpoint = f'/{identifier}/pdf/product'

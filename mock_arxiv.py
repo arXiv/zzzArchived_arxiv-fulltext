@@ -16,3 +16,10 @@ def get_a_submission_pdf(src_id, checksum):
     """Get a PDF for a submission from the compiler service."""
     resp = send_file('/opt/arxiv/1702.07336.pdf', mimetype='application/pdf')
     return resp, 200, {'ARXIV-OWNER': '1234'}   # <- NB owner of compiled PDF.
+
+
+@application.route('/compiler/status', methods=['HEAD', 'GET'])
+@application.route('/', methods=['HEAD'])
+def ruok():
+    """I'm not dead yet."""
+    return '', 200, {}
