@@ -6,9 +6,12 @@ import logging as pylogging
 import re
 import time
 
+from typing import Any
 from typing_extensions import Protocol
+from werkzeug.exceptions import HTTPException, Forbidden, Unauthorized, \
+    BadRequest, MethodNotAllowed, InternalServerError, NotFound
 from werkzeug.routing import BaseConverter, ValidationError
-from flask import Flask
+from flask import Flask, jsonify, Response
 
 from arxiv.base import Base, logging
 from arxiv.users.auth import Auth
@@ -17,8 +20,9 @@ from arxiv.base.middleware import wrap, request_logs
 
 from arxiv import vault
 
-from fulltext.celery import celery_app
 from fulltext.services import store, pdf, compiler, extractor
+from fulltext.celery import celery_app
+from fulltext import routes
 from . import extract
 
 logger = logging.getLogger(__name__)
@@ -27,14 +31,15 @@ logger = logging.getLogger(__name__)
 class SubmissionSourceConverter(BaseConverter):
     """Route converter for submission source identifiers."""
 
-    regex = '[^/][0-9]+/[^/\?#]+'
+    regex = r'[^/][0-9]+/[^/\?#]+'
 
 
 def create_web_app() -> Flask:
     """Initialize an instance of the web application."""
-    from fulltext import routes
+    from . import celeryconfig
     app = Flask('fulltext')
     app.config.from_pyfile('config.py')
+    celery_app.config_from_object(celeryconfig)
     app.url_map.converters['source'] = SubmissionSourceConverter
     pylogging.getLogger('boto').setLevel(pylogging.DEBUG)
     pylogging.getLogger('boto3').setLevel(pylogging.DEBUG)
@@ -54,10 +59,13 @@ def create_web_app() -> Flask:
     if app.config['WAIT_FOR_SERVICES']:
         time.sleep(app.config['WAIT_ON_STARTUP'])
         with app.app_context():
-            wait_for_service(store.Storage.current_session())
-            wait_for_service(pdf.CanonicalPDF.current_session())
-            wait_for_service(compiler.Compiler.current_session())
-            wait_for_service(extract)
+            wait_for(store.Storage.current_session())
+            wait_for(pdf.CanonicalPDF.current_session())
+            wait_for(compiler.Compiler.current_session())
+            wait_for(extract, await_result=True)
+        logger.info('All upstream services are available; ready to start')
+
+    register_error_handlers(app)
     return app
 
 
@@ -77,10 +85,11 @@ def create_worker_app() -> Flask:
     if flask_app.config['WAIT_FOR_SERVICES']:
         time.sleep(flask_app.config['WAIT_ON_STARTUP'])
         with flask_app.app_context():
-            wait_for_service(store.Storage.current_session())
-            wait_for_service(pdf.CanonicalPDF.current_session())
-            wait_for_service(compiler.Compiler.current_session())
-            wait_for_service(extractor.do_extraction)
+            wait_for(store.Storage.current_session())
+            wait_for(pdf.CanonicalPDF.current_session())
+            wait_for(compiler.Compiler.current_session())
+            wait_for(extractor.do_extraction)
+        logger.info('All upstream services are available; ready to start')
     return flask_app
 
 
@@ -92,7 +101,7 @@ class IAwaitable(Protocol):
         ...
 
 
-def wait_for_service(service: IAwaitable, delay: int = 2) -> None:
+def wait_for(service: IAwaitable, delay: int = 2, **extra: Any) -> None:
     """Wait for a service to become available."""
     if hasattr(service, '__name__'):
         service_name = service.__name__
@@ -102,7 +111,25 @@ def wait_for_service(service: IAwaitable, delay: int = 2) -> None:
         service_name = str(service)
 
     logger.info('await %s', service_name)
-    while not service.is_available():
+    while not service.is_available(**extra):
         logger.info('service %s is not available; try again', service_name)
         time.sleep(delay)
     logger.info('service %s is available!', service_name)
+
+
+def register_error_handlers(app: Flask) -> None:
+    """Register error handlers for the Flask app."""
+    app.errorhandler(Forbidden)(jsonify_exception)
+    app.errorhandler(Unauthorized)(jsonify_exception)
+    app.errorhandler(BadRequest)(jsonify_exception)
+    app.errorhandler(InternalServerError)(jsonify_exception)
+    app.errorhandler(NotFound)(jsonify_exception)
+    app.errorhandler(MethodNotAllowed)(jsonify_exception)
+
+
+def jsonify_exception(error: HTTPException) -> Response:
+    """Render exceptions as JSON."""
+    exc_resp = error.get_response()
+    response: Response = jsonify(reason=error.description)
+    response.status_code = exc_resp.status_code
+    return response

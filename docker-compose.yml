@@ -37,7 +37,7 @@ services:
     #     cpu: "300m"
     privileged: true
     volumes:
-    # - docker:/var/lib/docker
+    - "${DIND_LIB_DIR}:/var/lib/docker"
     # - docker-run:/var/run
     - pdfs:/pdfs
 

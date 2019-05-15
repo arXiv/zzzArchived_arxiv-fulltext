@@ -12,9 +12,6 @@ from arxiv.users.auth import scopes
 from arxiv.users.helpers import generate_token
 from arxiv.integration.api import service
 
-# Don't use the worker; do it all in this process.
-os.environ['CELERY_ALWAYS_EAGER'] = '1'
-
 from fulltext.factory import create_web_app
 from fulltext.services import pdf, store, compiler
 from fulltext import extract
