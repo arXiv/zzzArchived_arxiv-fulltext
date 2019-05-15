@@ -3,7 +3,7 @@
 import os
 import shutil
 from datetime import datetime
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Any
 
 import docker
 from docker import DockerClient
@@ -26,7 +26,7 @@ class Extractor:
     is made otherwise.
     """
 
-    def is_available(self) -> bool:
+    def is_available(self, **kwargs: Any) -> bool:
         """Make sure that we can connect to the Docker API."""
         try:
             self._new_client().info()

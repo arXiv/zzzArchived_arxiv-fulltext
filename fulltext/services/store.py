@@ -1,6 +1,6 @@
 """Filesystem-based storage for plain text extraction."""
 
-from typing import Optional
+from typing import Optional, Any
 import os
 import json
 from datetime import datetime
@@ -44,7 +44,7 @@ class Storage(metaclass=MetaIntegration):
 
         self._volume = volume
 
-    def is_available(self) -> bool:
+    def is_available(self, **kwargs: Any) -> bool:
         """Determine whether storage is available."""
         try:
             self._store(self._paper_path('test', 'test'), 'test')

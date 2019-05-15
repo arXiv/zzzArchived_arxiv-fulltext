@@ -5,7 +5,7 @@ The compiler is responsible for building PDF, DVI, and other goodies from
 LaTeX sources. This is where we obtain the submission PDF from which to
 extract text.
 """
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Any
 import os
 import tempfile
 from urllib.parse import urlparse
@@ -35,7 +35,7 @@ class Compiler(service.HTTPIntegration):
         _stat: dict = self.json('get', 'status')[0]
         return _stat
 
-    def is_available(self) -> bool:
+    def is_available(self, **kwargs: Any) -> bool:
         """Determine whether the compiler service is available."""
         return bool(self.request('get', '/status').status_code == status.OK)
 

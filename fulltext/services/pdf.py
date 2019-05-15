@@ -3,6 +3,7 @@
 import os
 import tempfile
 import time
+from typing import Any
 
 import requests
 
@@ -29,7 +30,7 @@ class CanonicalPDF(service.HTTPIntegration):
 
         service_name = "canonical"
 
-    def is_available(self) -> bool:
+    def is_available(self, **kwargs: Any) -> bool:
         """Determine whether canonical PDFs are available."""
         response = self._session.head(self._path(f'/'), allow_redirects=True)
         return bool(response.status_code == status.OK)

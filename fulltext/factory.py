@@ -62,7 +62,7 @@ def create_web_app() -> Flask:
             wait_for(store.Storage.current_session())
             wait_for(pdf.CanonicalPDF.current_session())
             wait_for(compiler.Compiler.current_session())
-            wait_for(extract, await_result=True)
+            wait_for(extract, await_result=True)    # type: ignore
         logger.info('All upstream services are available; ready to start')
 
     register_error_handlers(app)
@@ -96,7 +96,7 @@ def create_worker_app() -> Flask:
 class IAwaitable(Protocol):
     """An object that provides an ``is_available`` predicate."""
 
-    def is_available(self) -> bool:
+    def is_available(self, **kwargs: Any) -> bool:
         """Check whether an object (e.g. a service) is available."""
         ...
 
@@ -104,7 +104,7 @@ class IAwaitable(Protocol):
 def wait_for(service: IAwaitable, delay: int = 2, **extra: Any) -> None:
     """Wait for a service to become available."""
     if hasattr(service, '__name__'):
-        service_name = service.__name__
+        service_name = service.__name__    # type: ignore
     elif hasattr(service, '__class__'):
         service_name = service.__class__.__name__
     else:
