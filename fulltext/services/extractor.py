@@ -117,6 +117,10 @@ class Extractor:
         self._cleanup(pdfpath, outpath)
         duration = (start_time - datetime.now()).microseconds
         logger.info(f'Finished extraction for %s in %s ms', filename, duration)
+
+        if not content:
+            raise RuntimeError('No content extracted from %s', filename)
+
         return content
 
 

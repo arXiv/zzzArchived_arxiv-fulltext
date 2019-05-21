@@ -172,7 +172,7 @@ def extract(identifier: str, id_type: str, version: str,
         extraction = storage.retrieve(identifier, version, bucket=id_type,
                                       meta_only=True)
         content = extractor.do_extraction(pdf_path)
-        assert content is not None
+
     except Exception as e:
         logger.error('Failed to process %s: %s', identifier, e)
         storage.store(extraction.copy(status=Extraction.Status.FAILED,
