@@ -129,6 +129,8 @@ def start_extraction(id_type: str, identifier: str, token: str,
             logger.debug('Client is not authorized to work with this resource')
             # Pretend that the resource does not even exist.
             raise NotFound('No such document')
+    else:
+        raise NotFound('No such document')
 
     if not force:
         # If an extraction product or task already exists for this paper,
