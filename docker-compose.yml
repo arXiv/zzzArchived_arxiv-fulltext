@@ -80,6 +80,7 @@ services:
     depends_on:
       - plaintext-test-redis
       - plaintext-api
+      
   plaintext-api:
     image: arxiv/plaintext-api
     build:

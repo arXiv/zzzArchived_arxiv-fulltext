@@ -98,6 +98,22 @@ def start_extraction(id_type: str, identifier: str, token: str,
     storage = store.Storage.current_session()
     compilations = compiler.Compiler.current_session()
 
+    # Before creating an extraction task, check that the intended document
+    # even exists. This gives the client a clear failure now, rather than
+    # waiting until the async task fails. At the same time, we'll also grab
+    # the owner (if there is one) so that we can authorize the request.
+    owner: Optional[str] = None
+    if id_type == SupportedBuckets.ARXIV and not canonical.exists(identifier):
+        logger.debug('No PDF for this resource exists')
+        raise NotFound('No such document')
+    elif id_type == SupportedBuckets.SUBMISSION:
+        try:
+            owner = compilations.owner(identifier, token)
+            logger.debug('Got owner %s', owner)
+        except compiler.exceptions.NotFound as e:
+            logger.debug('Compiler returned 404 Not Found for %s', identifier)
+            raise NotFound('No such document') from e
+
     if not force:
         # If an extraction product or task already exists for this paper,
         # redirect. Don't do the same work twice for a given version of the
@@ -118,21 +134,6 @@ def start_extraction(id_type: str, identifier: str, token: str,
             return _redirect(product, authorizer)
 
     logger.debug('No existing task nor extraction for %s', identifier)
-    # Before creating an extraction task, check that the intended document
-    # even exists. This gives the client a clear failure now, rather than
-    # waiting until the async task fails. At the same time, we'll also grab
-    # the owner (if there is one) so that we can authorize the request.
-    owner: Optional[str] = None
-    if id_type == SupportedBuckets.ARXIV and not canonical.exists(identifier):
-        logger.debug('No PDF for this resource exists')
-        raise NotFound('No such document')
-    elif id_type == SupportedBuckets.SUBMISSION:
-        try:
-            owner = compilations.owner(identifier, token)
-            logger.debug('Got owner %s', owner)
-        except compiler.exceptions.NotFound as e:
-            logger.debug('Compiler returned 404 Not Found for %s', identifier)
-            raise NotFound('No such document') from e
 
     # Make sure that the client is authorized to work with this resource.
     # The route may have passed in an authorizer function that works with
