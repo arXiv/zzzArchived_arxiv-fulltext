@@ -103,9 +103,10 @@ def start_extraction(id_type: str, identifier: str, token: str,
     # waiting until the async task fails. At the same time, we'll also grab
     # the owner (if there is one) so that we can authorize the request.
     owner: Optional[str] = None
-    if id_type == SupportedBuckets.ARXIV and not canonical.exists(identifier):
-        logger.debug('No PDF for this resource exists')
-        raise NotFound('No such document')
+    if id_type == SupportedBuckets.ARXIV:
+        if not canonical.exists(identifier):
+            logger.debug('No PDF for this resource exists')
+            raise NotFound('No such document')
 
         # Make sure that the client is authorized to work with this resource.
         # The route may have passed in an authorizer function that works with
