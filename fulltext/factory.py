@@ -41,9 +41,13 @@ def create_web_app() -> Flask:
     app.config.from_pyfile('config.py')
     celery_app.config_from_object(celeryconfig)
     app.url_map.converters['source'] = SubmissionSourceConverter
-    pylogging.getLogger('boto').setLevel(pylogging.DEBUG)
-    pylogging.getLogger('boto3').setLevel(pylogging.DEBUG)
-    pylogging.getLogger('botocore').setLevel(pylogging.DEBUG)
+
+    if app.config['LOGLEVEL'] < 40:
+        # Make sure that boto doesn't spam the logs when we're in debug mode.
+        pylogging.getLogger('boto').setLevel(pylogging.ERROR)
+        pylogging.getLogger('boto3').setLevel(pylogging.ERROR)
+        pylogging.getLogger('botocore').setLevel(pylogging.ERROR)
+
     Base(app)
     Auth(app)
     app.register_blueprint(routes.blueprint)
@@ -71,12 +75,14 @@ def create_web_app() -> Flask:
 
 def create_worker_app() -> Flask:
     """Initialize an instance of the worker application."""
-    pylogging.getLogger('boto').setLevel(pylogging.ERROR)
-    pylogging.getLogger('boto3').setLevel(pylogging.ERROR)
-    pylogging.getLogger('botocore').setLevel(pylogging.ERROR)
-
     flask_app = Flask('fulltext')
     flask_app.config.from_pyfile('config.py')
+
+    if flask_app.config['LOGLEVEL'] < 40:
+        # Make sure that boto doesn't spam the logs when we're in debug mode.
+        pylogging.getLogger('boto').setLevel(pylogging.ERROR)
+        pylogging.getLogger('boto3').setLevel(pylogging.ERROR)
+        pylogging.getLogger('botocore').setLevel(pylogging.ERROR)
 
     store.Storage.current_session().init_app(flask_app)
     pdf.CanonicalPDF.init_app(flask_app)
