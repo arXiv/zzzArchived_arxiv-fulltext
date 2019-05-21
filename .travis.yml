@@ -10,7 +10,8 @@ python:
 script:
   - pip install -U pip pipenv
   - pipenv install --dev
-  - CELERY_ALWAYS_EAGER=1 pipenv run nose2 -s extractor -s ./ --with-coverage --coverage-report=term-missing
+  - WITH_INTEGRATION=1 pipenv run nose2 -s extractor
+  - CELERY_ALWAYS_EAGER=1 pipenv run nose2 -s ./ --with-coverage --coverage-report=term-missing
 after_success:
   - coveralls
   - "./tests/lintstats.sh"
