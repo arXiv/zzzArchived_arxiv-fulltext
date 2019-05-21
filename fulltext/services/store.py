@@ -9,6 +9,7 @@ from backports.datetime_fromisoformat import MonkeyPatch
 
 from flask import Flask
 
+from arxiv.identifier import OLD_STYLE, STANDARD
 from arxiv.integration.meta import MetaIntegration
 from arxiv.base.globals import get_application_global, get_application_config
 from arxiv.base import logging
@@ -54,7 +55,23 @@ class Storage(metaclass=MetaIntegration):
         return True
 
     def _paper_path(self, identifier: str, bucket: str) -> str:
-        return os.path.join(self._volume, bucket, identifier[:4], identifier)
+        """
+        Generate a base path for extraction from a particular resource.
+
+        This should generate paths like:
+
+        - Old-style e-print: /{volume}/arxiv/alg-geom/9204/9204001
+        - New-style e-print: /{volume}/arxiv/1801/00123
+        - Anything else: /{volume}/{bucket}/{identifier}
+
+        """
+        if OLD_STYLE.match(identifier):
+            pre, num = identifier.split('/', 1)
+            return os.path.join(self._volume, bucket, pre, num[:4], num)
+        elif STANDARD.match(identifier):
+            prefix = identifier.split('.', 1)[0]
+            return os.path.join(self._volume, bucket, prefix, identifier)
+        return os.path.join(self._volume, bucket, identifier)
 
     def _path(self, identifier: str, version: str, content_fmt: str,
               bucket: str) -> str:
