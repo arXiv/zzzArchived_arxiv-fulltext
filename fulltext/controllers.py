@@ -106,6 +106,14 @@ def start_extraction(id_type: str, identifier: str, token: str,
     if id_type == SupportedBuckets.ARXIV and not canonical.exists(identifier):
         logger.debug('No PDF for this resource exists')
         raise NotFound('No such document')
+
+        # Make sure that the client is authorized to work with this resource.
+        # The route may have passed in an authorizer function that works with
+        # the auth API to authorize the request.
+        if authorizer is not None and not authorizer(identifier, owner):
+            logger.debug('Client is not authorized to work with this resource')
+            # Pretend that the resource does not even exist.
+            raise NotFound('No such document')
     elif id_type == SupportedBuckets.SUBMISSION:
         try:
             owner = compilations.owner(identifier, token)
@@ -113,6 +121,14 @@ def start_extraction(id_type: str, identifier: str, token: str,
         except compiler.exceptions.NotFound as e:
             logger.debug('Compiler returned 404 Not Found for %s', identifier)
             raise NotFound('No such document') from e
+
+        # Make sure that the client is authorized to work with this resource.
+        # For submissions, an authorizer function must be provided, so we
+        # should deny access if one is mistakenly not provided.
+        if authorizer is None or not authorizer(identifier, owner):
+            logger.debug('Client is not authorized to work with this resource')
+            # Pretend that the resource does not even exist.
+            raise NotFound('No such document')
 
     if not force:
         # If an extraction product or task already exists for this paper,
@@ -134,14 +150,6 @@ def start_extraction(id_type: str, identifier: str, token: str,
             return _redirect(product, authorizer)
 
     logger.debug('No existing task nor extraction for %s', identifier)
-
-    # Make sure that the client is authorized to work with this resource.
-    # The route may have passed in an authorizer function that works with
-    # the auth API to authorize the request.
-    if authorizer is not None and not authorizer(identifier, owner):
-        logger.debug('Client is not authorized to work with this resource')
-        # Pretend that the resource does not even exist.
-        raise NotFound('No such document')
 
     try:
         logger.debug('Create a new extraction task with %s, %s',
