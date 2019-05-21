@@ -37,13 +37,16 @@ class Storage(metaclass=MetaIntegration):
 
     def __init__(self, volume: str) -> None:
         """Check and set the storage volume."""
-        if not os.path.exists(volume):
+        self._volume = volume
+
+        if not os.path.exists(self._volume):
             try:
-                os.makedirs(volume)
+                os.makedirs(self._volume)
             except Exception as e:
                 raise ConfigurationError("Cannot create storage volume") from e
 
-        self._volume = volume
+        if not self.is_available():
+            raise ConfigurationError("Cannot access storage volume")
 
     def is_available(self, **kwargs: Any) -> bool:
         """Determine whether storage is available."""
@@ -118,10 +121,6 @@ class Storage(metaclass=MetaIntegration):
             logger.debug('Make paths to %s', parent)
             os.makedirs(parent)
 
-    def ready(self) -> bool:
-        """Check whether the storage volume is available."""
-        return os.path.exists(self._volume)
-
     def store(self, extraction: Extraction,
               content_fmt: Optional[str] = None) -> None:
         """Store an :class:`.Extraction`."""
@@ -144,11 +143,11 @@ class Storage(metaclass=MetaIntegration):
         self._store(meta_path, json.dumps(meta))
 
     def _store(self, path: str, content: str) -> None:
-        self.make_paths(path)
         try:    # Write metadata record.
+            self.make_paths(path)
             with open(path, 'w') as f:
                 f.write(content)
-        except IOError as e:
+        except (IOError, PermissionError) as e:
             raise StorageFailed("Could not store content") from e
 
     def retrieve(self, identifier: str, version: Optional[str] = None,
