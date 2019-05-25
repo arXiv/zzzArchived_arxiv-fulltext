@@ -59,6 +59,8 @@ def create_web_app() -> Flask:
     if app.config['VAULT_ENABLED']:
         middleware.insert(0, vault.middleware.VaultMiddleware)
     wrap(app, middleware)
+    if app.config['VAULT_ENABLED']:
+        app.middlewares['VaultMiddleware'].update_secrets({})
 
     if app.config['WAIT_FOR_SERVICES']:
         time.sleep(app.config['WAIT_ON_STARTUP'])
@@ -87,6 +89,13 @@ def create_worker_app() -> Flask:
     store.Storage.current_session().init_app(flask_app)
     pdf.CanonicalPDF.init_app(flask_app)
     compiler.Compiler.init_app(flask_app)
+
+    middleware = [auth.middleware.AuthMiddleware]
+    if flask_app.config['VAULT_ENABLED']:
+        middleware.insert(0, vault.middleware.VaultMiddleware)
+    wrap(flask_app, middleware)
+    if flask_app.config['VAULT_ENABLED']:
+        flask_app.middlewares['VaultMiddleware'].update_secrets({})
 
     if flask_app.config['WAIT_FOR_SERVICES']:
         time.sleep(flask_app.config['WAIT_ON_STARTUP'])

@@ -11,7 +11,7 @@ from fulltext.factory import create_worker_app, celery_app
 app = create_worker_app()
 app.app_context().push()
 
-__secrets__ = None
+__secrets__ = app.middlewares['VaultMiddleware'].secrets
 
 
 @celeryd_init.connect   # Runs in the worker right when the daemon starts.
@@ -21,7 +21,7 @@ def get_secrets(*args: Any, **kwargs: Any) -> None:
         print('Vault not enabled; skipping')
         return
 
-    for key, value in get_secrets_manager().yield_secrets():
+    for key, value in __secrets__.yield_secrets():
         app.config[key] = value
 
 
@@ -41,13 +41,5 @@ def verify_secrets_up_to_date(*args: Any, **kwargs: Any) -> None:
         print('Vault not enabled; skipping')
         return
 
-    for key, value in get_secrets_manager().yield_secrets():
+    for key, value in __secrets__.yield_secrets():
         app.config[key] = value
-
-
-def get_secrets_manager() -> ConfigManager:
-    """Get or create a :class:`.ConfigManager` for this app."""
-    global __secrets__
-    if __secrets__ is None:
-        __secrets__ = ConfigManager(app.config)
-    return __secrets__
