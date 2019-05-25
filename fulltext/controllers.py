@@ -30,7 +30,7 @@ def service_status() -> Response:
     """Handle a request for the status of this service."""
     # This is the critical upstream integration.
     if store.Storage.current_session().is_available():
-        return {}, status.OK, {}
+        return {'storage': True}, status.OK, {}
     raise InternalServerError('Failed readiness check')
 
 

@@ -34,7 +34,7 @@ spec:
           claimName: "{{ .Values.name }}"
 
       containers:
-      - name: dind-daemon
+      - name: plaintext-dind-daemon
         image: docker:18-dind
         # resources:
         #   requests:
@@ -55,6 +55,9 @@ spec:
         image: arxiv/plaintext-worker:{{ .Values.worker.image.tag }}
         imagePullPolicy: "{{ default "Always" .Values.imagePullPolicy }}"
         volumeMounts:
+        - name: vault-certificate
+          mountPath: /etc/vault-certificate
+          readOnly: true
         - name: temp-pdfs
           mountPath: /pdfs
         - name: vault-token
@@ -86,7 +89,9 @@ spec:
         - name: KUBE_TOKEN
           value: /var/run/secrets/kubernetes.io/serviceaccount/token
         - name: EXTRACTOR_IMAGE
-          value: arxiv/plaintext-extractor:{{ default "latest" .Values.plaintext.image.tag }}
+          value: arxiv/{{ default "fulltext-extractor" .Values.plaintext.image.name }}
+        - name: EXTRACTOR_VERSION
+          value: "{{ default "latest" .Values.plaintext.image.tag }}"
         - name: NAMESPACE
           valueFrom:
             fieldRef:
