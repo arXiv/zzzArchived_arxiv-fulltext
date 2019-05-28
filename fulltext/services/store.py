@@ -51,7 +51,8 @@ class Storage(metaclass=MetaIntegration):
     def is_available(self, **kwargs: Any) -> bool:
         """Determine whether storage is available."""
         try:
-            self._store(self._paper_path('test', 'test'), 'test')
+            test_path = os.path.join(self._paper_path('test', 'test'), 'test')
+            self._store(test_path, 'test')
         except StorageFailed as e:
             logger.error('Could not write: %s', e)
             return False
@@ -143,11 +144,13 @@ class Storage(metaclass=MetaIntegration):
         self._store(meta_path, json.dumps(meta))
 
     def _store(self, path: str, content: str) -> None:
+        logger.debug('store %i bytes at %s', len(content), path)
         try:    # Write metadata record.
             self.make_paths(path)
             with open(path, 'w') as f:
                 f.write(content)
         except (IOError, PermissionError) as e:
+            logger.error('Encountered error when writing: %s', e)
             raise StorageFailed("Could not store content") from e
 
     def retrieve(self, identifier: str, version: Optional[str] = None,

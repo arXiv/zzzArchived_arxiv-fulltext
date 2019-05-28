@@ -32,7 +32,9 @@ class CanonicalPDF(service.HTTPIntegration):
 
     def is_available(self, **kwargs: Any) -> bool:
         """Determine whether canonical PDFs are available."""
-        response = self._session.head(self._path(f'/'), allow_redirects=True)
+        timeout: float = kwargs.get('timeout', 2.0)
+        response = self._session.head(self._path(f'/'), allow_redirects=True,
+                                      timeout=timeout)
         return bool(response.status_code == status.OK)
 
     def exists(self, identifier: str) -> bool:

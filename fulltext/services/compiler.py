@@ -37,7 +37,13 @@ class Compiler(service.HTTPIntegration):
 
     def is_available(self, **kwargs: Any) -> bool:
         """Determine whether the compiler service is available."""
-        return bool(self.request('get', '/status').status_code == status.OK)
+        timeout: float = kwargs.get('timeout', 0.5)
+        try:
+            resp = self.request('get', '/status', timeout=timeout)
+        except exceptions.RequestFailed as e:
+            logger.error('Error calling compiler: %s', e)
+            return False
+        return bool(resp.status_code == status.OK)
 
     def exists(self, identifier: str, token: str) -> bool:
         """Check whether a compilation product exists."""
