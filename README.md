@@ -11,6 +11,13 @@ consumers.
 See the [arXiv help pages](https://arxiv.org/help/bulk_data) for instructions
 about how to obtain access to arXiv e-prints in bulk.
 
+## TODO
+
+- [ ] [Refactor ``celery.py`` and ``celeryconfig.py``](https://arxiv-org.atlassian.net/browse/ARXIVNG-2173)
+  - [ ] Use a factory function instead of just instantiating Celery in module.
+  - [ ] Configure the Celery app from the Flask app (unify configs).
+- [ ] [Support for bulk retrieval, including ranges/subsets](https://arxiv-org.atlassian.net/browse/ARXIVNG-2174).
+
 ## Quick start
 
 The minimal working service cluster requires the API application, the
