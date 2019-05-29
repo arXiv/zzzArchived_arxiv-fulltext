@@ -23,7 +23,7 @@ Werkzeug = "*"
 arxiv-base = "==0.15.8rc4"
 kombu = "==4.0.2"
 arxiv-auth = "==0.3.2rc6"
-arxiv-vault = "==0.1.1rc13"
+arxiv-vault = "==0.1.1rc15"
 retry = "*"
 docker = "*"
 
