@@ -27,13 +27,11 @@ together is to use the ``docker-compose.yml`` configuration in the root of
 this repository.
 
 Note that the DinD container has its own image storage, so it will need to pull
-down the extractor image before the API will start handling requests. So that
-you only have to do this the first time, create a temporary directory where
-the DinD can keep it's stuff, and pass it with ``DIND_LIB_DIR``.
+down the extractor image before the API will start handling requests. 
 
 ```bash
 docker-compose build    # Will build the API and worker images.
-DIND_LIB_DIR=/tmp/dind-var-lib-docker docker-compose up
+docker-compose up
 ```
 
 This will also start a mock arXiv server that yields a PDF for requests to

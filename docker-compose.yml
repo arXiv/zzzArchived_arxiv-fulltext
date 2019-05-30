@@ -37,7 +37,7 @@ services:
     #     cpu: "300m"
     privileged: true
     volumes:
-    - "${DIND_LIB_DIR}:/var/lib/docker"
+    - dind-lib-dir:/var/lib/docker
     # - docker-run:/var/run
     - pdfs:/pdfs
 
@@ -61,7 +61,7 @@ services:
       VAULT_ENABLED: "1"
       NAMESPACE: "production"
       KUBE_TOKEN: "fookubetoken"
-      VAULT_HOST: "mock-vault"
+      VAULT_HOST: "mock-plaintext-vault"
       VAULT_PORT: "8200"
       VAULT_ROLE: "plaintext"
       VAULT_CREDENTIAL: "foocredential"
@@ -80,7 +80,7 @@ services:
     depends_on:
       - plaintext-test-redis
       - plaintext-api
-      
+
   plaintext-api:
     image: arxiv/plaintext-api
     build:
@@ -102,7 +102,7 @@ services:
       VAULT_ENABLED: "1"
       NAMESPACE: "production"
       KUBE_TOKEN: "fookubetoken"
-      VAULT_HOST: "mock-vault"
+      VAULT_HOST: "mock-plaintext-vault"
       VAULT_PORT: "8200"
       VAULT_ROLE: "plaintext"
       VAULT_CREDENTIAL: "foocredential"
@@ -131,12 +131,12 @@ services:
     networks:
       - plaintext-test
 
-  mock-vault:
-    image: arxiv/mock-vault
+  mock-plaintext-vault:
+    image: arxiv/mock-plaintext-vault
     build:
       context: .
       dockerfile: Dockerfile-mock-vault
-    container_name: mock-vault
+    container_name: mock-plaintext-vault
     environment:
       JWT_SECRET: foosecret
     networks:
@@ -176,3 +176,4 @@ volumes:
   data:
   docker:
   docker-run:
+  dind-lib-dir:
