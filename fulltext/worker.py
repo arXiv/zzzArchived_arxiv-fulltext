@@ -1,5 +1,5 @@
 """Initialize the Celery application."""
-from typing import Any
+from typing import Any, Optional
 from celery.signals import task_prerun, celeryd_init, worker_init
 
 import docker
@@ -11,7 +11,10 @@ from fulltext.factory import create_worker_app, celery_app
 app = create_worker_app()
 app.app_context().push()
 
-__secrets__ = app.middlewares['VaultMiddleware'].secrets
+
+__secrets__: Optional[ConfigManager] = None
+if app.config['VAULT_ENABLED']:
+    __secrets__ = app.middlewares['VaultMiddleware'].secrets
 
 
 @celeryd_init.connect   # Runs in the worker right when the daemon starts.

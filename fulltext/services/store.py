@@ -2,6 +2,7 @@
 
 from typing import Optional, Any
 import os
+import shutil
 import json
 from datetime import datetime
 from pytz import UTC
@@ -50,12 +51,15 @@ class Storage(metaclass=MetaIntegration):
 
     def is_available(self, **kwargs: Any) -> bool:
         """Determine whether storage is available."""
+        test_name = f'test-{datetime.timestamp(datetime.now(UTC))}'
+        test_paper_path = self._paper_path('test', test_name)
+        test_path = os.path.join(test_paper_path, test_name)
         try:
-            test_path = os.path.join(self._paper_path('test', 'test'), 'test')
-            self._store(test_path, 'test')
+            self._store(test_path, 'test_name')
         except StorageFailed as e:
             logger.error('Could not write: %s', e)
             return False
+        shutil.rmtree(test_paper_path)
         return True
 
     def _paper_path(self, identifier: str, bucket: str) -> str:

@@ -5,7 +5,7 @@ metadata:
   namespace: "{{ .Values.namespace }}"
   labels:
     subsystem: "{{ .Values.labels.subsystem }}"
-    container: plaintext-worker
+    container: plaintext-api
     service-group: api
 
   annotations:
@@ -27,5 +27,5 @@ spec:
       paths:
       - path: "{{ default "/plaintext" .Values.subPath }}"
         backend:
-          serviceName: "plaintext-api"
+          serviceName: "plaintext"
           servicePort: 80
