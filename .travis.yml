@@ -19,16 +19,12 @@ after_success:
 deploy:
 - provider: script
   script:
-    ./deploy/make_and_push_images.sh api &&
-    ./deploy/make_and_push_images.sh agent &&
-    ./deploy/make_and_push_images.sh worker
+    ./deploy/make_and_push_images.sh
   on:
     all_branches: true
 - provider: script
   script:
-    ./deploy/make_and_push_images.sh api &&
-    ./deploy/make_and_push_images.sh agent &&
-    ./deploy/make_and_push_images.sh worker &&
+    ./deploy/make_and_push_images.sh
     ./deploy/install_helm.sh development &&
     ./deploy/publish_helm_chart.sh
   on:

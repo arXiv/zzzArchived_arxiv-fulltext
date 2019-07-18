@@ -1,6 +1,6 @@
 # arxiv/fulltext
 
-ARG BASE_VERSION=latest
+ARG BASE_VERSION=ARXIVNG-2462
 
 FROM arxiv/base:${BASE_VERSION}
 
@@ -21,7 +21,7 @@ VOLUME /data
 VOLUME /checkpoint
 VOLUME /pdfs
 
-COPY Pipfile /opt/arxiv/
+COPY Pipfile Pipfile.lock /opt/arxiv/
 RUN pipenv install && rm -rf ~/.cache/pip
 
 COPY wsgi.py uwsgi.ini /opt/arxiv/

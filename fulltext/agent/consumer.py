@@ -11,7 +11,9 @@ from botocore.exceptions import WaiterError, NoCredentialsError, \
 from flask import url_for
 
 from arxiv.base import logging
-from arxiv.integration.kinesis.consumer import BaseConsumer, RestartProcessing
+from arxiv.integration.kinesis import consumer
+from arxiv.integration.kinesis.consumer import BaseConsumer, StopProcessing, \
+    RestartProcessing
 from arxiv.vault.manager import ConfigManager
 
 from retry.api import retry_call
@@ -42,6 +44,42 @@ class FulltextRecordProcessor(BaseConsumer):
             self.update_secrets()
         self._access_key = self._config.get('AWS_ACCESS_KEY_ID')
         self._secret_key = self._config.get('AWS_SECRET_ACCESS_KEY')
+
+    def wait_for_stream(self, tries: int = 5, delay: int = 5,
+                        max_delay: Optional[int] = None, backoff: int = 2,
+                        jitter: Union[int, Tuple[int, int]] = 0) -> None:
+        """
+        Wait for the stream to become available.
+
+        If the stream becomes available, returns ``None``. Otherwise, raises
+        a :class:`.StreamNotAvailable` exception.
+
+        Raises
+        ------
+        :class:`.StreamNotAvailable`
+            Raised when the stream could not be reached.
+
+        """
+        waiter = self.client.get_waiter('stream_exists')
+        try:
+            logger.info(f'Waiting for stream {self.stream_name}')
+            waiter.wait(
+                StreamName=self.stream_name,
+                WaiterConfig=dict(
+                    Delay=delay,
+                    MaxAttempts=tries,
+                    ExclusiveStartShardId=self.shard_id
+                )
+            )
+        except WaiterError as e:
+            msg = 'Failed to get stream while waiting'
+            logger.error(msg)
+            raise consumer.exceptions.StreamNotAvailable(msg) from e
+        except (PartialCredentialsError, NoCredentialsError) as e:
+            msg = 'Credentials missing or incomplete: %s'
+            logger.error(msg, e.msg)
+            raise consumer.exceptions.ConfigurationError(msg % e.msg) from e
+        logger.info('Done waiting')
 
     def update_secrets(self) -> bool:
         """Update any secrets that are out of date."""

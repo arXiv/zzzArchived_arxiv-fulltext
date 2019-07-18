@@ -10,17 +10,19 @@ services:
       driver: none
     # ports:
     #   - "6379:6379"
-  # plaintext-test-localstack:
-  #   image: atlassianlabs/localstack
-  #   container_name: plaintext-test-localstack
-  #   networks:
-  #     - plaintext-test
-  #   ports:
-  #     - "4572:4572"
-  #     - "4568:4568"
-  #   environment:
-  #     USE_SSL: 'true'
-  #     DEBUG: 'true'
+
+  plaintext-test-localstack:
+    image: atlassianlabs/localstack
+    container_name: plaintext-test-localstack
+    networks:
+      - plaintext-test
+    ports:
+      - "4572:4572"
+      - "4568:4568"
+    environment:
+      USE_SSL: 'true'
+      DEBUG: 'true'
+
   plaintext-dind:
     image: docker:18-dind
     container_name: plaintext-dind
@@ -99,8 +101,6 @@ services:
       REDIS_ENDPOINT: "plaintext-test-redis:6379"
       AWS_ACCESS_KEY_ID: "foo"
       AWS_SECRET_ACCESS_KEY: "bar"
-      # KINESIS_VERIFY: ""
-      # KINESIS_ENDPOINT: "plaintext-test-redis:4568"
       LOGLEVEL: 10
       JWT_SECRET: foosecret
       CANONICAL_ENDPOINT: "http://mock-arxiv:8000"
@@ -149,35 +149,30 @@ services:
       JWT_SECRET: foosecret
     networks:
       - plaintext-test
-  # plaintext-agent:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   args:
-  #      BASE_VERSION: ARXIVNG-2462
-  #   command: ["python", "-m", "fulltext.agent"]
-  #   environment:
-  #     AWS_ACCESS_KEY_ID: "foo"
-  #     AWS_SECRET_ACCESS_KEY: "bar"
-  #     CLOUDWATCH_ENDPOINT: "https://test-localstack:4582"
-  #     DYNAMODB_ENDPOINT: "https://test-localstack:4569"
-  #     KINESIS_ENDPOINT: "https://test-localstack:4568"
-  #     KINESIS_VERIFY: ""
-  #     DYNAMODB_VERIFY: ""
-  #     CLOUDWATCH_VERIFY: ""
-  #     EXTRACTION_ENDPOINT: "http://api:8000"
-  #     LOGLEVEL: 10
-  #     LOGFILE: "/var/log/plaintext-agent-processor.log"
-  #     MODE: "test"
-  #     JAVA_FLAGS: "-Dcom.amazonaws.sdk.disableCertChecking"
-  #     AWS_CBOR_DISABLE: "true"
-  #     INSTANCE_CREDENTIALS: ""
-  #   networks:
-  #     - plaintext-test
-  #   depends_on:
-  #     - plaintext-test-localstack
-  #     - plaintext-worker
-  #     - plaintext-api
+
+  plaintext-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BASE_VERSION: ARXIVNG-2462
+    command: ["python", "-m", "fulltext.agent"]
+    environment:
+      AWS_ACCESS_KEY_ID: "foo"
+      AWS_SECRET_ACCESS_KEY: "bar"
+      KINESIS_VERIFY: "0"
+      KINESIS_START_TYPE: "TRIM_HORIZON"
+      KINESIS_ENDPOINT: "https://plaintext-test-localstack:4568"
+      EXTRACTION_ENDPOINT: "http://api:8000"
+      LOGLEVEL: 10
+      LOGFILE: "/var/log/plaintext-agent-processor.log"
+      MODE: "test"
+    networks:
+      - plaintext-test
+    depends_on:
+      - plaintext-test-localstack
+      - plaintext-worker
+      - plaintext-api
 
 networks:
   plaintext-test:
