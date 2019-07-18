@@ -12,13 +12,41 @@ Paths for submission extractions are just ``/{volume}/{bucket}/{identifier}``.
 
 For announced arXiv e-prints, we have to path formats:
 
-- Old-style e-print: ``/{volume}/arxiv/alg-geom/{YY}{MM}/{YY}{MM}{NNN}``
-- New-style e-print: ``/{volume}/arxiv/{YY}{MM}/{NNNNN}``
+- Old-style e-print: ``/{volume}/arxiv/alg-geom/{YY}{MM}/{YY}{MM}{NNN}v{V}``
+- New-style e-print: ``/{volume}/arxiv/{YY}{MM}/{NNNNN}v{V}``
 
 Where ``{YY}`` and ``{MM}`` are the year and month in which the first version
 of the e-print was announced. The remaining digits ``N`` reflect the
 announcement order, which should not be taken to imply anything else of
-consequence.
+consequence. The digit ``{V}`` is the numeric version of the e-print.
+
+Extraction versions
+===================
+At each identifier path, content is further separated by extractor version
+and content format (currently ``plain`` or ``psv``, see
+:const:`.domain.SupportedFormats`).
+
+So the plain text content for the e-print ``2003.00012v4`` using the
+current extractor version (0.3 at this writing) would live at:
+``/{volume}/arxiv/2003/00012v4/0.3/plain``.
+
+Metadata
+========
+Metadata about an extraction is stored alongside the content in a file named
+``meta.json``. This is an UTF-8 encoded JSON document that contains information
+about the state of an extraction (see :class:`Extraction`).
+
+For extractions that are generated with this software, the metadata record will
+be created at about the time that the extraction is requested by a client or
+initiated by the plain text agent (e.g. in response to notifications about new
+PDFs). It will be updated if the disposition of the extraction task changes,
+e.g. if it fails or succeeeds.
+
+Therefore, a metadata record may exist well before an actual extraction.
+
+For extractions that were **not** generated with this software (i.e. brought
+forward from the legacy system), a metadata record **may not** exist. See
+comments in code, below.
 """
 
 from typing import Optional, Any
@@ -89,8 +117,8 @@ class Storage(metaclass=MetaIntegration):
 
         This should generate paths like:
 
-        - Old-style e-print: /{volume}/arxiv/alg-geom/9204/9204001
-        - New-style e-print: /{volume}/arxiv/1801/00123
+        - Old-style e-print: /{volume}/arxiv/alg-geom/9204/9204001v2
+        - New-style e-print: /{volume}/arxiv/1801/00123v1
         - Anything else: /{volume}/{bucket}/{identifier}
 
         """
