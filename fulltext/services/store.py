@@ -1,4 +1,25 @@
-"""Filesystem-based storage for plain text extraction."""
+"""
+Filesystem-based storage for plain text extraction.
+
+There are two supported "buckets" for plain text content (see
+:const:`.domain.SupportedBuckets`). These map on to two separate directories on
+the filesystem.
+
+- ``arxiv`` -> ``/{volume}/arxiv``
+- ``submission`` -> ``/{volume}/{bucket}``
+
+Paths for submission extractions are just ``/{volume}/{bucket}/{identifier}``.
+
+For announced arXiv e-prints, we have to path formats:
+
+- Old-style e-print: ``/{volume}/arxiv/alg-geom/{YY}{MM}/{YY}{MM}{NNN}``
+- New-style e-print: ``/{volume}/arxiv/{YY}{MM}/{NNNNN}``
+
+Where ``{YY}`` and ``{MM}`` are the year and month in which the first version
+of the e-print was announced. The remaining digits ``N`` reflect the
+announcement order, which should not be taken to imply anything else of
+consequence.
+"""
 
 from typing import Optional, Any
 import os
