@@ -194,11 +194,11 @@ texinfo_documents = [
 
 intersphinx_mapping = {
     'python':  ('https://docs.python.org/3.6', None),
-    'arxitecture':  ('https://cul-it.github.io/arxiv-arxitecture/', None),
-    'arxiv.taxonomy': ('https://cul-it.github.io/arxiv-base', None),
-    'arxiv.base':  ('https://cul-it.github.io/arxiv-base', None),
-    'arxiv.users':  ('https://cul-it.github.io/arxiv-auth', None),
-    'browse':  ('https://cul-it.github.io/arxiv-browse/', None),
-    'search':  ('https://cul-it.github.io/arxiv-search/', None),
-    'zero':  ('https://cul-it.github.io/arxiv-zero/', None),
+    'arxitecture':  ('https://arxiv.github.io/arxiv-arxitecture/', None),
+    'arxiv.taxonomy': ('https://arxiv.github.io/arxiv-base', None),
+    'arxiv.base':  ('https://arxiv.github.io/arxiv-base', None),
+    'arxiv.users':  ('https://arxiv.github.io/arxiv-auth', None),
+    'browse':  ('https://arxiv.github.io/arxiv-browse/', None),
+    'search':  ('https://arxiv.github.io/arxiv-search/', None),
+    'zero':  ('https://arxiv.github.io/arxiv-zero/', None),
 }
