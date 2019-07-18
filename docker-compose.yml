@@ -44,7 +44,10 @@ services:
   plaintext-worker:
     build:
       context: .
-      dockerfile: Dockerfile-worker
+      dockerfile: Dockerfile
+      args:
+        BASE_VERSION: ARXIVNG-2462
+    command: ["celery", "worker", "-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=1"]
     environment:
       REDIS_ENDPOINT: "plaintext-test-redis:6379"
       AWS_ACCESS_KEY_ID: "foo"
@@ -85,7 +88,12 @@ services:
     image: arxiv/plaintext-api
     build:
       context: .
-      dockerfile: Dockerfile-api
+      dockerfile: Dockerfile
+      args:
+        BASE_VERSION: ARXIVNG-2462
+    # logging:
+    #   driver: none
+    command: ["uwsgi", "--ini", "/opt/arxiv/uwsgi.ini"]
     container_name: plaintext-api
     environment:
       REDIS_ENDPOINT: "plaintext-test-redis:6379"
@@ -144,7 +152,10 @@ services:
   # plaintext-agent:
   #   build:
   #     context: .
-  #     dockerfile: Dockerfile-agent
+  #     dockerfile: Dockerfile
+  #   args:
+  #      BASE_VERSION: ARXIVNG-2462
+  #   command: ["python", "-m", "fulltext.agent"]
   #   environment:
   #     AWS_ACCESS_KEY_ID: "foo"
   #     AWS_SECRET_ACCESS_KEY: "bar"

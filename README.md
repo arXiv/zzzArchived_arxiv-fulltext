@@ -20,6 +20,19 @@ about how to obtain access to arXiv e-prints in bulk.
 
 ## Quick start
 
+### Dependencies
+
+
+We use [Pipenv](https://github.com/pypa/pipenv) for managing Python
+dependencies. You can install all of the dependencies for this project like
+this:
+
+```bash
+pipenv install --dev
+```
+
+### Docker
+
 The minimal working service cluster requires the API application, the
 worker application, a Docker host (e.g. a dind container), and a Redis for
 the task queue/result backend. The easiest way to get these all running
@@ -27,7 +40,7 @@ together is to use the ``docker-compose.yml`` configuration in the root of
 this repository.
 
 Note that the DinD container has its own image storage, so it will need to pull
-down the extractor image before the API will start handling requests. 
+down the extractor image before the API will start handling requests.
 
 ```bash
 docker-compose build    # Will build the API and worker images.
@@ -38,10 +51,16 @@ This will also start a mock arXiv server that yields a PDF for requests to
 ``/pdf/<arxiv id>``. Note that the same PDF is returned no matter what ID is
 requested.
 
+### Authn/z
+
 To use the API you will need an auth token with scopes ``fulltext:read`` and
 ``fulltext:write``. The easiest way to generate one of these is to use the
-helper script
-[here](https://github.com/arXiv/arxiv-auth/blob/develop/generate_token.py).
+helper script ``generate-token`` included with ``arxiv.auth`` package.
+
+```
+JWT_SECRET=foosecret pipenv run generate-token --scope="fulltext:read fulltext:create"
+```
+
 Make sure that you use the same ``JWT_SECRET`` that is used in
 ``docker-compose.yml``.
 
@@ -52,10 +71,6 @@ To extract text from submissions, you will also need ``compile:read`` and
 ``compile:create``. Your user ID will also need to match the owner stated by
 the mock compiler endpoint in [``mock_arxiv.py``](./mock_arxiv.py).
 
-```bash
-JWT_SECRET=foosecret pipenv run python generate_token.py
-```
-
 You should pass this token as the value of the ``Authorization`` header in
 all requests to the API. For example:
 
@@ -63,9 +78,23 @@ all requests to the API. For example:
 curl -XPOST -H "Authorization: [auth token]" http://127.0.0.1:8000/arxiv/1802.00125
 ```
 
-This should return status `202` (Accepted) with the following JSON response: `{"reason": "fulltext extraction in process"}`
+This should return status `202` (Accepted) with the following JSON response: `{"reason": "fulltext extraction in process"}`.
 
-**Note:** when you first start the cluster, the worker may take a little while
+You can retrieve the result with:
+
+```
+curl -H "Authorization: [auth token]" http://127.0.0.1:8000/arxiv/1802.00125
+```
+
+or
+
+```
+curl -H "Accept: text/plain" -H "Authorization: [auth token]" http://127.0.0.1:8000/arxiv/1802.00125
+```
+
+### Notes
+
+When you first start the cluster, the worker may take a little while
 to start up. This is because it is waiting for the dind container to pull down
 the extractor image. You may notice that the dind container chews up a lot of
 CPU during this process (e.g. if you use ``docker stats``). Once the worker

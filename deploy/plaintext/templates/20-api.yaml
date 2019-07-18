@@ -50,8 +50,9 @@ spec:
 
       containers:
       - name: plaintext-api
-        image: arxiv/plaintext-api:{{ default "latest" .Values.api.image.tag }}
+        image: arxiv/plaintext:{{ default "latest" .Values.api.image.tag }}
         imagePullPolicy: "{{ default "Always" .Values.imagePullPolicy }}"
+        command: ["uwsgi", "--ini", "/opt/arxiv/uwsgi.ini"]
         ports:
         - containerPort: 8000
         livenessProbe:

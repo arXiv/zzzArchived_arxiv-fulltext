@@ -269,7 +269,7 @@ This can be a TCP address to a Docker API, e.g. ``tcp://localhost:2375``, or
 use the local socket, e.g. ``unix:///var/run/docker.sock``.
 """
 
-WORKDIR = environ.get('WORKDIR', '/tmp')
+WORKDIR = environ.get('WORKDIR', '/pdfs')
 """Volume in the worker container where PDFs are stored."""
 
 MOUNTDIR = environ.get('MOUNTDIR', '/pdfs')

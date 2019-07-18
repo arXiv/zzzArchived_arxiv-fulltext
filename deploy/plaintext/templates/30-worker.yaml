@@ -52,8 +52,9 @@ spec:
           mountPath: /pdfs
 
       - name: plaintext-worker
-        image: arxiv/plaintext-worker:{{ .Values.worker.image.tag }}
+        image: arxiv/plaintext:{{ .Values.worker.image.tag }}
         imagePullPolicy: "{{ default "Always" .Values.imagePullPolicy }}"
+        command: ["celery", "worker", "-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=1"]
         volumeMounts:
         - name: vault-certificate
           mountPath: /etc/vault-certificate

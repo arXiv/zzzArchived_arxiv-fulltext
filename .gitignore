@@ -7,3 +7,4 @@ __pycache__
 build
 .coverage
 .mypy_cache
+.pytest_cache

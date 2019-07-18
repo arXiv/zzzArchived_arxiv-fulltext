@@ -31,8 +31,9 @@
 #
 #       containers:
 #       - name: plaintext-agent
-#         image: arxiv/plaintext-agent:{{ default "latest" .Values.agent.image.tag }}
+#         image: arxiv/plaintext:{{ default "latest" .Values.agent.image.tag }}
 #         imagePullPolicy: "{{ default "Always" .Values.imagePullPolicy }}"
+#         command: ["python", "-m", "fulltext.agent"]
 #         env:
 #         - name: LOGLEVEL
 #           value: "{{ .Values.agent.log_level }}"

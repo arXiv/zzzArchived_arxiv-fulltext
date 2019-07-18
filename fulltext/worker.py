@@ -1,13 +1,16 @@
 """Initialize the Celery application."""
+import json
 from typing import Any, Optional
 from celery.signals import task_prerun, celeryd_init, worker_init
 
 import docker
 from docker.errors import ImageNotFound, APIError
 
+from arxiv.base import logging
 from arxiv.vault.manager import ConfigManager
 from fulltext.factory import create_worker_app, celery_app
 
+logger = logging.getLogger(__name__)
 app = create_worker_app()
 app.app_context().push()
 
@@ -34,12 +37,17 @@ def pull_image(*args: Any, **kwargs: Any) -> None:
     client = docker.DockerClient(app.config['DOCKER_HOST'])
     image_name = app.config['EXTRACTOR_IMAGE']
     image_tag = app.config['EXTRACTOR_VERSION']
-    client.images.pull(f'{image_name}:{image_tag}')
+    logger.info('Pulling %s', f'{image_name}:{image_tag}')
+    for line in client.images.pull(f'{image_name}:{image_tag}', stream=True):
+        print(json.dumps(line, indent=4))
+        logger.debug(json.dumps(line, indent=4))
+    logger.info('Finished pulling %s', f'{image_name}:{image_tag}')
 
 
 @task_prerun.connect    # Runs in the worker before start a task.
 def verify_secrets_up_to_date(*args: Any, **kwargs: Any) -> None:
     """Verify that any required secrets from Vault are up to date."""
+    logger.debug('Veryifying that secrets are up to date')
     if not app.config['VAULT_ENABLED']:
         print('Vault not enabled; skipping')
         return

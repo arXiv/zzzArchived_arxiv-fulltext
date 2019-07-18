@@ -150,6 +150,7 @@ def start_extraction(id_type: str, identifier: str, token: str,
         if product is not None:
             # Redirect to either the task status endpoint or the finished
             # extraction product.
+            logger.debug('Got an extraction product: %s', product)
             return _redirect(product, authorizer)
 
     logger.debug('No existing task nor extraction for %s', identifier)

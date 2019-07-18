@@ -167,7 +167,13 @@ class Storage(metaclass=MetaIntegration):
                      version, identifier, bucket)
         if version is None:
             version = self._latest_version(identifier, bucket)
+            logger.debug('Using latest version: %s', version)
+
         content_path = self._path(identifier, version, content_fmt, bucket)
+        # TODO: for classic extractions (i.e. not generated through this app),
+        # we will need to handle the case that there is no metadata available.
+        # We should generate fallback metadata that can be used to instantiate
+        # ``Extraction``, below.
         try:
             with open(self._meta_path(identifier, version, bucket)) as meta_fp:
                 meta = json.load(meta_fp)
@@ -179,6 +185,7 @@ class Storage(metaclass=MetaIntegration):
                 meta['ended'] = datetime.fromisoformat(meta['ended'])   # type: ignore
             meta['status'] = Extraction.Status(meta['status'])
         except FileNotFoundError as e:
+            logger.debug('File does not exist: %s', content_path)
             raise DoesNotExist("No such resource") from e
 
         # Get the extraction content.
@@ -194,6 +201,7 @@ class Storage(metaclass=MetaIntegration):
                             '%s) in bucket %s', content_fmt, identifier,
                             version, bucket)
         assert meta['bucket'] == bucket
+        logger.debug('Finished loading extraction')
         return Extraction(content=content, **meta)
 
     @classmethod
