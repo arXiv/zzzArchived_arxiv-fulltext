@@ -25,6 +25,9 @@ ENV STORAGE_VOLUME /data
 
 ADD fulltext /opt/arxiv/fulltext/
 ADD wsgi.py uwsgi.ini /opt/arxiv/
+
+ENV APPLICATION_ROOT "/"
+
 EXPOSE 8000
 
 ENTRYPOINT ["pipenv", "run"]

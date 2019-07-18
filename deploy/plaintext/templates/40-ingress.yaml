@@ -15,7 +15,7 @@ metadata:
     # ingress.kubernetes.io/auth-response-headers: Authorization
     ingress.kubernetes.io/limit-connections: "4"
     ingress.kubernetes.io/limit-rps: "4"
-    ingress.kubernetes.io/rewrite-target: /
+    # ingress.kubernetes.io/rewrite-target: /
 
 spec:
   tls:  # This will use the default certificate for the ingress controller.
@@ -25,7 +25,7 @@ spec:
   - host: "{{ .Values.ingress.host }}"
     http:
       paths:
-      - path: "{{ default "/plaintext" .Values.subPath }}"
+      - path: "{{ default "/plaintext" .Values.ingress.path }}"
         backend:
           serviceName: "plaintext"
           servicePort: 80

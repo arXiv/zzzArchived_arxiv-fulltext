@@ -28,7 +28,7 @@ metadata:
     service-group: api
     log-style: uwsgi
 spec:
-  replicas: 1
+  replicas: {{ int .Values.scaling.api_replicas }}
   template:
     metadata:
       labels:
@@ -56,14 +56,14 @@ spec:
         - containerPort: 8000
         livenessProbe:
           httpGet:
-            path: /status
+            path: "{{ .Values.ingress.path }}/status"
             port: 8000
             scheme: HTTP
           initialDelaySeconds: 30
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            path: /status
+            path: "{{ .Values.ingress.path }}/status"
             port: 8000
             scheme: HTTP
           initialDelaySeconds: 30
@@ -73,6 +73,8 @@ spec:
           value: "{{ .Values.api.log_level }}"
         - name: LOGFILE
           value: "{{ .Values.agent.log_file }}"
+        - name: APPLICATION_ROOT
+          value: "{{ .Values.ingress.path }}"
         - name: REDIS_ENDPOINT
           value: "{{ .Values.redis.host }}:6379"
         - name: VAULT_ENABLED
@@ -90,9 +92,7 @@ spec:
         - name: KUBE_TOKEN
           value: /var/run/secrets/kubernetes.io/serviceaccount/token
         - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
+          value: "{{ .Values.namespace }}"
 
         volumeMounts:
           - name: vault-certificate
@@ -106,7 +106,7 @@ spec:
         resources:
           limits:
             cpu: 300m
-            memory: 256Mi
+            memory: 512Mi
           requests:
             cpu: 100m
-            memory: 128Mi
+            memory: 256Mi

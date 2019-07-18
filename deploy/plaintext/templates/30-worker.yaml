@@ -9,7 +9,7 @@ metadata:
     service-group: api
     log-style: python
 spec:
-  replicas: 2
+  replicas: {{ int .Values.scaling.worker_replicas }}
   template:
     metadata:
       labels:
