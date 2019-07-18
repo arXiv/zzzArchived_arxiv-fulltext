@@ -1,7 +1,7 @@
 """Provides the blueprint for the fulltext API."""
 
 from typing import Optional, Callable, Any, List
-from flask import request, Blueprint, Response
+from flask import request, Blueprint, Response, make_response
 from werkzeug.exceptions import NotAcceptable, BadRequest, NotFound
 from flask.json import jsonify
 from arxiv import status
@@ -55,7 +55,7 @@ def best_match(available: List[str], default: str) -> str:
 
 
 @blueprint.route('/status')
-def ok() -> tuple:
+def ok() -> Response:
     """Provide current integration status information for health checks."""
     data, code, headers = controllers.service_status()
     return jsonify(data), code, headers
@@ -64,7 +64,7 @@ def ok() -> tuple:
 @blueprint.route(ARXIV_PREFIX, methods=['POST'])
 @blueprint.route(SUBMISSION_PREFIX, methods=['POST'])
 @scoped(scopes.CREATE_FULLTEXT, resource=resource_id)
-def start_extraction(id_type: str, identifier: str) -> tuple:
+def start_extraction(id_type: str, identifier: str) -> Response:
     """Handle requests for fulltext extraction."""
     force = request.args.get('force', False)
     token = request.environ['token']
@@ -77,7 +77,8 @@ def start_extraction(id_type: str, identifier: str) -> tuple:
     data, code, headers = \
         controllers.start_extraction(id_type, identifier, token, force=force,
                                      authorizer=authorizer)
-    return jsonify(data), code, headers
+    response: Response = make_response(jsonify(data), code, headers)
+    return response
 
 
 @blueprint.route(ARXIV_PREFIX + '/version/<version>/format/<content_fmt>')
@@ -90,7 +91,7 @@ def start_extraction(id_type: str, identifier: str) -> tuple:
 @blueprint.route(SUBMISSION_PREFIX)
 @scoped(scopes.READ_FULLTEXT, resource=resource_id)
 def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
-             content_fmt: str = SupportedFormats.PLAIN) -> tuple:
+             content_fmt: str = SupportedFormats.PLAIN) -> Response:
     """Retrieve full-text content for an arXiv paper."""
     if identifier is None:
         raise BadRequest('identifier missing in request')
@@ -113,7 +114,8 @@ def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
         response_data = jsonify(data)
     else:
         raise NotAcceptable('unsupported content type')
-    return response_data, code, headers
+    response: Response = make_response(response_data, code, headers)
+    return response
 
 
 @blueprint.route(ARXIV_PREFIX + '/version/<version>/status')
@@ -122,7 +124,7 @@ def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
 @blueprint.route(SUBMISSION_PREFIX + '/status')
 @scoped(scopes.READ_FULLTEXT, resource=resource_id)
 def task_status(id_type: str, identifier: str,
-                version: Optional[str] = None) -> tuple:
+                version: Optional[str] = None) -> Response:
     """Get the status of a text extraction task."""
     # Authorization is required to work with submissions.
     authorizer: Optional[Authorizer] = None
@@ -132,4 +134,5 @@ def task_status(id_type: str, identifier: str,
     data, code, headers = controllers.get_task_status(identifier, id_type,
                                                       version=version,
                                                       authorizer=authorizer)
-    return jsonify(data), code, headers
+    response: Response = make_response(jsonify(data), code, headers)
+    return response
