@@ -1,19 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>fulltext.celeryconfig module &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="fulltext.config module" href="fulltext.config.html" />
@@ -38,6 +37,39 @@
 <span id="fulltext-celeryconfig-module"></span><h1>fulltext.celeryconfig module<a class="headerlink" href="#module-fulltext.celeryconfig" title="Permalink to this headline">¶</a></h1>
 <p>Celery configuration module.</p>
 <p>See <a class="reference external" href="http://docs.celeryproject.org/en/latest/userguide/configuration.html">the celery docs</a>.</p>
+<dl class="data">
+<dt id="fulltext.celeryconfig.task_acks_late">
+<code class="descclassname">fulltext.celeryconfig.</code><code class="descname">task_acks_late</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.celeryconfig.task_acks_late" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do not acknowledge a task until it has been completed.</p>
+<p>As described for <code class="xref py py-const docutils literal notranslate"><span class="pre">worker_prefetch_multiplier</span></code>, we assume that workers
+will disappear without warning. This ensures that a task will can be executed
+again if the worker crashes during execution.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.celeryconfig.task_always_eager">
+<code class="descclassname">fulltext.celeryconfig.</code><code class="descname">task_always_eager</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.celeryconfig.task_always_eager" title="Permalink to this definition">¶</a></dt>
+<dd><p>If True, tasks will be executed in the same process as the dispatcher.</p>
+<p>This is only useful (and should only be used) for testing purposes.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.celeryconfig.task_default_queue">
+<code class="descclassname">fulltext.celeryconfig.</code><code class="descname">task_default_queue</code><em class="property"> = 'fulltext-worker'</em><a class="headerlink" href="#fulltext.celeryconfig.task_default_queue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the queue for plain text extraction tasks.</p>
+<p>Using different queue names allows us to run many different queues on the same
+underlying transport (e.g. Redis cluster).</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.celeryconfig.worker_prefetch_multiplier">
+<code class="descclassname">fulltext.celeryconfig.</code><code class="descname">worker_prefetch_multiplier</code><em class="property"> = 1</em><a class="headerlink" href="#fulltext.celeryconfig.worker_prefetch_multiplier" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prevent the worker from taking more than one task at a time.</p>
+<p>In general we want to treat our workers as ephemeral. Even though Celery itself
+is pretty solid runtime, we may lose the underlying machine with little or no
+warning. The less state held by the workers the better.</p>
+</dd></dl>
+
 </div>
 
 
@@ -84,8 +116,6 @@
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -98,8 +128,8 @@
       &copy;2018, arXiv.org.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="../_sources/fulltext/fulltext.celeryconfig.rst.txt"

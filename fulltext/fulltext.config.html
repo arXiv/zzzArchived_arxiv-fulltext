@@ -1,19 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>fulltext.config module &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="fulltext.controllers module" href="fulltext.controllers.html" />
@@ -47,9 +46,125 @@ cookie as path value. If domains are used, this should be None.</p>
 </dd></dl>
 
 <dl class="data">
+<dt id="fulltext.config.AUTH_UPDATED_SESSION_REF">
+<code class="descclassname">fulltext.config.</code><code class="descname">AUTH_UPDATED_SESSION_REF</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.config.AUTH_UPDATED_SESSION_REF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Attache auth info at <code class="docutils literal notranslate"><span class="pre">request.auth</span></code> instead of <code class="docutils literal notranslate"><span class="pre">request.session</span></code>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.AWS_ACCESS_KEY_ID">
+<code class="descclassname">fulltext.config.</code><code class="descname">AWS_ACCESS_KEY_ID</code><em class="property"> = 'nope'</em><a class="headerlink" href="#fulltext.config.AWS_ACCESS_KEY_ID" title="Permalink to this definition">¶</a></dt>
+<dd><p>Access key for requests to AWS services.</p>
+<p>If <a class="reference internal" href="#fulltext.config.VAULT_ENABLED" title="fulltext.config.VAULT_ENABLED"><code class="xref py py-const docutils literal notranslate"><span class="pre">VAULT_ENABLED</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, this will be overwritten.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.AWS_REGION">
+<code class="descclassname">fulltext.config.</code><code class="descname">AWS_REGION</code><em class="property"> = 'us-east-1'</em><a class="headerlink" href="#fulltext.config.AWS_REGION" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default region for calling AWS services.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.AWS_SECRET_ACCESS_KEY">
+<code class="descclassname">fulltext.config.</code><code class="descname">AWS_SECRET_ACCESS_KEY</code><em class="property"> = 'nope'</em><a class="headerlink" href="#fulltext.config.AWS_SECRET_ACCESS_KEY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Secret auth key for requests to AWS services.</p>
+<p>If <a class="reference internal" href="#fulltext.config.VAULT_ENABLED" title="fulltext.config.VAULT_ENABLED"><code class="xref py py-const docutils literal notranslate"><span class="pre">VAULT_ENABLED</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, this will be overwritten.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.BASE_SERVER">
+<code class="descclassname">fulltext.config.</code><code class="descname">BASE_SERVER</code><em class="property"> = 'arxiv.org'</em><a class="headerlink" href="#fulltext.config.BASE_SERVER" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base arXiv server.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.CANONICAL_ENDPOINT">
+<code class="descclassname">fulltext.config.</code><code class="descname">CANONICAL_ENDPOINT</code><em class="property"> = 'https://arxiv.org:443/'</em><a class="headerlink" href="#fulltext.config.CANONICAL_ENDPOINT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Full URL to the root canonical service API endpoint.</p>
+<p>If not explicitly provided, this is composed from <a class="reference internal" href="#fulltext.config.CANONICAL_HOST" title="fulltext.config.CANONICAL_HOST"><code class="xref py py-const docutils literal notranslate"><span class="pre">CANONICAL_HOST</span></code></a>,
+<a class="reference internal" href="#fulltext.config.CANONICAL_PORT" title="fulltext.config.CANONICAL_PORT"><code class="xref py py-const docutils literal notranslate"><span class="pre">CANONICAL_PORT</span></code></a>, <a class="reference internal" href="#fulltext.config.CANONICAL_PROTO" title="fulltext.config.CANONICAL_PROTO"><code class="xref py py-const docutils literal notranslate"><span class="pre">CANONICAL_PROTO</span></code></a>, and <a class="reference internal" href="#fulltext.config.CANONICAL_PATH" title="fulltext.config.CANONICAL_PATH"><code class="xref py py-const docutils literal notranslate"><span class="pre">CANONICAL_PATH</span></code></a>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.CANONICAL_HOST">
+<code class="descclassname">fulltext.config.</code><code class="descname">CANONICAL_HOST</code><em class="property"> = 'arxiv.org'</em><a class="headerlink" href="#fulltext.config.CANONICAL_HOST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hostname or addreess of the canonical service.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.CANONICAL_PATH">
+<code class="descclassname">fulltext.config.</code><code class="descname">CANONICAL_PATH</code><em class="property"> = ''</em><a class="headerlink" href="#fulltext.config.CANONICAL_PATH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path at which the canonical service is deployed.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.CANONICAL_PORT">
+<code class="descclassname">fulltext.config.</code><code class="descname">CANONICAL_PORT</code><em class="property"> = '443'</em><a class="headerlink" href="#fulltext.config.CANONICAL_PORT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Port for the canonical service.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.CANONICAL_PROTO">
+<code class="descclassname">fulltext.config.</code><code class="descname">CANONICAL_PROTO</code><em class="property"> = 'https'</em><a class="headerlink" href="#fulltext.config.CANONICAL_PROTO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Protocol for the canonical service.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.CANONICAL_VERIFY">
+<code class="descclassname">fulltext.config.</code><code class="descname">CANONICAL_VERIFY</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.config.CANONICAL_VERIFY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable/disable SSL certificate verification for canonical service.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.COMPILER_ENDPOINT">
+<code class="descclassname">fulltext.config.</code><code class="descname">COMPILER_ENDPOINT</code><em class="property"> = 'https://arxiv.org:443/'</em><a class="headerlink" href="#fulltext.config.COMPILER_ENDPOINT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Full URL to the root compiler service API endpoint.</p>
+<p>If not explicitly provided, this is composed from <a class="reference internal" href="#fulltext.config.COMPILER_HOST" title="fulltext.config.COMPILER_HOST"><code class="xref py py-const docutils literal notranslate"><span class="pre">COMPILER_HOST</span></code></a>,
+<a class="reference internal" href="#fulltext.config.COMPILER_PORT" title="fulltext.config.COMPILER_PORT"><code class="xref py py-const docutils literal notranslate"><span class="pre">COMPILER_PORT</span></code></a>, <a class="reference internal" href="#fulltext.config.COMPILER_PROTO" title="fulltext.config.COMPILER_PROTO"><code class="xref py py-const docutils literal notranslate"><span class="pre">COMPILER_PROTO</span></code></a>, and <a class="reference internal" href="#fulltext.config.COMPILER_PATH" title="fulltext.config.COMPILER_PATH"><code class="xref py py-const docutils literal notranslate"><span class="pre">COMPILER_PATH</span></code></a>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.COMPILER_HOST">
+<code class="descclassname">fulltext.config.</code><code class="descname">COMPILER_HOST</code><em class="property"> = 'arxiv.org'</em><a class="headerlink" href="#fulltext.config.COMPILER_HOST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hostname or addreess of the compiler service.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.COMPILER_PATH">
+<code class="descclassname">fulltext.config.</code><code class="descname">COMPILER_PATH</code><em class="property"> = ''</em><a class="headerlink" href="#fulltext.config.COMPILER_PATH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path at which the compiler service is deployed.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.COMPILER_PORT">
+<code class="descclassname">fulltext.config.</code><code class="descname">COMPILER_PORT</code><em class="property"> = '443'</em><a class="headerlink" href="#fulltext.config.COMPILER_PORT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Port for the compiler service.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.COMPILER_PROTO">
+<code class="descclassname">fulltext.config.</code><code class="descname">COMPILER_PROTO</code><em class="property"> = 'https'</em><a class="headerlink" href="#fulltext.config.COMPILER_PROTO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Protocol for the compiler service.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.COMPILER_VERIFY">
+<code class="descclassname">fulltext.config.</code><code class="descname">COMPILER_VERIFY</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.config.COMPILER_VERIFY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable/disable SSL certificate verification for compiler service.</p>
+</dd></dl>
+
+<dl class="data">
 <dt id="fulltext.config.DEBUG">
 <code class="descclassname">fulltext.config.</code><code class="descname">DEBUG</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.DEBUG" title="Permalink to this definition">¶</a></dt>
 <dd><p>enable/disable debug mode</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.DOCKER_HOST">
+<code class="descclassname">fulltext.config.</code><code class="descname">DOCKER_HOST</code><em class="property"> = 'tcp://localhost:2375'</em><a class="headerlink" href="#fulltext.config.DOCKER_HOST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Docker host that will run the <code class="xref py py-const docutils literal notranslate"><span class="pre">EXTRACTOR_IMAGE</span></code>.</p>
+<p>This can be a TCP address to a Docker API, e.g. <code class="docutils literal notranslate"><span class="pre">tcp://localhost:2375</span></code>, or
+use the local socket, e.g. <code class="docutils literal notranslate"><span class="pre">unix:///var/run/docker.sock</span></code>.</p>
 </dd></dl>
 
 <dl class="data">
@@ -59,6 +174,18 @@ cookie as path value. If domains are used, this should be None.</p>
 message to the logger explaining the attempts to locate the template. This can
 be useful to figure out why templates cannot be found or wrong templates appear
 to be loaded.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.EXTERNAL_URL_SCHEME">
+<code class="descclassname">fulltext.config.</code><code class="descname">EXTERNAL_URL_SCHEME</code><em class="property"> = 'https'</em><a class="headerlink" href="#fulltext.config.EXTERNAL_URL_SCHEME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scheme to use for external URLs.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.EXTRACTOR_IMAGE">
+<code class="descclassname">fulltext.config.</code><code class="descname">EXTRACTOR_IMAGE</code><em class="property"> = 'arxiv/fulltext-extractor'</em><a class="headerlink" href="#fulltext.config.EXTRACTOR_IMAGE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the image used to extract plain text from PDFs.</p>
 </dd></dl>
 
 <dl class="data">
@@ -95,12 +222,18 @@ transport for instance.</p>
 <dl class="data">
 <dt id="fulltext.config.JSON_SORT_KEYS">
 <code class="descclassname">fulltext.config.</code><code class="descname">JSON_SORT_KEYS</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.config.JSON_SORT_KEYS" title="Permalink to this definition">¶</a></dt>
-<dd><p>By default Flask will serialize JSON objects in a way that the keys are ordered.
-This is done in order to ensure that independent of the hash seed of the
-dictionary the return value will be consistent to not trash external HTTP
-caches. You can override the default behavior by changing this variable.
-This is not recommended but might give you a performance improvement on the
-cost of cacheability.</p>
+<dd><p>By default Flask will serialize JSON objects in a way that the keys are
+ordered. This is done in order to ensure that independent of the hash seed of
+the dictionary the return value will be consistent to not trash external HTTP
+caches. You can override the default behavior by changing this variable. This
+is not recommended but might give you a performance improvement on the cost of
+cacheability.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.KINESIS_CHECKPOINT_VOLUME">
+<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_CHECKPOINT_VOLUME</code><em class="property"> = '/tmp'</em><a class="headerlink" href="#fulltext.config.KINESIS_CHECKPOINT_VOLUME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Location on disk to store the consumer checkpoint.</p>
 </dd></dl>
 
 <dl class="data">
@@ -110,9 +243,29 @@ cost of cacheability.</p>
 </dd></dl>
 
 <dl class="data">
+<dt id="fulltext.config.KINESIS_SHARD_ID">
+<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_SHARD_ID</code><em class="property"> = '0'</em><a class="headerlink" href="#fulltext.config.KINESIS_SHARD_ID" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shard of <code class="xref py py-const docutils literal notranslate"><span class="pre">KINESIS_STREAM</span></code> that the agent should consume.</p>
+</dd></dl>
+
+<dl class="data">
 <dt id="fulltext.config.KINESIS_SLEEP">
 <code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_SLEEP</code><em class="property"> = '0.1'</em><a class="headerlink" href="#fulltext.config.KINESIS_SLEEP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Amount of time to wait before moving on to the next record.</p>
+<p>This can be used to address situations where we are exceeding throughput. But
+also note <a class="reference external" href="https://arxiv-org.atlassian.net/browse/ARXIVNG-2041">https://arxiv-org.atlassian.net/browse/ARXIVNG-2041</a>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.KINESIS_START_AT">
+<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_START_AT</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.KINESIS_START_AT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Timestamp (ISO-8601) at which to start if using <code class="docutils literal notranslate"><span class="pre">AT_TIMESTAMP</span></code>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.KINESIS_START_TYPE">
+<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_START_TYPE</code><em class="property"> = 'AT_TIMESTAMP'</em><a class="headerlink" href="#fulltext.config.KINESIS_START_TYPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Start type to use if a checkpoint is not available at start-up.</p>
 </dd></dl>
 
 <dl class="data">
@@ -123,8 +276,14 @@ cost of cacheability.</p>
 
 <dl class="data">
 <dt id="fulltext.config.KINESIS_VERIFY">
-<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_VERIFY</code><em class="property"> = 'true'</em><a class="headerlink" href="#fulltext.config.KINESIS_VERIFY" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">fulltext.config.</code><code class="descname">KINESIS_VERIFY</code><em class="property"> = True</em><a class="headerlink" href="#fulltext.config.KINESIS_VERIFY" title="Permalink to this definition">¶</a></dt>
 <dd><p>Indicates whether SSL certificate verification should be enforced.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.KUBE_TOKEN">
+<code class="descclassname">fulltext.config.</code><code class="descname">KUBE_TOKEN</code><em class="property"> = 'fookubetoken'</em><a class="headerlink" href="#fulltext.config.KUBE_TOKEN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Service account token for authenticating with Vault. May be a file path.</p>
 </dd></dl>
 
 <dl class="data">
@@ -143,10 +302,29 @@ disables it entirely.</p>
 </dd></dl>
 
 <dl class="data">
+<dt id="fulltext.config.LOGLEVEL">
+<code class="descclassname">fulltext.config.</code><code class="descname">LOGLEVEL</code><em class="property"> = 20</em><a class="headerlink" href="#fulltext.config.LOGLEVEL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Logging verbosity.</p>
+<p>See <a href="#id1"><span class="problematic" id="id2">`https://docs.python.org/3/library/logging.html#levels`_</span></a>.</p>
+</dd></dl>
+
+<dl class="data">
 <dt id="fulltext.config.MAX_CONTENT_LENGTH">
 <code class="descclassname">fulltext.config.</code><code class="descname">MAX_CONTENT_LENGTH</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.MAX_CONTENT_LENGTH" title="Permalink to this definition">¶</a></dt>
 <dd><p>If set to a value in bytes, Flask will reject incoming requests with a content
 length greater than this by returning a 413 status code.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.MOUNTDIR">
+<code class="descclassname">fulltext.config.</code><code class="descname">MOUNTDIR</code><em class="property"> = '/pdfs'</em><a class="headerlink" href="#fulltext.config.MOUNTDIR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Volume in the docker host to be mounted at /pdfs in extractor.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.NAMESPACE">
+<code class="descclassname">fulltext.config.</code><code class="descname">NAMESPACE</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.NAMESPACE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Namespace in which this service is deployed; to qualify keys for secrets.</p>
 </dd></dl>
 
 <dl class="data">
@@ -182,6 +360,12 @@ true.</p>
 </dd></dl>
 
 <dl class="data">
+<dt id="fulltext.config.REDIS_ENDPOINT">
+<code class="descclassname">fulltext.config.</code><code class="descname">REDIS_ENDPOINT</code><em class="property"> = 'localhost:6379'</em><a class="headerlink" href="#fulltext.config.REDIS_ENDPOINT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hostname and port of the Redis used for task queueing and result storage.</p>
+</dd></dl>
+
+<dl class="data">
 <dt id="fulltext.config.SECRET_KEY">
 <code class="descclassname">fulltext.config.</code><code class="descname">SECRET_KEY</code><em class="property"> = 'asdf1234'</em><a class="headerlink" href="#fulltext.config.SECRET_KEY" title="Permalink to this definition">¶</a></dt>
 <dd><p>the secret key</p>
@@ -199,11 +383,7 @@ on Flask or Blueprint, respectively. Defaults to 43200 (12 hours).</p>
 <dl class="data">
 <dt id="fulltext.config.SERVER_NAME">
 <code class="descclassname">fulltext.config.</code><code class="descname">SERVER_NAME</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.SERVER_NAME" title="Permalink to this definition">¶</a></dt>
-<dd><p>the name and port number of the server. Required for subdomain support (e.g.
-‘myapp.dev:5000’) Note that localhost does not support subdomains so setting
-this to “localhost” does not help. Setting a <code class="docutils literal notranslate"><span class="pre">SERVER_NAME</span></code> also by default
-enables URL generation without a request context but with an application
-context.</p>
+<dd><p>The name of this server.</p>
 </dd></dl>
 
 <dl class="data">
@@ -248,6 +428,12 @@ session is modified. Non permanent sessions are not affected by this.</p>
 </dd></dl>
 
 <dl class="data">
+<dt id="fulltext.config.STORAGE_VOLUME">
+<code class="descclassname">fulltext.config.</code><code class="descname">STORAGE_VOLUME</code><em class="property"> = '/var/folders/l7/5ygyvtbs29340t2s2nsq4lh00000gp/T/tmpen6_j61a'</em><a class="headerlink" href="#fulltext.config.STORAGE_VOLUME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Volume in API/worker containers where extraction results are stored.</p>
+</dd></dl>
+
+<dl class="data">
 <dt id="fulltext.config.TEMPLATES_AUTO_RELOAD">
 <code class="descclassname">fulltext.config.</code><code class="descname">TEMPLATES_AUTO_RELOAD</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.TEMPLATES_AUTO_RELOAD" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether to check for modifications of the template source and reload it
@@ -282,9 +468,76 @@ have to find out where an HTTP exception is coming from.</p>
 </dd></dl>
 
 <dl class="data">
+<dt id="fulltext.config.URLS">
+<code class="descclassname">fulltext.config.</code><code class="descname">URLS</code><em class="property"> = []</em><a class="headerlink" href="#fulltext.config.URLS" title="Permalink to this definition">¶</a></dt>
+<dd><p>URLs for external services, for use with <code class="xref py py-func docutils literal notranslate"><span class="pre">flask.url_for()</span></code>.</p>
+<p>For details, see <a class="reference external" href="https://arxiv.github.io/arxiv-base/arxiv/arxiv.base.urls.html#module-arxiv.base.urls" title="(in arXiv base v0.2)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">arxiv.base.urls</span></code></a>.</p>
+</dd></dl>
+
+<dl class="data">
 <dt id="fulltext.config.USE_X_SENDFILE">
 <code class="descclassname">fulltext.config.</code><code class="descname">USE_X_SENDFILE</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.USE_X_SENDFILE" title="Permalink to this definition">¶</a></dt>
 <dd><p>enable/disable x-sendfile</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.VAULT_CERT">
+<code class="descclassname">fulltext.config.</code><code class="descname">VAULT_CERT</code><em class="property"> = None</em><a class="headerlink" href="#fulltext.config.VAULT_CERT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Path to CA certificate for TLS verification when talking to Vault.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.VAULT_ENABLED">
+<code class="descclassname">fulltext.config.</code><code class="descname">VAULT_ENABLED</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.VAULT_ENABLED" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable/disable secret retrieval from Vault.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.VAULT_HOST">
+<code class="descclassname">fulltext.config.</code><code class="descname">VAULT_HOST</code><em class="property"> = 'foovaulthost'</em><a class="headerlink" href="#fulltext.config.VAULT_HOST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vault hostname/address.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.VAULT_PORT">
+<code class="descclassname">fulltext.config.</code><code class="descname">VAULT_PORT</code><em class="property"> = '1234'</em><a class="headerlink" href="#fulltext.config.VAULT_PORT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vault API port.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.VAULT_REQUESTS">
+<code class="descclassname">fulltext.config.</code><code class="descname">VAULT_REQUESTS</code><em class="property"> = [{'type': 'generic', 'name': 'JWT_SECRET', 'mount_point': 'secret-None/', 'path': 'jwt', 'key': 'jwt-secret', 'minimum_ttl': 3600}, {'type': 'aws', 'name': 'AWS_S3_CREDENTIAL', 'mount_point': 'aws-None/', 'role': None}]</em><a class="headerlink" href="#fulltext.config.VAULT_REQUESTS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Requests for Vault secrets.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.VAULT_ROLE">
+<code class="descclassname">fulltext.config.</code><code class="descname">VAULT_ROLE</code><em class="property"> = 'plaintext'</em><a class="headerlink" href="#fulltext.config.VAULT_ROLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vault role linked to this application’s service account.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.VAULT_SCHEME">
+<code class="descclassname">fulltext.config.</code><code class="descname">VAULT_SCHEME</code><em class="property"> = 'https'</em><a class="headerlink" href="#fulltext.config.VAULT_SCHEME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default is <code class="docutils literal notranslate"><span class="pre">https</span></code>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.WAIT_FOR_SERVICES">
+<code class="descclassname">fulltext.config.</code><code class="descname">WAIT_FOR_SERVICES</code><em class="property"> = False</em><a class="headerlink" href="#fulltext.config.WAIT_FOR_SERVICES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable/disable waiting for upstream services to be available on startup.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.WAIT_ON_STARTUP">
+<code class="descclassname">fulltext.config.</code><code class="descname">WAIT_ON_STARTUP</code><em class="property"> = 0</em><a class="headerlink" href="#fulltext.config.WAIT_ON_STARTUP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of seconds to wait before checking upstream services.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="fulltext.config.WORKDIR">
+<code class="descclassname">fulltext.config.</code><code class="descname">WORKDIR</code><em class="property"> = '/pdfs'</em><a class="headerlink" href="#fulltext.config.WORKDIR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Volume in the worker container where PDFs are stored.</p>
 </dd></dl>
 
 </div>
@@ -333,8 +586,6 @@ have to find out where an HTTP exception is coming from.</p>
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -347,8 +598,8 @@ have to find out where an HTTP exception is coming from.</p>
       &copy;2018, arXiv.org.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="../_sources/fulltext/fulltext.config.rst.txt"

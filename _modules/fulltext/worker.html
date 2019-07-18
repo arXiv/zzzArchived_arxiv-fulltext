@@ -1,19 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>fulltext.worker &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
    
@@ -34,19 +33,25 @@
             
   <h1>Source code for fulltext.worker</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Initialize the Celery application.&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">celery.signals</span> <span class="k">import</span> <span class="n">task_prerun</span><span class="p">,</span> <span class="n">celeryd_init</span><span class="p">,</span> <span class="n">worker_init</span>
 
 <span class="kn">import</span> <span class="nn">docker</span>
 <span class="kn">from</span> <span class="nn">docker.errors</span> <span class="k">import</span> <span class="n">ImageNotFound</span><span class="p">,</span> <span class="n">APIError</span>
 
+<span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
 <span class="kn">from</span> <span class="nn">arxiv.vault.manager</span> <span class="k">import</span> <span class="n">ConfigManager</span>
 <span class="kn">from</span> <span class="nn">fulltext.factory</span> <span class="k">import</span> <span class="n">create_worker_app</span><span class="p">,</span> <span class="n">celery_app</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_worker_app</span><span class="p">()</span>
 <span class="n">app</span><span class="o">.</span><span class="n">app_context</span><span class="p">()</span><span class="o">.</span><span class="n">push</span><span class="p">()</span>
 
-<span class="n">__secrets__</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="n">__secrets__</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ConfigManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;VAULT_ENABLED&#39;</span><span class="p">]:</span>
+    <span class="n">__secrets__</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">middlewares</span><span class="p">[</span><span class="s1">&#39;VaultMiddleware&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">secrets</span>
 
 
 <div class="viewcode-block" id="get_secrets"><a class="viewcode-back" href="../../fulltext/fulltext.worker.html#fulltext.worker.get_secrets">[docs]</a><span class="nd">@celeryd_init</span><span class="o">.</span><span class="n">connect</span>   <span class="c1"># Runs in the worker right when the daemon starts.</span>
@@ -56,7 +61,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Vault not enabled; skipping&#39;</span><span class="p">)</span>
         <span class="k">return</span>
 
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">get_secrets_manager</span><span class="p">()</span><span class="o">.</span><span class="n">yield_secrets</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">__secrets__</span><span class="o">.</span><span class="n">yield_secrets</span><span class="p">():</span>
         <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
 
 
@@ -66,26 +71,23 @@
     <span class="n">client</span> <span class="o">=</span> <span class="n">docker</span><span class="o">.</span><span class="n">DockerClient</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;DOCKER_HOST&#39;</span><span class="p">])</span>
     <span class="n">image_name</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;EXTRACTOR_IMAGE&#39;</span><span class="p">]</span>
     <span class="n">image_tag</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;EXTRACTOR_VERSION&#39;</span><span class="p">]</span>
-    <span class="n">client</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">pull</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{image_name}</span><span class="s1">:</span><span class="si">{image_tag}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Pulling </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{image_name}</span><span class="s1">:</span><span class="si">{image_tag}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">pull</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{image_name}</span><span class="s1">:</span><span class="si">{image_tag}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Finished pulling </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{image_name}</span><span class="s1">:</span><span class="si">{image_tag}</span><span class="s1">&#39;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="verify_secrets_up_to_date"><a class="viewcode-back" href="../../fulltext/fulltext.worker.html#fulltext.worker.verify_secrets_up_to_date">[docs]</a><span class="nd">@task_prerun</span><span class="o">.</span><span class="n">connect</span>    <span class="c1"># Runs in the worker before start a task.</span>
 <span class="k">def</span> <span class="nf">verify_secrets_up_to_date</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Verify that any required secrets from Vault are up to date.&quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Veryifying that secrets are up to date&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;VAULT_ENABLED&#39;</span><span class="p">]:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Vault not enabled; skipping&#39;</span><span class="p">)</span>
         <span class="k">return</span>
 
-    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">get_secrets_manager</span><span class="p">()</span><span class="o">.</span><span class="n">yield_secrets</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">__secrets__</span><span class="o">.</span><span class="n">yield_secrets</span><span class="p">():</span>
         <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
-
-
-<div class="viewcode-block" id="get_secrets_manager"><a class="viewcode-back" href="../../fulltext/fulltext.worker.html#fulltext.worker.get_secrets_manager">[docs]</a><span class="k">def</span> <span class="nf">get_secrets_manager</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ConfigManager</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Get or create a :class:`.ConfigManager` for this app.&quot;&quot;&quot;</span>
-    <span class="k">global</span> <span class="n">__secrets__</span>
-    <span class="k">if</span> <span class="n">__secrets__</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">__secrets__</span> <span class="o">=</span> <span class="n">ConfigManager</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">__secrets__</span></div>
 </pre></div>
 
           </div>
@@ -125,8 +127,6 @@
     <form class="search" action="../../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -139,8 +139,8 @@
       &copy;2018, arXiv.org.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>
 

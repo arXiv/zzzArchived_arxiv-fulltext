@@ -1,19 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>fulltext.domain &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
    
@@ -44,10 +43,10 @@
 <span class="n">MonkeyPatch</span><span class="o">.</span><span class="n">patch_fromisoformat</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="Extraction"><a class="viewcode-back" href="../../fulltext/fulltext.domain.html#fulltext.domain.Extraction">[docs]</a><span class="k">class</span> <span class="nc">Extraction</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+<div class="viewcode-block" id="Extraction"><a class="viewcode-back" href="../../fulltext/fulltext.domain.html#fulltext.domain.Extraction">[docs]</a><span class="k">class</span> <span class="nc">Extraction</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>    <span class="c1"># arch: domain</span>
     <span class="sd">&quot;&quot;&quot;Metadata about an extraction.&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="Extraction.Status"><a class="viewcode-back" href="../../fulltext/fulltext.domain.html#fulltext.domain.Extraction.Status">[docs]</a>    <span class="k">class</span> <span class="nc">Status</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<div class="viewcode-block" id="Extraction.Status"><a class="viewcode-back" href="../../fulltext/fulltext.domain.html#fulltext.domain.Extraction.Status">[docs]</a>    <span class="k">class</span> <span class="nc">Status</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>   <span class="c1"># type: ignore</span>
         <span class="sd">&quot;&quot;&quot;Task Status.&quot;&quot;&quot;</span>
 
         <span class="n">IN_PROGRESS</span> <span class="o">=</span> <span class="s1">&#39;in_progress&#39;</span>
@@ -72,8 +71,8 @@
     <span class="sd">&quot;&quot;&quot;The identifier of the running task.&quot;&quot;&quot;</span>
     <span class="n">status</span><span class="p">:</span> <span class="s1">&#39;Extraction.Status&#39;</span> <span class="o">=</span> <span class="n">Status</span><span class="o">.</span><span class="n">IN_PROGRESS</span>
     <span class="sd">&quot;&quot;&quot;Status of the extraction task.&quot;&quot;&quot;</span>
-    <span class="n">content</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="sd">&quot;&quot;&quot;Extraction content, in the specified :attr:`.format`.&quot;&quot;&quot;</span>
+    <span class="n">content</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="sd">&quot;&quot;&quot;Extraction content.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Extraction.to_dict"><a class="viewcode-back" href="../../fulltext/fulltext.domain.html#fulltext.domain.Extraction.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Generate a dict representation of this placeholder.&quot;&quot;&quot;</span>
@@ -90,20 +89,21 @@
             <span class="s1">&#39;bucket&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bucket</span>
         <span class="p">}</span></div>
 
-<div class="viewcode-block" id="Extraction.copy"><a class="viewcode-back" href="../../fulltext/fulltext.domain.html#fulltext.domain.Extraction.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Extraction&#39;</span><span class="p">:</span>
+<div class="viewcode-block" id="Extraction.copy"><a class="viewcode-back" href="../../fulltext/fulltext.domain.html#fulltext.domain.Extraction.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Extraction&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Create a new :class:`.Extraction` with updated values.&quot;&quot;&quot;</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
         <span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">])</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="c1"># mypy does not know about fromisoformat yet, apparently.</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Extraction</span><span class="o">.</span><span class="n">Status</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;started&#39;</span><span class="p">])</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
-            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;started&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;started&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;ended&#39;</span><span class="p">])</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">:</span>
-            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;ended&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;ended&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;started&#39;</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;started&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;started&#39;</span><span class="p">])</span>   <span class="c1"># type: ignore</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;ended&#39;</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;ended&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;ended&#39;</span><span class="p">])</span>   <span class="c1"># type: ignore</span>
         <span class="k">return</span> <span class="n">Extraction</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">completed</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">completed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Determine whether the task is in a completed states.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">SUCCEEDED</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Status</span><span class="o">.</span><span class="n">FAILED</span><span class="p">]</span></div>
 
@@ -128,8 +128,10 @@
         <span class="k">return</span> <span class="n">value</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ARXIV</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SUBMISSION</span><span class="p">]</span>
 
 
-<span class="n">SupportedFormats</span> <span class="o">=</span> <span class="n">_SupportedFormats</span><span class="p">()</span>
-<span class="n">SupportedBuckets</span> <span class="o">=</span> <span class="n">_SupportedBuckets</span><span class="p">()</span>
+<span class="n">SupportedFormats</span> <span class="o">=</span> <span class="n">_SupportedFormats</span><span class="p">()</span>      <span class="c1"># arch: domain</span>
+<span class="n">SupportedBuckets</span> <span class="o">=</span> <span class="n">_SupportedBuckets</span><span class="p">()</span>      <span class="c1"># arch: domain</span>
+
+<span class="n">SupportedFormats</span><span class="o">.</span><span class="n">PLAIN</span>
 </pre></div>
 
           </div>
@@ -169,8 +171,6 @@
     <form class="search" action="../../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -183,8 +183,8 @@
       &copy;2018, arXiv.org.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>
 

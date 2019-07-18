@@ -1,19 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>fulltext.agent.consumer &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
     <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
    
@@ -46,7 +45,9 @@
 <span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">url_for</span>
 
 <span class="kn">from</span> <span class="nn">arxiv.base</span> <span class="k">import</span> <span class="n">logging</span>
-<span class="kn">from</span> <span class="nn">arxiv.integration.kinesis.consumer</span> <span class="k">import</span> <span class="n">BaseConsumer</span><span class="p">,</span> <span class="n">RestartProcessing</span>
+<span class="kn">from</span> <span class="nn">arxiv.integration.kinesis</span> <span class="k">import</span> <span class="n">consumer</span>
+<span class="kn">from</span> <span class="nn">arxiv.integration.kinesis.consumer</span> <span class="k">import</span> <span class="n">BaseConsumer</span><span class="p">,</span> <span class="n">StopProcessing</span><span class="p">,</span> \
+    <span class="n">RestartProcessing</span>
 <span class="kn">from</span> <span class="nn">arxiv.vault.manager</span> <span class="k">import</span> <span class="n">ConfigManager</span>
 
 <span class="kn">from</span> <span class="nn">retry.api</span> <span class="k">import</span> <span class="n">retry_call</span>
@@ -67,7 +68,7 @@
     <span class="n">sleep</span> <span class="o">=</span> <span class="mf">0.2</span>
     <span class="n">sleep_after_credentials</span> <span class="o">=</span> <span class="mi">10</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initialize a secrets manager before starting.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="p">{})</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">FulltextRecordProcessor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -77,6 +78,42 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">update_secrets</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_access_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AWS_ACCESS_KEY_ID&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_secret_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;AWS_SECRET_ACCESS_KEY&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FulltextRecordProcessor.wait_for_stream"><a class="viewcode-back" href="../../../fulltext/fulltext.agent.consumer.html#fulltext.agent.consumer.FulltextRecordProcessor.wait_for_stream">[docs]</a>    <span class="k">def</span> <span class="nf">wait_for_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">delay</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+                        <span class="n">max_delay</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">backoff</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+                        <span class="n">jitter</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wait for the stream to become available.</span>
+
+<span class="sd">        If the stream becomes available, returns ``None``. Otherwise, raises</span>
+<span class="sd">        a :class:`.StreamNotAvailable` exception.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        :class:`.StreamNotAvailable`</span>
+<span class="sd">            Raised when the stream could not be reached.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">waiter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get_waiter</span><span class="p">(</span><span class="s1">&#39;stream_exists&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Waiting for stream </span><span class="si">{self.stream_name}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">waiter</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span>
+                <span class="n">StreamName</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stream_name</span><span class="p">,</span>
+                <span class="n">WaiterConfig</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                    <span class="n">Delay</span><span class="o">=</span><span class="n">delay</span><span class="p">,</span>
+                    <span class="n">MaxAttempts</span><span class="o">=</span><span class="n">tries</span><span class="p">,</span>
+                    <span class="n">ExclusiveStartShardId</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shard_id</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">WaiterError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Failed to get stream while waiting&#39;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">consumer</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">StreamNotAvailable</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">PartialCredentialsError</span><span class="p">,</span> <span class="n">NoCredentialsError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Credentials missing or incomplete: </span><span class="si">%s</span><span class="s1">&#39;</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">consumer</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ConfigurationError</span><span class="p">(</span><span class="n">msg</span> <span class="o">%</span> <span class="n">e</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Done waiting&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="FulltextRecordProcessor.update_secrets"><a class="viewcode-back" href="../../../fulltext/fulltext.agent.consumer.html#fulltext.agent.consumer.FulltextRecordProcessor.update_secrets">[docs]</a>    <span class="k">def</span> <span class="nf">update_secrets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Update any secrets that are out of date.&quot;&quot;&quot;</span>
@@ -95,9 +132,19 @@
 <div class="viewcode-block" id="FulltextRecordProcessor.process_records"><a class="viewcode-back" href="../../../fulltext/fulltext.agent.consumer.html#fulltext.agent.consumer.FulltextRecordProcessor.process_records">[docs]</a>    <span class="k">def</span> <span class="nf">process_records</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Update secrets before getting a new batch of records.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;VAULT_ENABLED&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_secrets</span><span class="p">():</span>
+            <span class="c1"># From the docs:</span>
+            <span class="c1">#</span>
+            <span class="c1"># &gt; Unfortunately, IAM credentials are eventually consistent with</span>
+            <span class="c1"># &gt; respect to other Amazon services. If you are planning on using</span>
+            <span class="c1"># &gt; these credential in a pipeline, you may need to add a delay of</span>
+            <span class="c1"># &gt; 5-10 seconds (or more) after fetching credentials before they</span>
+            <span class="c1"># &gt; can be used successfully.</span>
+            <span class="c1">#  -- https://www.vaultproject.io/docs/secrets/aws/index.html#usage</span>
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sleep_after_credentials</span><span class="p">)</span>
             <span class="k">raise</span> <span class="n">RestartProcessing</span><span class="p">(</span><span class="s1">&#39;Got fresh credentials&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">FulltextRecordProcessor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">process_records</span><span class="p">(</span><span class="n">start</span><span class="p">)</span></div>
+        <span class="n">sup</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="nb">super</span><span class="p">(</span><span class="n">FulltextRecordProcessor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">process_records</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sup</span></div>
 
 <div class="viewcode-block" id="FulltextRecordProcessor.process_record"><a class="viewcode-back" href="../../../fulltext/fulltext.agent.consumer.html#fulltext.agent.consumer.FulltextRecordProcessor.process_record">[docs]</a>    <span class="k">def</span> <span class="nf">process_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -119,7 +166,7 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sleep</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Processing record </span><span class="si">{record[&quot;SequenceNumber&quot;]}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Processing record </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="s2">&quot;SequenceNumber&quot;</span><span class="p">])</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">deserialized</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s1">&#39;Data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
         <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -128,7 +175,7 @@
             <span class="k">raise</span> <span class="n">BadMessage</span><span class="p">(</span><span class="s1">&#39;Could not deserialize payload&#39;</span><span class="p">)</span>
 
         <span class="n">arxiv_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">deserialized</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;document_id&#39;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Processing notification for </span><span class="si">{arxiv_id}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Processing notification for </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">arxiv_id</span><span class="p">)</span>
         <span class="n">extract</span><span class="o">.</span><span class="n">delay</span><span class="p">(</span><span class="n">arxiv_id</span><span class="p">,</span> <span class="n">url_for</span><span class="p">(</span><span class="s1">&#39;pdf&#39;</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="n">arxiv_id</span><span class="p">))</span></div></div>
 </pre></div>
 
@@ -169,8 +216,6 @@
     <form class="search" action="../../../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -183,8 +228,8 @@
       &copy;2018, arXiv.org.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>
 

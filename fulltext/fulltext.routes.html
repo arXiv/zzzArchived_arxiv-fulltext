@@ -1,19 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>fulltext.routes module &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="fulltext.worker module" href="fulltext.worker.html" />
@@ -41,90 +40,77 @@
 <dt id="fulltext.routes.best_match">
 <code class="descclassname">fulltext.routes.</code><code class="descname">best_match</code><span class="sig-paren">(</span><em>available</em>, <em>default</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#best_match"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.best_match" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine best content type given Accept header and available types.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="fulltext.routes.extract">
-<code class="descclassname">fulltext.routes.</code><code class="descname">extract</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#extract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.extract" title="Permalink to this definition">¶</a></dt>
-<dd><p>Handle requests for fulltext extraction.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#tuple" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="fulltext.routes.make_authorizer">
 <code class="descclassname">fulltext.routes.</code><code class="descname">make_authorizer</code><span class="sig-paren">(</span><em>scope</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#make_authorizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.make_authorizer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Make an authorizer function for injection into a controller.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Callable" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Callable" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3.6/library/typing.html#typing.Optional" title="(in Python v3.6)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]], <a class="reference external" href="https://docs.python.org/3.6/library/functions.html#bool" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="fulltext.routes.ok">
 <code class="descclassname">fulltext.routes.</code><code class="descname">ok</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#ok"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.ok" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provide current integration status information for health checks.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#tuple" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="fulltext.routes.resource_id">
-<code class="descclassname">fulltext.routes.</code><code class="descname">resource_id</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#resource_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.resource_id" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">fulltext.routes.</code><code class="descname">resource_id</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em>, <em>*args</em>, <em>**kw</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#resource_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.resource_id" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the resource ID for an endpoint.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="fulltext.routes.retrieve">
 <code class="descclassname">fulltext.routes.</code><code class="descname">retrieve</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em>, <em>version=None</em>, <em>content_fmt='plain'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#retrieve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.retrieve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve full-text content for an arXiv paper.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#tuple" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="fulltext.routes.start_extraction">
+<code class="descclassname">fulltext.routes.</code><code class="descname">start_extraction</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#start_extraction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.start_extraction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Handle requests for fulltext extraction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
 <dt id="fulltext.routes.task_status">
 <code class="descclassname">fulltext.routes.</code><code class="descname">task_status</code><span class="sig-paren">(</span><em>id_type</em>, <em>identifier</em>, <em>version=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fulltext/routes.html#task_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#fulltext.routes.task_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the status of a text extraction task.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3.6/library/stdtypes.html#tuple" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a></td>
-</tr>
-</tbody>
-</table>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </div>
@@ -173,8 +159,6 @@
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -187,8 +171,8 @@
       &copy;2018, arXiv.org.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="../_sources/fulltext/fulltext.routes.rst.txt"

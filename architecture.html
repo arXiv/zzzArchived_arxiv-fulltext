@@ -1,19 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>Architecture &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="fulltext package" href="fulltext/fulltext.html" />
@@ -41,9 +40,9 @@
 <p>The fulltext extraction service is used during the submission process as part
 of QA/QC workflows, and after announcement to support indexing and other
 downstream applications.</p>
-<div class="figure" id="id1">
+<div class="figure align-center" id="id1">
 <span id="figure-context"></span><a class="reference internal image-reference" href="_images/fulltext-service-context.png"><img alt="_images/fulltext-service-context.png" src="_images/fulltext-service-context.png" style="width: 450px;" /></a>
-<p class="caption"><span class="caption-text">System context for the fulltext extraction service.</span></p>
+<p class="caption"><span class="caption-text">System context for the fulltext extraction service.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </div>
 <p>The submission worker process will request fulltext content for submissions by
 making a GET request to the fulltext service. If an extraction for the
@@ -75,18 +74,18 @@ container.</p>
 e-print ID and extractor version. When an extraction task is created, a
 placeholder file with the task ID is stored where the content will eventually
 be. This helps to prevent duplicate extraction tasks.</p>
-<div class="figure" id="id2">
+<div class="figure align-center" id="id2">
 <span id="figure-containers"></span><a class="reference internal image-reference" href="_images/fulltext-service-containers.png"><img alt="_images/fulltext-service-containers.png" src="_images/fulltext-service-containers.png" style="width: 450px;" /></a>
-<p class="caption"><span class="caption-text">Container-level view of the fulltext extraction service.</span></p>
+<p class="caption"><span class="caption-text">Container-level view of the fulltext extraction service.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
 </div>
 </div>
 <div class="section" id="components">
 <h2>Components<a class="headerlink" href="#components" title="Permalink to this headline">¶</a></h2>
 <p>The fulltext extraction service implements the general architecture described
-in <span class="xref std std-doc">arxitecture:crosscutting/services</span>.</p>
-<div class="figure" id="id3">
+in <a class="reference external" href="https://arxiv.github.io/arxiv-arxitecture/crosscutting/services.html" title="(in arXiv arXitecture v0.9)"><span>Services in arXiv NG</span></a>.</p>
+<div class="figure align-center" id="id3">
 <span id="figure-components"></span><a class="reference internal image-reference" href="_images/fulltext-service-components.png"><img alt="_images/fulltext-service-components.png" src="_images/fulltext-service-components.png" style="width: 600px;" /></a>
-<p class="caption"><span class="caption-text">Component-level view of the fulltext extraction service.</span></p>
+<p class="caption"><span class="caption-text">Component-level view of the fulltext extraction service.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
 </div>
 <p>Two service modules, <a class="reference internal" href="fulltext/fulltext.services.pdf.html#module-fulltext.services.pdf" title="fulltext.services.pdf"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.services.pdf</span></code></a> and
 <a class="reference internal" href="fulltext/fulltext.services.store.html#module-fulltext.services.store" title="fulltext.services.store"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fulltext.services.store</span></code></a>, provide integration with arXiv PDF content
@@ -162,8 +161,6 @@ extraction and access the status/results of the extraction.</p>
     <form class="search" action="search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -176,8 +173,8 @@ extraction and access the status/results of the extraction.</p>
       &copy;2018, arXiv.org.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
       <a href="_sources/architecture.rst.txt"

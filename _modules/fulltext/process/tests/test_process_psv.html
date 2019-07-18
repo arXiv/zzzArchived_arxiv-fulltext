@@ -1,19 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>fulltext.process.tests.test_process_psv &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
     <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
    
@@ -68,17 +67,37 @@
             <span class="s1">&#39;truthfully speaking we could have released scipy&#39;</span><span class="p">,</span>
             <span class="s1">&#39;long time ago so&#39;</span><span class="p">,</span>
             <span class="s1">&#39;i happy we do it now at long last&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;the project has long history and during the years it has matured also as software project&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;believe it has well proved its merit to warrant version number starting with unity&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;since its conception years ago scipy has largely been written by and for scientists to provide box of basic tools that they need&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;over time the set of people active in its development has undergone some rotation and we have evolved towards somewhat more systematic approach to development&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;regardless this underlying drive has stayed the same and think it will also continue propelling the project forward in future&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;the project has long history and during the years it has matured&#39;</span>
+            <span class="s1">&#39; also as software project&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;believe it has well proved its merit to warrant version number&#39;</span>
+            <span class="s1">&#39; starting with unity&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;since its conception years ago scipy has largely been written by&#39;</span>
+            <span class="s1">&#39; and for scientists to provide box of basic tools that they need&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;over time the set of people active in its development has&#39;</span>
+            <span class="s1">&#39; undergone some rotation and we have evolved towards somewhat&#39;</span>
+            <span class="s1">&#39; more systematic approach to development&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;regardless this underlying drive has stayed the same and think it&#39;</span>
+            <span class="s1">&#39; will also continue propelling the project forward in future&#39;</span><span class="p">,</span>
             <span class="s1">&#39;this is all good since not long after&#39;</span><span class="p">,</span>
             <span class="s1">&#39;comes&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">psv</span><span class="o">.</span><span class="n">tidy_txt_from_pdf</span><span class="p">(</span><span class="n">text</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="TestConvertToPSV.test_to_psv"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSV.test_to_psv">[docs]</a>    <span class="k">def</span> <span class="nf">test_to_psv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">expected</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;pauli virtanen is scipy benevolent dictator for life bdfl he says truthfully speaking we could have released scipy long time ago so i happy we do it now at long last the project has long history and during the years it has matured also as software project believe it has well proved its merit to warrant version number starting with unity since its conception years ago scipy has largely been written by and for scientists to provide box of basic tools that they need over time the set of people active in its development has undergone some rotation and we have evolved towards somewhat more systematic approach to development regardless this underlying drive has stayed the same and think it will also continue propelling the project forward in future this is all good since not long after comes&quot;&quot;&quot;</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;pauli virtanen is scipy benevolent dictator for life bdfl&quot;</span>
+            <span class="s2">&quot; he says truthfully speaking we could have released scipy long&quot;</span>
+            <span class="s2">&quot; time ago so i happy we do it now at long last the project has&quot;</span>
+            <span class="s2">&quot; long history and during the years it has matured also as&quot;</span>
+            <span class="s2">&quot; software project believe it has well proved its merit to warrant&quot;</span>
+            <span class="s2">&quot; version number starting with unity since its conception years&quot;</span>
+            <span class="s2">&quot; ago scipy has largely been written by and for scientists to&quot;</span>
+            <span class="s2">&quot; provide box of basic tools that they need over time the set of&quot;</span>
+            <span class="s2">&quot; people active in its development has undergone some rotation and&quot;</span>
+            <span class="s2">&quot; we have evolved towards somewhat more systematic approach to&quot;</span>
+            <span class="s2">&quot; development regardless this underlying drive has stayed the same&quot;</span>
+            <span class="s2">&quot; and think it will also continue propelling the project forward&quot;</span>
+            <span class="s2">&quot; in future this is all good since not long after comes&quot;</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">psv</span><span class="o">.</span><span class="n">normalize_text_psv</span><span class="p">(</span><span class="n">PAULI</span><span class="p">),</span> <span class="n">expected</span><span class="p">)</span></div></div>
 
 
@@ -159,7 +178,25 @@
             <span class="s2">&quot;Shankle turkey tongue  sirloin meatloaf corned beef tail strip&quot;</span><span class="p">,</span>
             <span class="s2">&quot;steak   sausage bacon beef ribs. &quot;</span>
         <span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">psv</span><span class="o">.</span><span class="n">_remove_WhiteSpace</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span></div></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">psv</span><span class="o">.</span><span class="n">_remove_WhiteSpace</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TestConvertToPSVUnits.test_remove_whitespace_is_idempotent"><a class="viewcode-back" href="../../../../fulltext/fulltext.process.tests.test_process_psv.html#fulltext.process.tests.test_process_psv.TestConvertToPSVUnits.test_remove_whitespace_is_idempotent">[docs]</a>    <span class="k">def</span> <span class="nf">test_remove_whitespace_is_idempotent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Re-applying whitespace removal has no effect.&quot;&quot;&quot;</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Meatball</span><span class="se">\t</span><span class="s2"> pastrami chicken hamburger brisket ham hock capicola.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Shankle turkey tongue</span><span class="se">\n\n</span><span class="s2">sirloin meatloaf corned beef tail strip&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;steak   sausage bacon beef ribs. &quot;</span>
+        <span class="p">]</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Meatball  pastrami chicken hamburger brisket ham hock capicola.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Shankle turkey tongue  sirloin meatloaf corned beef tail strip&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;steak   sausage bacon beef ribs. &quot;</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">psv</span><span class="o">.</span><span class="n">_remove_WhiteSpace</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">psv</span><span class="o">.</span><span class="n">_remove_WhiteSpace</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">psv</span><span class="o">.</span><span class="n">_remove_WhiteSpace</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span></div></div>
 </pre></div>
 
           </div>
@@ -199,8 +236,6 @@
     <form class="search" action="../../../../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -213,8 +248,8 @@
       &copy;2018, arXiv.org.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>
 

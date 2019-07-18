@@ -1,19 +1,18 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
     <title>fulltext.routes &#8212; arXiv Fulltext Extraction Service 0.1 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
    
@@ -35,8 +34,8 @@
   <h1>Source code for fulltext.routes</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Provides the blueprint for the fulltext API.&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span>
-<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">request</span><span class="p">,</span> <span class="n">Blueprint</span><span class="p">,</span> <span class="n">Response</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="k">import</span> <span class="n">request</span><span class="p">,</span> <span class="n">Blueprint</span><span class="p">,</span> <span class="n">Response</span><span class="p">,</span> <span class="n">make_response</span>
 <span class="kn">from</span> <span class="nn">werkzeug.exceptions</span> <span class="k">import</span> <span class="n">NotAcceptable</span><span class="p">,</span> <span class="n">BadRequest</span><span class="p">,</span> <span class="n">NotFound</span>
 <span class="kn">from</span> <span class="nn">flask.json</span> <span class="k">import</span> <span class="n">jsonify</span>
 <span class="kn">from</span> <span class="nn">arxiv</span> <span class="k">import</span> <span class="n">status</span>
@@ -54,10 +53,12 @@
 
 <span class="n">blueprint</span> <span class="o">=</span> <span class="n">Blueprint</span><span class="p">(</span><span class="s1">&#39;fulltext&#39;</span><span class="p">,</span> <span class="vm">__name__</span><span class="p">,</span> <span class="n">url_prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
 
+<span class="n">Authorizer</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="nb">bool</span><span class="p">]</span>
 
-<div class="viewcode-block" id="make_authorizer"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.make_authorizer">[docs]</a><span class="k">def</span> <span class="nf">make_authorizer</span><span class="p">(</span><span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]:</span>
+
+<div class="viewcode-block" id="make_authorizer"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.make_authorizer">[docs]</a><span class="k">def</span> <span class="nf">make_authorizer</span><span class="p">(</span><span class="n">scope</span><span class="p">:</span> <span class="n">Scope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Authorizer</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Make an authorizer function for injection into a controller.&quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">owner_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check whether the session is authorized for a specific resource.&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Authorize for </span><span class="si">%s</span><span class="s1"> owned by </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">owner_id</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Client user id is </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">request</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
@@ -72,45 +73,46 @@
     <span class="k">return</span> <span class="n">inner</span></div>
 
 
-<div class="viewcode-block" id="resource_id"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.resource_id">[docs]</a><span class="k">def</span> <span class="nf">resource_id</span><span class="p">(</span><span class="n">id_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<div class="viewcode-block" id="resource_id"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.resource_id">[docs]</a><span class="k">def</span> <span class="nf">resource_id</span><span class="p">(</span><span class="n">id_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Get the resource ID for an endpoint.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">id_type</span> <span class="o">==</span> <span class="n">SupportedBuckets</span><span class="o">.</span><span class="n">SUBMISSION</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">identifier</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">identifier</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">identifier</span></div>
 
 
-<div class="viewcode-block" id="best_match"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.best_match">[docs]</a><span class="k">def</span> <span class="nf">best_match</span><span class="p">(</span><span class="n">available</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
+<div class="viewcode-block" id="best_match"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.best_match">[docs]</a><span class="k">def</span> <span class="nf">best_match</span><span class="p">(</span><span class="n">available</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">default</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Determine best content type given Accept header and available types.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="s1">&#39;Accept&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">default</span>
-    <span class="k">return</span> <span class="n">request</span><span class="o">.</span><span class="n">accept_mimetypes</span><span class="o">.</span><span class="n">best_match</span><span class="p">(</span><span class="n">available</span><span class="p">)</span></div>
+    <span class="n">ctype</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">accept_mimetypes</span><span class="o">.</span><span class="n">best_match</span><span class="p">(</span><span class="n">available</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ctype</span></div>
 
 
 <div class="viewcode-block" id="ok"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.ok">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/status&#39;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">ok</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">ok</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Provide current integration status information for health checks.&quot;&quot;&quot;</span>
     <span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">controllers</span><span class="o">.</span><span class="n">service_status</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span></div>
 
 
-<div class="viewcode-block" id="extract"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.extract">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="n">ARXIV_PREFIX</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<div class="viewcode-block" id="start_extraction"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.start_extraction">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="n">ARXIV_PREFIX</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="n">SUBMISSION_PREFIX</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">CREATE_FULLTEXT</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="n">resource_id</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">extract</span><span class="p">(</span><span class="n">id_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">start_extraction</span><span class="p">(</span><span class="n">id_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Handle requests for fulltext extraction.&quot;&quot;&quot;</span>
     <span class="n">force</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;force&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
     <span class="n">token</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;token&#39;</span><span class="p">]</span>
 
     <span class="c1"># Authorization is required to work with submissions.</span>
+    <span class="n">authorizer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Authorizer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">id_type</span> <span class="o">==</span> <span class="n">SupportedBuckets</span><span class="o">.</span><span class="n">SUBMISSION</span><span class="p">:</span>
         <span class="n">authorizer</span> <span class="o">=</span> <span class="n">make_authorizer</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_COMPILE</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">authorizer</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> \
-        <span class="n">controllers</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">id_type</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span>
-                            <span class="n">authorizer</span><span class="o">=</span><span class="n">authorizer</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span></div>
+        <span class="n">controllers</span><span class="o">.</span><span class="n">start_extraction</span><span class="p">(</span><span class="n">id_type</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span>
+                                     <span class="n">authorizer</span><span class="o">=</span><span class="n">authorizer</span><span class="p">)</span>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <div class="viewcode-block" id="retrieve"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.retrieve">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="n">ARXIV_PREFIX</span> <span class="o">+</span> <span class="s1">&#39;/version/&lt;version&gt;/format/&lt;content_fmt&gt;&#39;</span><span class="p">)</span>
@@ -123,7 +125,7 @@
 <span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="n">SUBMISSION_PREFIX</span><span class="p">)</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_FULLTEXT</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="n">resource_id</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">retrieve</span><span class="p">(</span><span class="n">id_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-             <span class="n">content_fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SupportedFormats</span><span class="o">.</span><span class="n">PLAIN</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+             <span class="n">content_fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SupportedFormats</span><span class="o">.</span><span class="n">PLAIN</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Retrieve full-text content for an arXiv paper.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">identifier</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">BadRequest</span><span class="p">(</span><span class="s1">&#39;identifier missing in request&#39;</span><span class="p">)</span>
@@ -131,23 +133,23 @@
     <span class="n">content_type</span> <span class="o">=</span> <span class="n">best_match</span><span class="p">(</span><span class="n">available</span><span class="p">,</span> <span class="s1">&#39;application/json&#39;</span><span class="p">)</span>
 
     <span class="c1"># Authorization is required to work with submissions.</span>
+    <span class="n">authorizer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Authorizer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">id_type</span> <span class="o">==</span> <span class="n">SupportedBuckets</span><span class="o">.</span><span class="n">SUBMISSION</span><span class="p">:</span>
         <span class="n">authorizer</span> <span class="o">=</span> <span class="n">make_authorizer</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_COMPILE</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">authorizer</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">controllers</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="n">id_type</span><span class="p">,</span> <span class="n">version</span><span class="p">,</span>
-                                               <span class="n">content_format</span><span class="o">=</span><span class="n">content_fmt</span><span class="p">,</span>
+                                               <span class="n">content_fmt</span><span class="o">=</span><span class="n">content_fmt</span><span class="p">,</span>
                                                <span class="n">authorizer</span><span class="o">=</span><span class="n">authorizer</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">content_type</span> <span class="o">==</span> <span class="s1">&#39;text/plain&#39;</span><span class="p">:</span>
         <span class="n">response_data</span> <span class="o">=</span> <span class="n">Response</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">],</span> <span class="n">content_type</span><span class="o">=</span><span class="s1">&#39;text/plain&#39;</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">content_type</span> <span class="o">==</span> <span class="s1">&#39;application/json&#39;</span><span class="p">:</span>
         <span class="k">if</span> <span class="s1">&#39;content&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span>
         <span class="n">response_data</span> <span class="o">=</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">NotAcceptable</span><span class="p">(</span><span class="s1">&#39;unsupported content type&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">response_data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">response_data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 <div class="viewcode-block" id="task_status"><a class="viewcode-back" href="../../fulltext/fulltext.routes.html#fulltext.routes.task_status">[docs]</a><span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="n">ARXIV_PREFIX</span> <span class="o">+</span> <span class="s1">&#39;/version/&lt;version&gt;/status&#39;</span><span class="p">)</span>
@@ -156,18 +158,18 @@
 <span class="nd">@blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="n">SUBMISSION_PREFIX</span> <span class="o">+</span> <span class="s1">&#39;/status&#39;</span><span class="p">)</span>
 <span class="nd">@scoped</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_FULLTEXT</span><span class="p">,</span> <span class="n">resource</span><span class="o">=</span><span class="n">resource_id</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">task_status</span><span class="p">(</span><span class="n">id_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+                <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Get the status of a text extraction task.&quot;&quot;&quot;</span>
     <span class="c1"># Authorization is required to work with submissions.</span>
+    <span class="n">authorizer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Authorizer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">id_type</span> <span class="o">==</span> <span class="n">SupportedBuckets</span><span class="o">.</span><span class="n">SUBMISSION</span><span class="p">:</span>
         <span class="n">authorizer</span> <span class="o">=</span> <span class="n">make_authorizer</span><span class="p">(</span><span class="n">scopes</span><span class="o">.</span><span class="n">READ_COMPILE</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">authorizer</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="n">data</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span> <span class="o">=</span> <span class="n">controllers</span><span class="o">.</span><span class="n">get_task_status</span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="n">id_type</span><span class="p">,</span>
                                                       <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
                                                       <span class="n">authorizer</span><span class="o">=</span><span class="n">authorizer</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span></div>
+    <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">=</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">code</span><span class="p">,</span> <span class="n">headers</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span></div>
 </pre></div>
 
           </div>
@@ -207,8 +209,6 @@
     <form class="search" action="../../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -221,8 +221,8 @@
       &copy;2018, arXiv.org.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>
 
