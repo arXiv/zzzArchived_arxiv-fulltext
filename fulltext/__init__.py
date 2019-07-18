@@ -1,0 +1,1 @@
+"""Fulltext extraction service."""

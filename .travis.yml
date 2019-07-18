@@ -8,8 +8,26 @@ os:
 python:
   - "3.6"
 script:
-  - pip install -r requirements/test.txt
-  - nose2 -s extractor
-  - nose2
+  - pip install -U pip pipenv
+  - pipenv install --dev
+  - WITH_INTEGRATION=1 pipenv run nose2 -s extractor
+  - CELERY_ALWAYS_EAGER=1 pipenv run nose2 -s ./ --with-coverage --coverage-report=term-missing
 after_success:
   - coveralls
+  - "./tests/lint.sh fulltext"
+  - "./tests/style.sh fulltext"
+  - "./tests/type-check.sh fulltext"
+
+deploy:
+- provider: script
+  script:
+    ./deploy/make_and_push_images.sh
+  on:
+    all_branches: true
+- provider: script
+  script:
+    ./deploy/make_and_push_images.sh
+    ./deploy/install_helm.sh development &&
+    ./deploy/publish_helm_chart.sh
+  on:
+    tags: true

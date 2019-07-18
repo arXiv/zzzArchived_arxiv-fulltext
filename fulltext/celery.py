@@ -1,9 +1,9 @@
 """Initialize the Celery application."""
 
 from celery import Celery
-from flask import Flask
-import os
 
-from fulltext.factory import create_worker_app
+from fulltext import celeryconfig
 
-app = create_worker_app()
+celery_app = Celery('fulltext')
+celery_app.config_from_object('fulltext.celeryconfig')
+celery_app.autodiscover_tasks(['fulltext'], related_name='extract', force=True)

@@ -1,10 +1,11 @@
 import os
 import sys
 # sys.path.append(".")
-from fulltext import logger
+import logging
 from fulltext import convert
 
-log = logger.getLogger('fulltext')
+log = logging.getLogger('fulltext')
+
 
 if __name__ == '__main__':
     if len(sys.argv) <= 1:

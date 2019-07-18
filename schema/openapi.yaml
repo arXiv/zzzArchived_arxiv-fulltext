@@ -1,0 +1,328 @@
+openapi: "3.0.0"
+info:
+  version: "0.3"
+  title: "arXiv fulltext extraction service"
+  contact:
+    name: "arXiv API Team"
+    email: nextgen@arxiv.org
+  license:
+    name: MIT
+
+paths:
+  /arxiv/arxiv/{identifier}:
+    get:
+      operationId: getLatestExtraction
+      summary: Retrieve the latest extraction for an e-print.
+      responses:
+        '200':
+          description: An extraction exists.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '303':
+          description: |
+            An extraction task exists for this paper using the current
+            extractor version.
+          headers:
+            Location:
+              description: The URI of the extraction task.
+              schema:
+                type: string
+
+    post:
+      operationId: requestExtraction
+      responses:
+        '202':
+          description: |
+            An extraction task has been created for this paper using the
+            current extractor version.
+          headers:
+            Location:
+              description: The URI of the extraction task.
+              schema:
+                type: string
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to force extraction.
+
+  /arxiv/{identifier}/format/{format}:
+    get:
+      operationId: getLatestExtractionByFormat
+      summary: |
+        Retrieve an extraction for a paper in a specific format.
+      responses:
+        '200':
+          description: The requested format exists.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '404':
+          description: The requested format does not exist.
+
+  /arxiv/{identifier}/version/{extractor_version}:
+    get:
+      operationId: getExtractionByVersion
+      summary: |
+        Retrieve an extraction for a paper from a specific extractor
+        version.
+      responses:
+        '200':
+          description: The requested version exists.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '404':
+          description: The requested version does not exist.
+
+  /arxiv/{identifier}/version/{extractor_version}/format/{format}:
+    get:
+      operationId: getExtractionByVersionAndFormat
+      summary: |
+        Retrieve an extraction for a paper from a specific extractor version
+        in a specific format.
+      responses:
+        '200':
+          description: The requested version and format exists.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '404':
+          description: The requested version + format does not exist.
+
+  /arxiv/{identifier}/status:
+    get:
+      operationId: getExtractionStatus
+      summary: |
+        Get the current status of an extraction task. If the extraction task
+        has completed successfully, redirects to the resulting fulltext
+        resource.
+      responses:
+        '200':
+          description: |
+            The extraction task exists, and is either pending, running, or has
+            failed.
+          content:
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '303':
+          description: |
+            The extraction task has completed successfully, and a fulltext
+            resource exists.
+          headers:
+            Location:
+              description: |
+                The URI of the fulltext resource created by this extraction
+                task.
+              schema:
+                type: string
+        '404':
+          description: The requested task does not exist.
+
+  /arxiv/{identifier}/version/{extractor_version}/status:
+    get:
+      operationId: getExtractionStatusByVersion
+      summary: |
+        Get the current status of an extraction task. If the extraction task
+        has completed successfully, redirects to the resulting fulltext
+        resource.
+      responses:
+        '200':
+          description: |
+            The extraction task exists, and is either pending, running, or has
+            failed.
+          content:
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '303':
+          description: |
+            The extraction task has completed successfully, and a fulltext
+            resource exists.
+          headers:
+            Location:
+              description: |
+                The URI of the fulltext resource created by this extraction
+                task.
+              schema:
+                type: string
+        '404':
+          description: The requested task does not exist.
+
+  /submission/{source_id}/{source_checksum}:
+    get:
+      operationId: getLatestSubmissionExtraction
+      summary: |
+        Retrieve the latest extraction for a submission.
+      responses:
+        '200':
+          description: |
+            An extraction for the current version of the extractor exists.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '303':
+          description: |
+            An extraction task exists for this submission using the current
+            extractor version.
+          headers:
+            Location:
+              description: The URI of the extraction task.
+              schema:
+                type: string
+
+    post:
+      operationId: requestSubmissionExtraction
+      responses:
+        '202':
+          description: |
+            An extraction task has been created for this submission using the
+            current extractor version.
+          headers:
+            Location:
+              description: The URI of the extraction task.
+              schema:
+                type: string
+        '401':
+          description: Unauthorized. Missing valid authentication information.
+        '403':
+          description: |
+            Forbidden. Client or user is not authorized to force extraction.
+
+  /submission/{source_id}/{source_checksum}/format/{format}:
+    get:
+      operationId: getSubmissionExtractionByFormat
+      summary: |
+        Retrieve an extraction for a submission in a specific format.
+      responses:
+        '200':
+          description: The requested format exists.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '404':
+          description: The requested format does not exist.
+
+  /submission/{source_id}/{source_checksum}/version/{extractor_version}:
+    get:
+      operationId: getSubmissionExtractionByVersion
+      summary: |
+        Retrieve an extraction for a submission from a specific extractor
+        version.
+      responses:
+        '200':
+          description: The requested version exists.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '404':
+          description: The requested version does not exist.
+
+  /submission/{source_id}/{source_checksum}/version/{extractor_version}/format/{format}:
+    get:
+      operationId: getSubmissionExtractionByVersionAndFormat
+      summary: |
+        Retrieve an extraction for a submission from a specific extractor
+        version in a specific format.
+      responses:
+        '200':
+          description: The requested version and format exists.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '404':
+          description: The requested version + format does not exist.
+
+  /submission/{source_id}/{source_checksum}/status:
+    get:
+      operationId: getSubmissionExtractionStatus
+      summary: |
+        Get the current status of an extraction task. If the extraction task
+        has completed successfully, redirects to the resulting fulltext
+        resource.
+      responses:
+        '200':
+          description: |
+            The extraction task exists, and is either pending, running, or has
+            failed.
+          content:
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '303':
+          description: |
+            The extraction task has completed successfully, and a fulltext
+            resource exists.
+          headers:
+            Location:
+              description: |
+                The URI of the fulltext resource created by this extraction
+                task.
+              schema:
+                type: string
+        '404':
+          description: The requested task does not exist.
+
+  /submission/{source_id}/{source_checksum}/version/{extractor_version}/status:
+    get:
+      operationId: getSubmissionExtractionStatusByVersion
+      summary: |
+        Get the current status of an extraction task. If the extraction task
+        has completed successfully, redirects to the resulting fulltext
+        resource.
+      responses:
+        '200':
+          description: |
+            The extraction task exists, and is either pending, running, or has
+            failed.
+          content:
+            application/json:
+              schema:
+                $ref: './resources/Extraction.json#'
+        '303':
+          description: |
+            The extraction task has completed successfully, and a fulltext
+            resource exists.
+          headers:
+            Location:
+              description: |
+                The URI of the fulltext resource created by this extraction
+                task.
+              schema:
+                type: string
+        '404':
+          description: The requested task does not exist.

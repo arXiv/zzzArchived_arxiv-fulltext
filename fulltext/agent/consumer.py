@@ -1,106 +1,120 @@
-"""
-This script is called by the KCL MultiLangDaemon to process Kinesis streams.
+"""Provides a record processor for PDFIsAvailable notifications."""
 
-http://docs.aws.amazon.com/streams/latest/dev/kinesis-record-processor-implementation-app-py.html
-https://github.com/awslabs/amazon-kinesis-client-python/blob/master/samples/sample_kclpy_app.py
-"""
-
-import time
-from fulltext import logging
+from typing import Dict, List, Any, Optional, Tuple, Union
 import json
 import os
-import amazon_kclpy
-from amazon_kclpy import kcl
-from amazon_kclpy.v2 import processor
-from amazon_kclpy.messages import ProcessRecordsInput, ShutdownInput
-from fulltext.services import credentials, extractor
+import time
+import boto3
+from botocore.exceptions import WaiterError, NoCredentialsError, \
+    PartialCredentialsError, BotoCoreError, ClientError
 
-ARXIV_HOME = 'https://arxiv.org'
+from flask import url_for
+
+from arxiv.base import logging
+from arxiv.integration.kinesis import consumer
+from arxiv.integration.kinesis.consumer import BaseConsumer, StopProcessing, \
+    RestartProcessing
+from arxiv.vault.manager import ConfigManager
+
+from retry.api import retry_call
+
+from fulltext.extract import extract
 
 logger = logging.getLogger(__name__)
+# logger.propagate = True
 
 
-class RecordProcessor(processor.RecordProcessorBase):
-    """
-    Processes records received by the Kinesis consumer.
+class BadMessage(RuntimeError):
+    """A malformed notification was encountered."""
 
-    This class is instantiated when the containing script is run by the
-    MultiLangDaemon. The underlying KCL process handles threading, offset
-    tracking, etc. The KCL guarantees that our :class:`.RecordProcessor` will
-    see each record *at least* once; the checkpoint mechanism gives us a way to
-    further guarantee that we only process each record a single time.
 
-    See the ``consumer.properties`` file for configuration details, including
-    streams.
-    """
+class FulltextRecordProcessor(BaseConsumer):
+    """Consumes ``PDFIsAvailable`` notifications, creates extraction tasks."""
 
-    def __init__(self):
-        """Initialize checkpointing state and retry configuration."""
-        self._SLEEP_SECONDS = 5
-        self._CHECKPOINT_RETRIES = 5
-        self._CHECKPOINT_FREQ = 60
-        self._largest_seq = (None, None)
-        self._largest_sub_seq = None
-        self._last_checkpoint_time = None
+    sleep = 0.2
+    sleep_after_credentials = 10
 
-    def initialize(self, initialize_input):
-        """Called once by a KCLProcess before any calls to process_records."""
-        self._largest_seq = (None, None)
-        self._last_checkpoint_time = time.time()
-        credentials.get_credentials()
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize a secrets manager before starting."""
+        self._config = kwargs.pop('config', {})
+        super(FulltextRecordProcessor, self).__init__(*args, **kwargs)
+        if self._config.get('VAULT_ENABLED'):
+            logger.info('Vault enabled; getting secrets')
+            self._secrets = ConfigManager(self._config)
+            self.update_secrets()
+        self._access_key = self._config.get('AWS_ACCESS_KEY_ID')
+        self._secret_key = self._config.get('AWS_SECRET_ACCESS_KEY')
 
-    def checkpoint(self, checkpointer: amazon_kclpy.kcl.Checkpointer,
-                   sequence_number=None,
-                   sub_sequence_number=None) -> None:
-        """Make periodic checkpoints while processing records."""
-        for n in range(0, self._CHECKPOINT_RETRIES):
-            try:
-                checkpointer.checkpoint(sequence_number, sub_sequence_number)
-                return
-            except kcl.CheckpointError as e:
-                if 'ShutdownException' == e.value:
-                    # A ShutdownException indicates that this record processor
-                    #  should be shutdown. This is due to some failover event,
-                    #  e.g. another MultiLangDaemon has taken the lease for
-                    #  this shard.
-                    logger.info("Encountered shutdown exception, skipping"
-                                " checkpoint")
-                    return
-                elif 'ThrottlingException' == e.value:
-                    # A ThrottlingException indicates that one of our
-                    #  dependencies is is over burdened, e.g. too many dynamo
-                    #  writes. We will sleep temporarily to let it recover.
-                    if self._CHECKPOINT_RETRIES - 1 == n:
-                        logger.error("Failed to checkpoint after %i attempts,"
-                                     " giving up." % n)
-                        return
-                    else:
-                        logger.info("Was throttled while checkpointing, will"
-                                    " attempt again in %i seconds"
-                                    % self._SLEEP_SECONDS)
-                elif 'InvalidStateException' == e.value:
-                    logger.error("MultiLangDaemon reported an invalid state"
-                                 " while checkpointing.")
-                else:  # Some other error
-                    logger.error("Encountered an error while checkpointing,"
-                                 " error was %s" % e)
-            time.sleep(self._SLEEP_SECONDS)
-
-    def request_extraction(self, document_id: str) -> None:
-        """Request fulltext extraction via the extraction service API."""
-        try:
-            pdf_url = '%s/pdf/%s' % (ARXIV_HOME, document_id)
-            extractor.extract(document_id, pdf_url)
-        except Exception as e:
-            msg = '%s: failed to extract fulltext: %s' % (document_id, e)
-            logger.error(msg)
-            raise RuntimeError(msg) from e
-        logger.info('%s: successfully extracted fulltext' % document_id)
-
-    def process_record(self, data: bytes, partition_key: bytes,
-                       sequence_number: int, sub_sequence_number: int) -> None:
+    def wait_for_stream(self, tries: int = 5, delay: int = 5,
+                        max_delay: Optional[int] = None, backoff: int = 2,
+                        jitter: Union[int, Tuple[int, int]] = 0) -> None:
         """
-        Called for each record that is passed to process_records.
+        Wait for the stream to become available.
+
+        If the stream becomes available, returns ``None``. Otherwise, raises
+        a :class:`.StreamNotAvailable` exception.
+
+        Raises
+        ------
+        :class:`.StreamNotAvailable`
+            Raised when the stream could not be reached.
+
+        """
+        waiter = self.client.get_waiter('stream_exists')
+        try:
+            logger.info(f'Waiting for stream {self.stream_name}')
+            waiter.wait(
+                StreamName=self.stream_name,
+                WaiterConfig=dict(
+                    Delay=delay,
+                    MaxAttempts=tries,
+                    ExclusiveStartShardId=self.shard_id
+                )
+            )
+        except WaiterError as e:
+            msg = 'Failed to get stream while waiting'
+            logger.error(msg)
+            raise consumer.exceptions.StreamNotAvailable(msg) from e
+        except (PartialCredentialsError, NoCredentialsError) as e:
+            msg = 'Credentials missing or incomplete: %s'
+            logger.error(msg, e.msg)
+            raise consumer.exceptions.ConfigurationError(msg % e.msg) from e
+        logger.info('Done waiting')
+
+    def update_secrets(self) -> bool:
+        """Update any secrets that are out of date."""
+        got_new_secrets = False
+        for key, value in self._secrets.yield_secrets():
+            if self._config.get(key) != value:
+                got_new_secrets = True
+            self._config[key] = value
+            os.environ[key] = str(value)
+        self._access_key = self._config.get('AWS_ACCESS_KEY_ID')
+        self._secret_key = self._config.get('AWS_SECRET_ACCESS_KEY')
+        if got_new_secrets:
+            logger.debug('Got new secrets')
+        return got_new_secrets
+
+    def process_records(self, start: str) -> Tuple[str, int]:
+        """Update secrets before getting a new batch of records."""
+        if self._config.get('VAULT_ENABLED') and self.update_secrets():
+            # From the docs:
+            #
+            # > Unfortunately, IAM credentials are eventually consistent with
+            # > respect to other Amazon services. If you are planning on using
+            # > these credential in a pipeline, you may need to add a delay of
+            # > 5-10 seconds (or more) after fetching credentials before they
+            # > can be used successfully.
+            #  -- https://www.vaultproject.io/docs/secrets/aws/index.html#usage
+            time.sleep(self.sleep_after_credentials)
+            raise RestartProcessing('Got fresh credentials')
+        sup: Tuple[str, int] = \
+            super(FulltextRecordProcessor, self).process_records(start)
+        return sup
+
+    def process_record(self, record: dict) -> None:
+        """
+        Call for each record that is passed to process_records.
 
         Parameters
         ----------
@@ -108,108 +122,24 @@ class RecordProcessor(processor.RecordProcessorBase):
         partition_key : bytes
         sequence_number : int
         sub_sequence_number : int
+
+        Raises
+        ------
+        IndexingFailed
+            Indexing of the document failed in a way that indicates recovery
+            is unlikely for subsequent papers, or too many individual
+            documents failed.
+
         """
+        time.sleep(self.sleep)
+        logger.debug(f'Processing record %s', record["SequenceNumber"])
         try:
-            deserialized = json.loads(data.decode('utf-8'))
-        except Exception as e:
-            logger.error("Error while deserializing data: %s" % e)
-            logger.error("Data payload: %s" % data)
-            return   # Don't bring down the whole batch.
+            deserialized = json.loads(record['Data'].decode('utf-8'))
+        except json.decoder.JSONDecodeError as e:
+            logger.error("Error while deserializing data %s", e)
+            logger.error("Data payload: %s", record['Data'])
+            raise BadMessage('Could not deserialize payload')
 
-        document_id = deserialized.get('document_id')
-        # try:
-        #     self.events.session.update_or_create(sequence_number,
-        #                                          document_id=document_id)
-        # except IOError as e:
-        #     # If we can't connect, there is no reason to proceed. Make noise.
-        #     msg = "Could not connect to extraction events database: %s" % e
-        #     logger.error(msg)
-        #     raise RuntimeError(msg) from e
-
-        try:
-            self.request_extraction(document_id)
-        except Exception as e:
-            logger.error("Error while processing document: %s" % e)
-            logger.error("Data payload: %s" % data)
-
-    def should_update_sequence(self, sequence_number: int,
-                               sub_sequence_number: int) -> bool:
-        """
-        Determine whether a new larger sequence number is available.
-
-        Parameters
-        ----------
-        sequence_number : int
-        sub_sequence_number : int
-
-        Returns
-        -------
-        bool
-        """
-        return (self._largest_seq == (None, None) or
-                sequence_number > self._largest_seq[0] or
-                (sequence_number == self._largest_seq[0] and
-                 sub_sequence_number > self._largest_seq[1]))
-
-    def process_records(self, records: ProcessRecordsInput) -> None:
-        """
-        Handle a series of records from the stream.
-
-        Called by a KCLProcess with a list of records to be processed and a
-        checkpointer which accepts sequence numbers from the records to
-        indicate where in the byteseam to checkpoint.
-
-        Parameters
-        ----------
-        records : :class:`amazon_kclpy.messages.ProcessRecordsInput`
-        """
-        try:
-            for record in records.records:
-                data = record.binary_data
-                seq = int(record.sequence_number)
-                sub_seq = record.sub_sequence_number
-                key = record.partition_key
-                self.process_record(data, key, seq, sub_seq)
-                if self.should_update_sequence(seq, sub_seq):
-                    self._largest_seq = (seq, sub_seq)
-
-            # Checkpoints every self._CHECKPOINT_FREQ seconds
-            last_check = time.time() - self._last_checkpoint_time
-            if last_check > self._CHECKPOINT_FREQ:
-                self.checkpoint(records.checkpointer,
-                                str(self._largest_seq[0]),
-                                self._largest_seq[1])
-                self._last_checkpoint_time = time.time()
-
-        except Exception as e:
-            logger.error("Encountered an exception while processing records."
-                         " Exception was %s" % e)
-            logger.error("Seq: %i; Sub seq: %i; Key: %s" % (seq, sub_seq, key))
-            logger.error("{}".format(data))
-
-    def shutdown(self, shutdown: ShutdownInput) -> None:
-        """
-        Shut down record processing gracefully, if possible.
-
-        Called by a KCLProcess instance to indicate that this record processor
-        should shutdown. After this is called, there will be no more calls to
-        any other methods of this record processor.
-
-        Parameters
-        ----------
-        shutdown : :class:`amazon_kclpy.messages.ShutdownInput`
-        """
-        try:
-            if shutdown.reason == 'TERMINATE':
-                # **THE RECORD PROCESSOR MUST CHECKPOINT OR THE KCL WILL BE
-                #   UNABLE TO PROGRESS**
-                # Checkpointing with no parameter will checkpoint at the
-                # largest sequence number reached by this processor on this
-                # shard id.
-                logger.info("Was told to terminate, attempting to checkpoint.")
-                self.checkpoint(shutdown.checkpointer, None)
-            else:    # reason == 'ZOMBIE'
-                # **ATTEMPTING TO CHECKPOINT ONCE A LEASE IS LOST WILL FAIL**
-                logger.info("Shutting down due to failover. Won't checkpoint.")
-        except Exception as e:
-            logger.error("Encountered exception while shutting down: %s" % e)
+        arxiv_id: str = deserialized.get('document_id')
+        logger.info(f'Processing notification for %s', arxiv_id)
+        extract.delay(arxiv_id, url_for('pdf', identifier=arxiv_id))

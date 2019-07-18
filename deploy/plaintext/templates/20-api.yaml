@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: plaintext
+  namespace: "{{ .Values.namespace }}"
+  labels:
+    subsystem: "{{ .Values.labels.subsystem }}"
+    container: plaintext-api
+    service-group: api
+    log-style: uwsgi
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8000
+  selector:
+    subsystem: "{{ .Values.labels.subsystem }}"
+    container: plaintext-api
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: plaintext-api
+  namespace: "{{ .Values.namespace }}"
+  labels:
+    subsystem: "{{ .Values.labels.subsystem }}"
+    container: plaintext-api
+    service-group: api
+    log-style: uwsgi
+spec:
+  replicas: {{ int .Values.scaling.api_replicas }}
+  template:
+    metadata:
+      labels:
+        subsystem: "{{ .Values.labels.subsystem }}"
+        container: plaintext-api
+        service-group: api
+        log-style: python
+    spec:
+      serviceAccount: plaintext
+      volumes:
+      - name: vault-certificate
+        secret:
+          secretName: vault-certificate
+      - name: vault-token
+        emptyDir: {}
+      - name: "{{ .Values.name }}-data"
+        persistentVolumeClaim:
+          claimName: "{{ .Values.name }}"
+
+      containers:
+      - name: plaintext-api
+        image: arxiv/plaintext:{{ default "latest" .Values.api.image.tag }}
+        imagePullPolicy: "{{ default "Always" .Values.imagePullPolicy }}"
+        command: ["uwsgi", "--ini", "/opt/arxiv/uwsgi.ini"]
+        ports:
+        - containerPort: 8000
+        livenessProbe:
+          httpGet:
+            path: "{{ .Values.ingress.path }}/status"
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: "{{ .Values.ingress.path }}/status"
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        env:
+        - name: LOGLEVEL
+          value: "{{ .Values.api.log_level }}"
+        - name: LOGFILE
+          value: "{{ .Values.agent.log_file }}"
+        - name: APPLICATION_ROOT
+          value: "{{ .Values.ingress.path }}"
+        - name: REDIS_ENDPOINT
+          value: "{{ .Values.redis.host }}:6379"
+        - name: VAULT_ENABLED
+          value: "1"
+        - name: VAULT_HOST
+          value: "{{ .Values.vault.host }}"
+        - name: VAULT_PORT
+          value: "{{ .Values.vault.port }}"
+        - name: VAULT_CERT
+          value: /etc/vault-certificate/vaulttls.cert.pem
+        - name: VAULT_ROLE
+          value: "{{ .Values.vault.role }}-{{ .Values.namespace }}"
+        - name: VAULT_CREDENTIAL
+          value: "{{ .Values.vault.credential }}"
+        - name: KUBE_TOKEN
+          value: /var/run/secrets/kubernetes.io/serviceaccount/token
+        - name: NAMESPACE
+          value: "{{ .Values.namespace }}"
+
+        volumeMounts:
+          - name: vault-certificate
+            mountPath: /etc/vault-certificate
+            readOnly: true
+          - name: vault-token
+            mountPath: /etc/vault
+          - mountPath: /data
+            name: "{{ .Values.name }}-data"
+
+        resources:
+          limits:
+            cpu: 300m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi

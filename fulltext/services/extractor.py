@@ -1,115 +1,133 @@
-"""Service integration for central arXiv document store."""
+"""Integration with Docker to perform plain text extraction."""
 
-import requests
 import os
-import time
-from datetime import datetime, timedelta
-import json
-from urllib.parse import urljoin
-from fulltext import logging
-from fulltext.context import get_application_config, get_application_global
+import shutil
+from datetime import datetime
+from typing import Tuple, Optional, Any
+
+import docker
+from docker import DockerClient
+from docker.errors import ContainerError, APIError
+from requests.exceptions import ConnectionError
+
+from flask import current_app
+
+from arxiv.base import logging
 
 logger = logging.getLogger(__name__)
 
 
-class RequestExtractionSession(object):
-    """Provides an interface to the reference extraction service."""
+class Extractor:
+    """
+    Integrates with Docker to perform plain text extraction.
 
-    def __init__(self, endpoint: str) -> None:
-        """Set the endpoint for Refextract service."""
-        self.endpoint = endpoint
-        self._session = requests.Session()
-        self._adapter = requests.adapters.HTTPAdapter(max_retries=2)
-        self._session.mount('http://', self._adapter)
+    This class groups together related methods for the sake of clarity. It is
+    completely stateless, and should stay that way unless an explicit decision
+    is made otherwise.
+    """
 
-    def status(self):
-        """Get the status of the extraction service."""
+    def is_available(self, **kwargs: Any) -> bool:
+        """Make sure that we can connect to the Docker API."""
         try:
-            response = self._session.get(urljoin(self.endpoint,
-                                                 '/fulltext/status'))
-        except IOError:
-            return False
-        if not response.ok:
+            self._new_client().info()
+        except (APIError, ConnectionError) as e:
+            logger.error('Error when connecting to Docker API: %s', e)
             return False
         return True
 
-    def extract(self, document_id: str, pdf_url: str) -> dict:
+    def _new_client(self) -> DockerClient:
+        """Make a new Docker client."""
+        return DockerClient(current_app.config['DOCKER_HOST'])
+
+    @property
+    def image(self) -> Tuple[str, str, str]:
+        """Get the name of the image used for extraction."""
+        image_name = current_app.config['EXTRACTOR_IMAGE']
+        image_tag = current_app.config['EXTRACTOR_VERSION']
+        return f'{image_name}:{image_tag}', image_name, image_tag
+
+    def _pull_image(self, client: Optional[DockerClient] = None) -> None:
+        """Tell the Docker API to pull our extraction image."""
+        if client is None:
+            client = self._new_client()
+        _, name, tag = self.image
+        client.images.pull(name, tag)
+
+    def _cleanup(self, pdfpath: str, outpath: str) -> None:
+        os.remove(pdfpath)
+        os.remove(outpath.replace('.txt', '.pdf2txt'))
+        os.remove(outpath)    # Cleanup.
+
+    def __call__(self, filename: str, cleanup: bool = False,
+                 image: Optional[str] = None) -> str:
         """
-        Request fulltext extraction.
+        Extract fulltext from the PDF represented by ``filehandle``.
 
         Parameters
         ----------
-        document_id : str
-        pdf_url : str
+        filename : str
 
         Returns
         -------
-        dict
+        str
+            Raw XML response from FullText.
+
         """
-        payload = {'document_id': document_id, 'url': pdf_url}
-        response = self._session.post(urljoin(self.endpoint, '/fulltext'),
-                                      data=json.dumps(payload))
-        if not response.ok:
-            raise IOError('Extraction request failed with status %i: %s' %
-                          (response.status_code, response.content))
+        logger.info('Attempting text extraction for %s', filename)
+        start_time = datetime.now()
 
-        target_url = urljoin(self.endpoint, '/fulltext/%s' % document_id)
+        # This is the path in this container/env where PDFs are stored.
+        workdir = current_app.config['WORKDIR']
+        logger.debug('WORKDIR: %s', workdir)
+        # This is the path on the Docker host that should be mapped into the
+        # extractor container at /pdf. This is the same volume that should be
+        # mounted at ``workdir`` in this container/env.
+        mountdir = current_app.config['MOUNTDIR']
+        logger.debug('MOUNTDIR: %s', mountdir)
+        # The result is something like:
+        #
+        #                       | <-- {workdir} (worker)
+        # [working volume] <--- |
+        #                       | <-- {mountdir} (dind) <-- /pdfs (extractor)
+        #
+
+        if image is None:
+            image, _, _ = self.image
+
+        client = self._new_client()
+
+        # The PDF is in a temporary directory; we need to copy it in to the
+        # working volume so that the extractor can find it.
+        fldr, name = os.path.split(filename)
+        stub, ext = os.path.splitext(os.path.basename(filename))
+        pdfpath = os.path.join(workdir, name)
+        shutil.copyfile(filename, pdfpath)
+        logger.info('Copied %s to %s', filename, pdfpath)
+
+        # Pull and run the extractor image.
         try:
-            status_url = response.headers['Location']
-        except KeyError:
-            status_url = response.url
-        if status_url == target_url:    # Extraction already performed.
-            return response.json()
+            self._pull_image(client)
+            volumes = {mountdir: {'bind': '/pdfs', 'mode': 'rw'}}
+            client.containers.run(image, f'/pdfs/{name}', volumes=volumes)
+        except (ContainerError, APIError) as e:
+            raise RuntimeError('Fulltext failed: %s' % filename) from e
 
-        failed = 0
-        start = datetime.now()    # If this runs too long, we'll abort.
-        while not response.url.startswith(target_url):
-            if failed > 8:    # TODO: make this configurable?
-                msg = '%s: cannot get extraction state: %s, %s' % \
-                      (document_id, response.status_code, response.content)
-                logger.error(msg)
-                raise IOError(msg)
+        # Grab the extracted plain text content from a .txt file in the working
+        # volume.
+        outpath = os.path.join(workdir, '{}.txt'.format(stub))
+        if not os.path.exists(outpath):
+            raise FileNotFoundError('%s not found, expected output' % outpath)
+        with open(outpath, 'rb') as f:
+            content = f.read().decode('utf-8')
 
-            if datetime.now() - start > timedelta(seconds=300):
-                msg = '%s: extraction did not complete within five minutes' % \
-                      document_id
-                logger.error(msg)
-                raise IOError(msg)
+        # Cleanup any left-over files.
+        self._cleanup(pdfpath, outpath)
+        duration = (start_time - datetime.now()).microseconds
+        logger.info(f'Finished extraction for %s in %s ms', filename, duration)
 
-            time.sleep(2 + failed * 2)    # Back off.
-            try:
-                # Might be a 200-series response with Location header.
-                target = response.headers.get('Location', response.url)
-                response = self._session.get(target)
-            except Exception as e:
-                msg = '%s: cannot get extraction state: %s' % (document_id, e)
-                logger.error(msg)
-                failed += 1
-
-            if not response.ok:
-                failed += 1
-
-        return response.json()
+        if not content:
+            raise RuntimeError('No content extracted from %s', filename)
+        return content
 
 
-def get_session(app: object = None) -> RequestExtractionSession:
-    """Get a new extraction session."""
-    endpoint = get_application_config(app).get('EXTRACTION_ENDPOINT')
-    if not endpoint:
-        raise RuntimeError('EXTRACTION_ENDPOINT not set')
-    return RequestExtractionSession(endpoint)
-
-
-def current_session():
-    """Get/create :class:`.RequestExtractionSession` for this context."""
-    g = get_application_global()
-    if g is None:
-        return get_session()
-    if 'extract' not in g:
-        g.extract = get_session()
-    return g.extract
-
-
-def extract(document_id: str, pdf_url: str) -> dict:
-    """Extract text using the current session."""
-    return current_session().extract(document_id, pdf_url)
+do_extraction = Extractor()

@@ -1,0 +1,45 @@
+# Application profile
+
+application:
+  slug: plaintext
+  subsystem: submission-moderation
+  service_group: backend
+  containers:
+  - name: api
+    type:  wsgi           # exposes port 8000
+    resources:
+      memory:
+        min: 128Mi
+        max: 256Mi
+      cpu:
+        min: 100m
+        max: 300m
+  - name: worker
+    type:  celery           # exposes port 8000
+    resources:
+      memory:
+        min: 128Mi
+        max: 256Mi
+      cpu:
+        min: 100m
+        max: 300m
+  - name: agent
+    type: kinesis          # exposes port 8000
+    resources:
+      memory:
+        min: 128Mi
+        max: 256Mi
+      cpu:
+        min: 100m
+        max: 300m
+  dependencies:
+  - name: uploads
+    type: maria
+    description: Metadata about upload workspaces, including ownership.
+  - type: efs
+    description: |
+      Submission source content/uploads for un-announced e-prints. Must be
+      shared among application instances, to allow horizontal scaling of the
+      application.
+  - type: kinesis
+    description: PDFIsAvailable

@@ -1,0 +1,41 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+boto = "*"
+"boto3" = "==1.9.137"
+botocore = "*"
+celery = "==4.1.0"
+chardet = "*"
+click = "*"
+jsonschema = "*"
+python-dateutil = "*"
+pytz = "*"
+redis = "*"
+requests = "*"
+simplejson = "*"
+"urllib3" = "*"
+Flask = "*"
+"Jinja2" = "*"
+Werkzeug = "*"
+arxiv-base = "==0.15.9"
+kombu = "==4.0.2"
+arxiv-auth = "==0.3.5rc2"
+arxiv-vault = "==0.1.1rc15"
+retry = "*"
+docker = "*"
+
+[dev-packages]
+nose2 = "*"
+mypy = "==0.711"
+pydocstyle = "*"
+pylint = "*"
+coverage = "*"
+coveralls = "*"
+sphinx = "*"
+sphinx-autodoc-typehints = "*"
+
+[requires]
+python_version = "3.6"

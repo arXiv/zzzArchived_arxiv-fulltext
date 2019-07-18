@@ -1,57 +1,210 @@
 """Provides asynchronous task for fulltext extraction."""
 
-from celery import shared_task
 import os
+from typing import Tuple, Optional, Dict, Any
 from datetime import datetime
-from fulltext import logging
-from fulltext.services import store, retrieve, fulltext, metrics
+from pytz import UTC
+import shutil
+
 from celery.result import AsyncResult
-from celery import current_app
 from celery.signals import after_task_publish
+
+from arxiv.base.globals import get_application_config
+from arxiv.base import logging
+
+from fulltext.celery import celery_app
+from fulltext.services import store, pdf, compiler, extractor
+from fulltext.process import psv
+from .domain import Extraction, SupportedFormats, SupportedBuckets
+
 logger = logging.getLogger(__name__)
 
 
-@shared_task
-def extract_fulltext(document_id: str, pdf_url: str) -> None:
-    """Perform fulltext extraction for a single arXiv document."""
-    logger.info('Retrieving PDF for %s' % document_id)
-    start_time = datetime.now()
+class NoSuchTask(RuntimeError):
+    """A request was made for a non-existant task."""
+
+
+class TaskCreationFailed(RuntimeError):
+    """An extraction task could not be created."""
+
+
+def get_version() -> str:
+    """Get the current version of the extractor."""
+    version: str = get_application_config().get('EXTRACTOR_VERSION', '-1.0')
+    return version
+
+
+def is_available(await_result: bool = False) -> bool:
+    """Verify that we can start extractions."""
+    logger.debug('check connection to task queue')
     try:
-        # Retrieve PDF from arXiv central document store.
-        pdf_path = retrieve.retrieve(pdf_url, document_id)
-        if pdf_path is None:
-            metrics.report('PDFIsAvailable', 0.)
-            msg = '%s: no PDF available' % document_id
-            logger.info(msg)
-            raise RuntimeError(msg)
-        metrics.report('PDFIsAvailable', 1.)
-        logger.info('%s: retrieved PDF' % document_id)
+        task = do_nothing.apply_async()
+    except Exception:
+        logger.debug('could not connect to task queue')
+        return False
+    logger.debug('connection to task queue ok')
+    if await_result:
+        try:
+            logger.debug('waiting for task result')
+            task.get()    # Blocks until result is available.
+        except Exception as e:
+            logger.error('Encounted exception while awaiting result: %s', e)
+            return False
+    return True
 
-        logger.info('Attempting text extraction for %s' % document_id)
-        content = fulltext.extract_fulltext(pdf_path)
-        logger.info('Text extraction for %s succeeded with %i chars' %
-                    (document_id, len(content)))
 
-        os.remove(pdf_path)    # Cleanup.
-        store.create(document_id, content)
-        duration = (start_time - datetime.now()).microseconds
-        metrics.report('ProcessingDuration', duration, units='Microseconds')
-        logger.debug('Finished processing in %i microseconds', duration)
+def task_id(identifier: str, id_type: str, version: str) -> str:
+    """Make a task ID for an extraction."""
+    return f"{id_type}::{identifier}::{version}"
+
+
+def create_task(identifier: str, id_type: str, owner: Optional[str] = None,
+                token: Optional[str] = None) -> str:
+    """
+    Create a new extraction task.
+
+    Parameters
+    ----------
+    identifier : str
+        Unique identifier for the paper being extracted. Usually an arXiv ID.
+    pdf_url : str
+        The full URL for the PDF from which text will be extracted.
+    id_type : str
+        Either 'arxiv' or 'submission'.
+
+    Returns
+    -------
+    str
+        The identifier for the created extraction task.
+
+    """
+    logger.debug('Create extraction task with %s, %s', identifier, id_type)
+    version = get_version()
+    storage = store.Storage.current_session()
+    try:
+        _task_id = task_id(identifier, id_type, version)
+        # Create this ahead of time so that the API is immediately consistent,
+        # even if it takes a little while for the extraction task to start
+        # in the worker.
+        storage.store(Extraction(
+            identifier=identifier,
+            version=version,
+            started=datetime.now(UTC),
+            bucket=id_type,
+            owner=owner,
+            task_id=_task_id,
+            status=Extraction.Status.IN_PROGRESS,
+        ))
+        # Dispatch the extraction task.
+        extract.apply_async((identifier, id_type, version), {'token': token},
+                            task_id=_task_id)
+        logger.info('extract: started processing as %s', _task_id)
+    except Exception as e:
+        logger.debug(e)
+        raise TaskCreationFailed('Failed to create task: %s', e) from e
+    return _task_id
+
+
+def get_task(identifier: str, id_type: str, version: str) -> Extraction:
+    """
+    Get the status of an extraction task.
+
+    Parameters
+    ----------
+    identifier : str
+        Unique identifier for the paper being extracted. Usually an arXiv ID.
+    id_type : str
+        Either 'arxiv' or 'submission'.
+    version : str
+        Extractor version.
+
+    Returns
+    -------
+    :class:`Extraction`
+
+    """
+    _task_id = task_id(identifier, id_type, version)
+    result = extract.AsyncResult(_task_id)
+    exception: Optional[str] = None
+    owner: Optional[str] = None
+    if result.status == 'PENDING':
+        raise NoSuchTask('No such task')
+    elif result.status in ['SENT', 'STARTED', 'RETRY']:
+        _status = Extraction.Status.IN_PROGRESS
+    elif result.status == 'FAILURE':
+        _status = Extraction.Status.FAILED
+        exception = str(result.result)
+    elif result.status == 'SUCCESS':
+        _status = Extraction.Status.SUCCEEDED
+        owner = str(result.result['owner'])
+    else:
+        raise RuntimeError(f'Unexpected state: {result.status}')
+    return Extraction(
+        identifier=identifier,
+        bucket=id_type,
+        task_id=_task_id,
+        version=version,
+        status=_status,
+        exception=exception,
+        owner=owner
+    )
+
+
+@celery_app.task
+def extract(identifier: str, id_type: str, version: str,
+            owner: Optional[str] = None,
+            token: Optional[str] = None) -> Dict[str, str]:
+    """Perform text extraction for a single arXiv document."""
+    logger.debug('Perform extraction for %s in bucket %s with version %s',
+                 identifier, id_type, version)
+
+    canonical = pdf.CanonicalPDF.current_session()
+    storage = store.Storage.current_session()
+    compilations = compiler.Compiler.current_session()
+
+    try:
+        if id_type == SupportedBuckets.ARXIV:
+            pdf_path = canonical.retrieve(identifier)
+        elif id_type == SupportedBuckets.SUBMISSION:
+            pdf_path, owner = compilations.retrieve(identifier, token)
+        else:
+            RuntimeError(f'Unsupported identifier: {identifier} ({id_type})')
+        extraction = storage.retrieve(identifier, version, bucket=id_type,
+                                      meta_only=True)
+        content = extractor.do_extraction(pdf_path)
 
     except Exception as e:
-        logger.error('Failed to process %s: %s' % (document_id, e))
+        logger.error('Failed to process %s: %s', identifier, e)
+        storage.store(extraction.copy(status=Extraction.Status.FAILED,
+                                      ended=datetime.now(UTC),
+                                      exception=str(e)))
         raise e
-    return {
-        'document_id': document_id,
-    }
+    finally:
+        os.remove(pdf_path)    # Cleanup.
 
-
-extract_fulltext.async_result = AsyncResult
+    extraction = extraction.copy(status=Extraction.Status.SUCCEEDED,
+                                 ended=datetime.now(UTC),
+                                 content=content)
+    storage.store(extraction, 'plain')
+    extraction = extraction.copy(content=psv.normalize_text_psv(content))
+    storage.store(extraction, 'psv')
+    result = extraction.to_dict()
+    result.pop('content')
+    return result
 
 
 @after_task_publish.connect
-def update_sent_state(sender=None, headers=None, body=None, **kwargs):
+def update_sent_state(sender: Optional[str] = None,
+                      headers: Optional[Dict[str, str]] = None,
+                      body: Any = None, **kwargs: Any) -> None:
     """Set state to SENT, so that we can tell whether a task exists."""
-    task = current_app.tasks.get(sender)
-    backend = task.backend if task else current_app.backend
-    backend.store_result(headers['id'], None, "SENT")
+    task = celery_app.tasks.get(sender)
+    backend = task.backend if task else celery_app.backend
+    if headers is not None:
+        backend.store_result(headers['id'], None, "SENT")
+
+
+@celery_app.task
+def do_nothing() -> None:
+    """Dummy task used to check the connection to the queue."""
+    return

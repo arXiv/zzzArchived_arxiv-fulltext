@@ -1,94 +1,185 @@
 version: '3'
 
 services:
-  fulltext-test-redis:
+  plaintext-test-redis:
     image: redis
-    container_name: fulltext-test-redis
+    container_name: plaintext-test-redis
     networks:
-      - fulltext-test
-  fulltext-test-localstack:
+      - plaintext-test
+    logging:
+      driver: none
+    # ports:
+    #   - "6379:6379"
+
+  plaintext-test-localstack:
     image: atlassianlabs/localstack
-    container_name: fulltext-test-localstack
+    container_name: plaintext-test-localstack
     networks:
-      - fulltext-test
+      - plaintext-test
     ports:
+      - "4572:4572"
       - "4568:4568"
-      - "4569:4569"
     environment:
       USE_SSL: 'true'
       DEBUG: 'true'
-  fulltext-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile-worker
-    environment:
-      REDIS_ENDPOINT: "fulltext-test-redis:6379"
-      AWS_ACCESS_KEY_ID: "foo"
-      AWS_SECRET_ACCESS_KEY: "bar"
-      CLOUDWATCH_ENDPOINT: "https://fulltext-test-localstack:4582"
-      DYNAMODB_ENDPOINT: "https://fulltext-test-localstack:4569"
-      DYNAMODB_VERIFY: ""
-      CLOUDWATCH_VERIFY: ""
-      FULLTEXT_DOCKER_IMAGE: "fulltext:test"
-      INSTANCE_CREDENTIALS: ""
-      LOGLEVEL: 10
+
+  plaintext-dind:
+    image: docker:18-dind
+    container_name: plaintext-dind
     networks:
-      - fulltext-test
+      - plaintext-test
+    logging:
+      driver: none
+    # resources:
+    #   requests:
+    #     memory: "50Mi"
+    #     cpu: "250m"
+    #   limits:
+    #     memory: "100Mi"
+    #     cpu: "300m"
+    privileged: true
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /pdfs:/pdfs
-    depends_on:
-      - fulltext-test-redis
-      - fulltext-test-localstack
-  fulltext-api:
+    - dind-lib-dir:/var/lib/docker
+    # - docker-run:/var/run
+    - pdfs:/pdfs
+
+  plaintext-worker:
     build:
       context: .
-      dockerfile: Dockerfile-api
-    container_name: fulltext-api
+      dockerfile: Dockerfile
+      args:
+        BASE_VERSION: ARXIVNG-2462
+    command: ["celery", "worker", "-A", "fulltext.worker.celery_app", "--loglevel=INFO", "-E", "--concurrency=1"]
     environment:
-      REDIS_ENDPOINT: "fulltext-test-redis:6379"
+      REDIS_ENDPOINT: "plaintext-test-redis:6379"
       AWS_ACCESS_KEY_ID: "foo"
       AWS_SECRET_ACCESS_KEY: "bar"
-      CLOUDWATCH_ENDPOINT: "https://fulltext-test-localstack:4582"
-      DYNAMODB_ENDPOINT: "https://fulltext-test-localstack:4569"
-      DYNAMODB_VERIFY: ""
-      CLOUDWATCH_VERIFY: ""
-      INSTANCE_CREDENTIALS: ""
+      # KINESIS_VERIFY: ""
+      # KINESIS_ENDPOINT: "plaintext-test-redis:4568"
       LOGLEVEL: 10
-    ports:
-      - "8002:8000"
+      CANONICAL_ENDPOINT: "http://mock-arxiv:8000"
+      CANONICAL_VERIFY: 0
+      COMPILER_ENDPOINT: "http://mock-arxiv:8000/compiler"
+      COMPILER_VERIFY: 0
+      DOCKER_HOST: "tcp://plaintext-dind:2375"
+
+      VAULT_ENABLED: "1"
+      NAMESPACE: "production"
+      KUBE_TOKEN: "fookubetoken"
+      VAULT_HOST: "mock-plaintext-vault"
+      VAULT_PORT: "8200"
+      VAULT_ROLE: "plaintext"
+      VAULT_CREDENTIAL: "foocredential"
+      VAULT_SCHEME: "http"
+
+      WAIT_FOR_SERVICES: 1
+      WAIT_ON_STARTUP: 5
+
     networks:
-      - fulltext-test
+      - plaintext-test
+    volumes:
+      # - docker:/var/lib/docker
+      # - docker-run:/var/run
+      - pdfs:/pdfs
+      - data:/data
     depends_on:
-      - fulltext-test-redis
-      - fulltext-test-localstack
-      - fulltext-worker
-  fulltext-agent:
+      - plaintext-test-redis
+      - plaintext-api
+
+  plaintext-api:
+    image: arxiv/plaintext-api
     build:
       context: .
-      dockerfile: Dockerfile-agent
+      dockerfile: Dockerfile
+      args:
+        BASE_VERSION: ARXIVNG-2462
+    # logging:
+    #   driver: none
+    command: ["uwsgi", "--ini", "/opt/arxiv/uwsgi.ini"]
+    container_name: plaintext-api
+    environment:
+      REDIS_ENDPOINT: "plaintext-test-redis:6379"
+      AWS_ACCESS_KEY_ID: "foo"
+      AWS_SECRET_ACCESS_KEY: "bar"
+      LOGLEVEL: 10
+      JWT_SECRET: foosecret
+      CANONICAL_ENDPOINT: "http://mock-arxiv:8000"
+      CANONICAL_VERIFY: 0
+      COMPILER_ENDPOINT: "http://mock-arxiv:8000/compiler"
+      COMPILER_VERIFY: 0
+      VAULT_ENABLED: "1"
+      NAMESPACE: "production"
+      KUBE_TOKEN: "fookubetoken"
+      VAULT_HOST: "mock-plaintext-vault"
+      VAULT_PORT: "8200"
+      VAULT_ROLE: "plaintext"
+      VAULT_CREDENTIAL: "foocredential"
+      VAULT_SCHEME: "http"
+
+      WAIT_FOR_SERVICES: 1
+      WAIT_ON_STARTUP: 5
+
+    volumes:
+      - data:/data
+    ports:
+      - "8000:8000"
+    networks:
+      - plaintext-test
+    depends_on:
+      - plaintext-test-redis
+
+  mock-arxiv:
+    image: arxiv/mock-arxiv
+    build:
+      context: .
+      dockerfile: Dockerfile-mock
+    container_name: mock-arxiv
+    environment:
+      JWT_SECRET: foosecret
+    networks:
+      - plaintext-test
+
+  mock-plaintext-vault:
+    image: arxiv/mock-plaintext-vault
+    build:
+      context: .
+      dockerfile: Dockerfile-mock-vault
+    container_name: mock-plaintext-vault
+    environment:
+      JWT_SECRET: foosecret
+    networks:
+      - plaintext-test
+
+  plaintext-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BASE_VERSION: ARXIVNG-2462
+    command: ["python", "-m", "fulltext.agent"]
     environment:
       AWS_ACCESS_KEY_ID: "foo"
       AWS_SECRET_ACCESS_KEY: "bar"
-      CLOUDWATCH_ENDPOINT: "https://test-localstack:4582"
-      DYNAMODB_ENDPOINT: "https://test-localstack:4569"
-      KINESIS_ENDPOINT: "https://test-localstack:4568"
-      KINESIS_VERIFY: ""
-      DYNAMODB_VERIFY: ""
-      CLOUDWATCH_VERIFY: ""
+      KINESIS_VERIFY: "0"
+      KINESIS_START_TYPE: "TRIM_HORIZON"
+      KINESIS_ENDPOINT: "https://plaintext-test-localstack:4568"
       EXTRACTION_ENDPOINT: "http://api:8000"
       LOGLEVEL: 10
-      LOGFILE: "/var/log/fulltext-agent-processor.log"
+      LOGFILE: "/var/log/plaintext-agent-processor.log"
       MODE: "test"
-      JAVA_FLAGS: "-Dcom.amazonaws.sdk.disableCertChecking"
-      AWS_CBOR_DISABLE: "true"
-      INSTANCE_CREDENTIALS: ""
     networks:
-      - fulltext-test
+      - plaintext-test
     depends_on:
-      - fulltext-test-localstack
-      - fulltext-worker
-      - fulltext-api
+      - plaintext-test-localstack
+      - plaintext-worker
+      - plaintext-api
 
 networks:
-  fulltext-test:
+  plaintext-test:
+
+volumes:
+  pdfs:
+  data:
+  docker:
+  docker-run:
+  dind-lib-dir:
