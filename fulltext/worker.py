@@ -27,7 +27,7 @@ def get_secrets(*args: Any, **kwargs: Any) -> None:
         print('Vault not enabled; skipping')
         return
 
-    for key, value in __secrets__.yield_secrets():
+    for key, value in __secrets__.yield_secrets():   # type: ignore
         app.config[key] = value
 
 
@@ -52,5 +52,5 @@ def verify_secrets_up_to_date(*args: Any, **kwargs: Any) -> None:
         print('Vault not enabled; skipping')
         return
 
-    for key, value in __secrets__.yield_secrets():
+    for key, value in __secrets__.yield_secrets():   # type: ignore
         app.config[key] = value

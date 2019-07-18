@@ -14,7 +14,9 @@ script:
   - CELERY_ALWAYS_EAGER=1 pipenv run nose2 -s ./ --with-coverage --coverage-report=term-missing
 after_success:
   - coveralls
-  - "./tests/lintstats.sh"
+  - "./tests/lint.sh fulltext"
+  - "./tests/style.sh fulltext"
+  - "./tests/type-check.sh fulltext"
 
 deploy:
 - provider: script

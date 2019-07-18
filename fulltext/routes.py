@@ -58,7 +58,9 @@ def best_match(available: List[str], default: str) -> str:
 def ok() -> Response:
     """Provide current integration status information for health checks."""
     data, code, headers = controllers.service_status()
-    return jsonify(data), code, headers
+    response: Response = make_response(jsonify(data), code, headers)
+    return response
+
 
 
 @blueprint.route(ARXIV_PREFIX, methods=['POST'])
