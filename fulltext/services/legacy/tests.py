@@ -8,16 +8,16 @@ from flask import Flask
 from arxiv import status
 from arxiv.integration.api import service
 
-from .. import pdf
+from . import legacy
 
 
 class TestExists(TestCase):
-    """Tests for :func:`fulltext.services.pdf.CanonicalPDF.exists`."""
+    """Tests for :func:`fulltext.services.legacy.CanonicalPDF.exists`."""
 
     def setUp(self):
         """Start an app so that we have some context."""
         self.app = Flask('test')
-        pdf.CanonicalPDF.init_app(self.app)
+        legacy.CanonicalPDF.init_app(self.app)
 
     @mock.patch(f'{service.__name__}.requests.Session')
     def test_pdf_exists(self, session):
@@ -27,7 +27,7 @@ class TestExists(TestCase):
             head=mock.MagicMock(return_value=mock_response)
         )
         with self.app.app_context():
-            canonical = pdf.CanonicalPDF.current_session()
+            canonical = legacy.CanonicalPDF.current_session()
             self.assertTrue(canonical.exists('1234.56789'))
 
     @mock.patch(f'{service.__name__}.requests.Session')
@@ -38,7 +38,7 @@ class TestExists(TestCase):
             head=mock.MagicMock(return_value=mock_response)
         )
         with self.app.app_context():
-            canonical = pdf.CanonicalPDF.current_session()
+            canonical = legacy.CanonicalPDF.current_session()
             self.assertFalse(canonical.exists('1234.56789'))
 
     @mock.patch(f'{service.__name__}.requests.Session')
@@ -50,33 +50,33 @@ class TestExists(TestCase):
         )
         with self.app.app_context():
             with self.assertRaises(IOError):
-                pdf.CanonicalPDF.current_session().exists('1234.56789')
+                legacy.CanonicalPDF.current_session().exists('1234.56789')
 
 
 class TestRetrieve(TestCase):
-    """Tests for :func:`fulltext.services.pdf.CanonicalPDF.retrieve`."""
+    """Tests for :func:`fulltext.services.legacy.CanonicalPDF.retrieve`."""
 
     def setUp(self):
         """Start an app so that we have some context."""
         self.app = Flask('test')
-        pdf.CanonicalPDF.init_app(self.app)
+        legacy.CanonicalPDF.init_app(self.app)
 
     @mock.patch(f'{service.__name__}.requests.Session')
     def test_pdf_exists(self, session):
         """A PDF exists at the passed URL."""
         mock_response = mock.MagicMock(
             status_code=status.HTTP_200_OK,
-            content=b'foo',
+            iter_content=lambda size: iter([b'foo']),
             headers={'Content-Type': 'application/pdf'})
         session.return_value = mock.MagicMock(
             get=mock.MagicMock(return_value=mock_response)
         )
         document_id = '1234.56789'
         with self.app.app_context():
-            pdf_path = pdf.CanonicalPDF.current_session().retrieve(document_id)
-        self.assertIn(document_id, pdf_path)
-        self.assertTrue(pdf_path.endswith('.pdf'))
-        self.assertTrue(os.path.exists(pdf_path))
+            l = legacy.CanonicalPDF.current_session()
+            pdf_content = l.retrieve(document_id)
+
+        self.assertEqual(pdf_content.read(), b'foo')
 
     @mock.patch(f'{service.__name__}.requests.Session')
     def test_pdf_not_ready(self, session):
@@ -88,7 +88,7 @@ class TestRetrieve(TestCase):
         )
         mock_pdf_response = mock.MagicMock(
             status_code=status.HTTP_200_OK,
-            content=b'foo',
+            iter_content=lambda size: iter([b'foo']),
             headers={'Content-Type': 'application/pdf'}
         )
         mock_get = mock.MagicMock(
@@ -98,12 +98,10 @@ class TestRetrieve(TestCase):
         document_id = '1234.56789'
 
         with self.app.app_context():
-            canonical = pdf.CanonicalPDF.current_session()
-            pdf_path = canonical.retrieve(document_id, sleep=0)
+            canonical = legacy.CanonicalPDF.current_session()
+            pdf_content = canonical.retrieve(document_id, sleep=0)
 
-        self.assertIn(document_id, pdf_path)
-        self.assertTrue(pdf_path.endswith('.pdf'))
-        self.assertTrue(os.path.exists(pdf_path))
+        self.assertEqual(pdf_content.read(), b'foo')
         self.assertEqual(mock_get.call_count, 2)
 
     @mock.patch(f'{service.__name__}.requests.Session')
@@ -117,7 +115,7 @@ class TestRetrieve(TestCase):
         mock_get = mock.MagicMock(return_value=mock_html_response)
         session.return_value = mock.MagicMock(get=mock_get)
         with self.app.app_context():
-            canonical = pdf.CanonicalPDF.current_session()
+            canonical = legacy.CanonicalPDF.current_session()
             with self.assertRaises(IOError):
                 canonical.retrieve('1234.56789', sleep=0)
         self.assertGreater(mock_get.call_count, 2)
@@ -130,8 +128,8 @@ class TestRetrieve(TestCase):
             get=mock.MagicMock(return_value=mock_response)
         )
         with self.app.app_context():
-            canonical = pdf.CanonicalPDF.current_session()
-            with self.assertRaises(pdf.DoesNotExist):
+            canonical = legacy.CanonicalPDF.current_session()
+            with self.assertRaises(legacy.DoesNotExist):
                 canonical.retrieve('1234.56789')
 
     @mock.patch(f'{service.__name__}.requests.Session')
@@ -143,5 +141,5 @@ class TestRetrieve(TestCase):
         )
         with self.app.app_context():
             with self.assertRaises(IOError):
-                canonical = pdf.CanonicalPDF.current_session()
+                canonical = legacy.CanonicalPDF.current_session()
                 canonical.retrieve('1234.56789')

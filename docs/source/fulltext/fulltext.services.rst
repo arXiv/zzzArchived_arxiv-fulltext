@@ -18,7 +18,7 @@ Submodules
 
 .. toctree::
 
-   fulltext.services.compiler
+   fulltext.services.preview
    fulltext.services.pdf
    fulltext.services.store
 

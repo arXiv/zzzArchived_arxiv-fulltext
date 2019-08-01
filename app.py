@@ -1,4 +1,4 @@
-from fulltext.factory import create_web_app, celery_app
+from fulltext.factory import create_web_app
 from fulltext.services import store
 
 app = create_web_app()

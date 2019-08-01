@@ -64,7 +64,7 @@ from arxiv.integration.meta import MetaIntegration
 from arxiv.base.globals import get_application_global, get_application_config
 from arxiv.base import logging
 
-from ..domain import Extraction, SupportedFormats, SupportedBuckets
+from ...domain import Extraction, SupportedFormats, SupportedBuckets
 
 logger = logging.getLogger(__name__)
 MonkeyPatch.patch_fromisoformat()

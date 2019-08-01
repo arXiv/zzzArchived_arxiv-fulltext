@@ -3,12 +3,14 @@
 import os
 import tempfile
 import time
-from typing import Any
+from typing import Any, IO
 
 import requests
 
 from arxiv.base import logging
 from arxiv.integration.api import status, service
+
+from ..util import ReadWrapper
 
 
 class InvalidURL(ValueError):
@@ -59,7 +61,7 @@ class CanonicalPDF(service.HTTPIntegration):
             return False
         raise IOError(f'Unexpected response status code: {r.status_code}')
 
-    def retrieve(self, identifier: str, sleep: int = 5) -> str:
+    def retrieve(self, identifier: str, sleep: int = 5) -> IO[bytes]:
         """
         Retrieve PDFs of published papers from the core arXiv document store.
 
@@ -107,8 +109,4 @@ class CanonicalPDF(service.HTTPIntegration):
                     raise IOError('%s: unexpected status for PDF: %i' %
                                   (identifier, pdf_response.status_code))
 
-        _, pdf_path = tempfile.mkstemp(prefix=identifier, suffix='.pdf')
-        with open(pdf_path, 'wb') as f:
-            f.write(pdf_response.content)
-        os.chmod(pdf_path, 0o644)
-        return pdf_path
+        return ReadWrapper(pdf_response.iter_content)

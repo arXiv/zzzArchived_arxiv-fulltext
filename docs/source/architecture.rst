@@ -96,7 +96,7 @@ is primarily intended for other services.
 To extract text from submissions, the ``compile:read`` scope is also required.
 
 Whereas announced e-prints require no special ownership privileges, submissions
-are more protected. The compiler service (from whence we obtain PDFs for
+are more protected. The preview service (from whence we obtain PDFs for
 submissions from which to extract text) publishes the identity of the resource
 owner (their user ID) via the ``ARXIV-OWNER`` header. The plaintext extraction
 service must implement authorization checks to ensure that only the owner (or a

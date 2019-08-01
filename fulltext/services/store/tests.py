@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from pytz import UTC
 from unittest import TestCase, mock
-from .. import store
+from . import store
 from ...domain import Extraction, SupportedFormats, SupportedBuckets
 
 

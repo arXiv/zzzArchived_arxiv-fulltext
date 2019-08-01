@@ -1,7 +1,7 @@
-fulltext.services.compiler module
+fulltext.services.preview module
 =================================
 
-.. automodule:: fulltext.services.compiler
+.. automodule:: fulltext.services.preview
     :members:
     :undoc-members:
     :show-inheritance:
