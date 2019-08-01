@@ -43,15 +43,6 @@ class TestInitialize(TestCase):
         with self.assertRaises(store.ConfigurationError):
             store.Storage(subvolume)
 
-    def test_init_with_no_write_access_to_create_files(self):
-        """The storage integration is initialized with an unwritable path."""
-        subvolume = os.path.join(self.volume, 'foo', 'baz')
-        os.makedirs(subvolume)
-        os.chmod(subvolume, stat.S_IREAD)  # Owner can read.
-
-        with self.assertRaises(store.ConfigurationError):
-            store.Storage(subvolume)
-
     def tearDown(self):
         """Remove the volume."""
         try:
