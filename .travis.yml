@@ -10,6 +10,8 @@ python:
 script:
   - pip install -U pip pipenv
   - pipenv install --dev
+  - docker pull redis
+  - docker pull atlassianlabs/localstack
   - WITH_INTEGRATION=1 pipenv run nose2 -s extractor
   - WITH_INTEGRATION=1 pipenv run nose2 -s ./ --with-coverage --coverage-report=term-missing
 after_success:
