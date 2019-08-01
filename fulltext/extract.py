@@ -131,7 +131,7 @@ def get_task(identifier: str, id_type: str, version: str) -> Extraction:
 
     """
     _task_id = task_id(identifier, id_type, version)
-    result = AsyncResult(_task_id)
+    result = AsyncResult(_task_id, task_name='extract')
     exception: Optional[str] = None
     owner: Optional[str] = None
     if result.status == 'PENDING':
@@ -256,19 +256,20 @@ def create_worker_app(app: Flask) -> Celery:
     :class:`celery.Celery`
 
     """
-    result_backend = app.config['RESULT_BACKEND']
-    broker = app.config['BROKER_URL']
+    result_backend = app.config['CELERY_RESULT_BACKEND']
+    broker = app.config['CELERY_BROKER_URL']
     celery_app = Celery('fulltext',
                         results=result_backend,
                         backend=result_backend,
                         result_backend=result_backend,
                         broker=broker)
 
-    celery_app.conf.queue_name_prefix = app.config['QUEUE_NAME_PREFIX']
-    celery_app.conf.task_default_queue = app.config['TASK_DEFAULT_QUEUE']
-    celery_app.conf.prefetch_multiplier = app.config['PREFETCH_MULTIPLIER']
-    celery_app.conf.task_acks_late = app.config['TASK_ACKS_LATE']
+    celery_app.conf.queue_name_prefix = app.config['CELERY_QUEUE_NAME_PREFIX']
+    celery_app.conf.task_default_queue = app.config['CELERY_TASK_DEFAULT_QUEUE']
+    celery_app.conf.prefetch_multiplier = app.config['CELERY_PREFETCH_MULTIPLIER']
+    celery_app.conf.task_acks_late = app.config['CELERY_TASK_ACKS_LATE']
     celery_app.conf.backend = result_backend
+    celery_app.conf.result_extended = app.config['CELERY_RESULT_EXTENDED']
 
     celery_app.task(extract, name='extract')
     celery_app.task(do_nothing, name='do_nothing')

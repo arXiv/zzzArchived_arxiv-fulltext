@@ -95,9 +95,6 @@ class Storage(metaclass=MetaIntegration):
             except Exception as e:
                 raise ConfigurationError("Cannot create storage volume") from e
 
-        if not self.is_available():
-            raise ConfigurationError("Cannot access storage volume")
-
     def is_available(self, **kwargs: Any) -> bool:
         """Determine whether storage is available."""
         test_name = f'test-{datetime.timestamp(datetime.now(UTC))}'

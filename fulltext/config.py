@@ -316,14 +316,14 @@ if not KINESIS_VERIFY:
 
 # --- CELERY CONFIGURATION
 
-REDIS_ENDPOINT = environ.get('REDIS_ENDPOINT', 'localhost:6379')
+CELERY_REDIS_ENDPOINT = environ.get('REDIS_ENDPOINT', 'localhost:6379')
 """Hostname and port of the Redis used for task queueing and result storage."""
 
-BROKER_URL = "redis://%s/0" % REDIS_ENDPOINT
-RESULT_BACKEND = "redis://%s/0" % REDIS_ENDPOINT
-QUEUE_NAME_PREFIX = 'fulltext-'
+CELERY_BROKER_URL = "redis://%s/0" % CELERY_REDIS_ENDPOINT
+CELERY_RESULT_BACKEND = "redis://%s/0" % CELERY_REDIS_ENDPOINT
+CELERY_QUEUE_NAME_PREFIX = 'fulltext-'
 
-PREFETCH_MULTIPLIER = 1
+CELERY_PREFETCH_MULTIPLIER = 1
 """
 Prevent the worker from taking more than one task at a time.
 
@@ -332,7 +332,7 @@ is pretty solid runtime, we may lose the underlying machine with little or no
 warning. The less state held by the workers the better.
 """
 
-TASK_ACKS_LATE = True
+CELERY_TASK_ACKS_LATE = True
 """
 Do not acknowledge a task until it has been completed.
 
@@ -341,13 +341,16 @@ will disappear without warning. This ensures that a task will can be executed
 again if the worker crashes during execution.
 """
 
-TASK_DEFAULT_QUEUE = 'fulltext-worker'
+CELERY_TASK_DEFAULT_QUEUE = 'fulltext-worker'
 """
 Name of the queue for plain text extraction tasks.
 
 Using different queue names allows us to run many different queues on the same
 underlying transport (e.g. Redis cluster).
 """
+
+CELERY_RESULT_EXTENDED = True
+"""Keep task metadata around in the result backend."""
 
 # --- URL GENERATION ---
 

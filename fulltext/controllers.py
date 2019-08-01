@@ -212,7 +212,9 @@ def get_task_status(identifier: str, id_type: str = SupportedBuckets.ARXIV,
     try:
         task = extract.get_task(identifier, id_type, version)
     except extract.NoSuchTask as e:
-        raise NotFound('No such task') from e
+        logger.debug(f'No such task: {e}')
+        # raise NotFound('No such task') from e
+        task = product
     return _task_redirect(task, product)
 
 
