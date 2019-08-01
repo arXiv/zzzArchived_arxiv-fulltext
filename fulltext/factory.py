@@ -1,27 +1,26 @@
 """Application factory for fulltext service components."""
 
-import os
-import sys
 import logging as pylogging
+import os
 import re
+import sys
 import time
-
 from typing import Any
+
+from flask import Flask, jsonify, Response
 from typing_extensions import Protocol
 from werkzeug.exceptions import HTTPException, Forbidden, Unauthorized, \
     BadRequest, MethodNotAllowed, InternalServerError, NotFound
 from werkzeug.routing import BaseConverter, ValidationError
-from flask import Flask, jsonify, Response
 
 from arxiv.base import Base, logging
 from arxiv.users.auth import Auth
 from arxiv.users import auth
 from arxiv.base.middleware import wrap, request_logs
-
 from arxiv import vault
 
-from fulltext.services import store, pdf, compiler, extractor
-from fulltext.celery import celery_app
+from fulltext.services import store, legacy, preview, extractor
+# from fulltext.celery import celery_app
 from fulltext import routes
 from . import extract
 
@@ -34,12 +33,10 @@ class SubmissionSourceConverter(BaseConverter):
     regex = r'[^/][0-9]+/[^/\?#]+'
 
 
-def create_web_app() -> Flask:
+def create_web_app(for_worker: bool = False) -> Flask:
     """Initialize an instance of the web application."""
-    from . import celeryconfig
     app = Flask('fulltext')
     app.config.from_pyfile('config.py')
-    celery_app.config_from_object(celeryconfig)
     app.url_map.converters['source'] = SubmissionSourceConverter
 
     if app.config['LOGLEVEL'] < 40:
@@ -52,8 +49,8 @@ def create_web_app() -> Flask:
     Auth(app)
     app.register_blueprint(routes.blueprint)
     store.Storage.current_session().init_app(app)
-    pdf.CanonicalPDF.init_app(app)
-    compiler.Compiler.init_app(app)
+    legacy.CanonicalPDF.init_app(app)
+    preview.PreviewService.init_app(app)
 
     middleware = [auth.middleware.AuthMiddleware]
     if app.config['VAULT_ENABLED']:
@@ -66,46 +63,17 @@ def create_web_app() -> Flask:
         time.sleep(app.config['WAIT_ON_STARTUP'])
         with app.app_context():
             wait_for(store.Storage.current_session())
-            wait_for(pdf.CanonicalPDF.current_session())
-            wait_for(compiler.Compiler.current_session())
-            wait_for(extract, await_result=True)    # type: ignore
+            wait_for(legacy.CanonicalPDF.current_session())
+            wait_for(preview.PreviewService.current_session())
+            if for_worker:
+                wait_for(extractor.do_extraction)
+            else:
+                wait_for(extract, await_result=True)    # type: ignore
         logger.info('All upstream services are available; ready to start')
 
     register_error_handlers(app)
+    app.celery_app = extract.get_or_create_worker_app(app)
     return app
-
-
-def create_worker_app() -> Flask:
-    """Initialize an instance of the worker application."""
-    flask_app = Flask('fulltext')
-    flask_app.config.from_pyfile('config.py')
-
-    if flask_app.config['LOGLEVEL'] < 40:
-        # Make sure that boto doesn't spam the logs when we're in debug mode.
-        pylogging.getLogger('boto').setLevel(pylogging.ERROR)
-        pylogging.getLogger('boto3').setLevel(pylogging.ERROR)
-        pylogging.getLogger('botocore').setLevel(pylogging.ERROR)
-
-    store.Storage.current_session().init_app(flask_app)
-    pdf.CanonicalPDF.init_app(flask_app)
-    compiler.Compiler.init_app(flask_app)
-
-    middleware = [auth.middleware.AuthMiddleware]
-    if flask_app.config['VAULT_ENABLED']:
-        middleware.insert(0, vault.middleware.VaultMiddleware)
-    wrap(flask_app, middleware)
-    if flask_app.config['VAULT_ENABLED']:
-        flask_app.middlewares['VaultMiddleware'].update_secrets({})
-
-    if flask_app.config['WAIT_FOR_SERVICES']:
-        time.sleep(flask_app.config['WAIT_ON_STARTUP'])
-        with flask_app.app_context():
-            wait_for(store.Storage.current_session())
-            wait_for(pdf.CanonicalPDF.current_session())
-            wait_for(compiler.Compiler.current_session())
-            wait_for(extractor.do_extraction)
-        logger.info('All upstream services are available; ready to start')
-    return flask_app
 
 
 class IAwaitable(Protocol):

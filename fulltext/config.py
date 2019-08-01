@@ -319,6 +319,35 @@ if not KINESIS_VERIFY:
 REDIS_ENDPOINT = environ.get('REDIS_ENDPOINT', 'localhost:6379')
 """Hostname and port of the Redis used for task queueing and result storage."""
 
+BROKER_URL = "redis://%s/0" % REDIS_ENDPOINT
+RESULT_BACKEND = "redis://%s/0" % REDIS_ENDPOINT
+QUEUE_NAME_PREFIX = 'fulltext-'
+
+PREFETCH_MULTIPLIER = 1
+"""
+Prevent the worker from taking more than one task at a time.
+
+In general we want to treat our workers as ephemeral. Even though Celery itself
+is pretty solid runtime, we may lose the underlying machine with little or no
+warning. The less state held by the workers the better.
+"""
+
+TASK_ACKS_LATE = True
+"""
+Do not acknowledge a task until it has been completed.
+
+As described for :const:`.worker_prefetch_multiplier`, we assume that workers
+will disappear without warning. This ensures that a task will can be executed
+again if the worker crashes during execution.
+"""
+
+TASK_DEFAULT_QUEUE = 'fulltext-worker'
+"""
+Name of the queue for plain text extraction tasks.
+
+Using different queue names allows us to run many different queues on the same
+underlying transport (e.g. Redis cluster).
+"""
 
 # --- URL GENERATION ---
 
@@ -384,39 +413,40 @@ VAULT_REQUESTS = [
 ]
 """Requests for Vault secrets."""
 
+JWT_SECRET = environ.get('JWT_SECRET')
 
 # --- UPSTREAM INTEGRATIONS ---
 
-# Integration with the compiler service.
-COMPILER_HOST = environ.get('COMPILER_SERVICE_HOST', 'arxiv.org')
-"""Hostname or addreess of the compiler service."""
+# Integration with the preview service.
+PREVIEW_HOST = environ.get('PREVIEW_SERVICE_HOST', 'arxiv.org')
+"""Hostname or addreess of the preview service."""
 
-COMPILER_PORT = environ.get('COMPILER_SERVICE_PORT', '443')
-"""Port for the compiler service."""
+PREVIEW_PORT = environ.get('PREVIEW_SERVICE_PORT', '443')
+"""Port for the preview service."""
 
-COMPILER_PROTO = environ.get(f'COMPILER_PORT_{COMPILER_PORT}_PROTO', 'https')
-"""Protocol for the compiler service."""
+PREVIEW_PROTO = environ.get(f'PREVIEW_PORT_{PREVIEW_PORT}_PROTO', 'https')
+"""Protocol for the preview service."""
 
-COMPILER_PATH = environ.get('COMPILER_PATH', '')
-"""Path at which the compiler service is deployed."""
+PREVIEW_PATH = environ.get('PREVIEW_PATH', '')
+"""Path at which the preview service is deployed."""
 
-COMPILER_ENDPOINT = environ.get(
-    'COMPILER_ENDPOINT',
-    '%s://%s:%s/%s' % (COMPILER_PROTO, COMPILER_HOST, COMPILER_PORT,
-                       COMPILER_PATH)
+PREVIEW_ENDPOINT = environ.get(
+    'PREVIEW_ENDPOINT',
+    '%s://%s:%s/%s' % (PREVIEW_PROTO, PREVIEW_HOST, PREVIEW_PORT,
+                       PREVIEW_PATH)
 )
 """
-Full URL to the root compiler service API endpoint.
+Full URL to the root preview service API endpoint.
 
-If not explicitly provided, this is composed from :const:`COMPILER_HOST`,
-:const:`COMPILER_PORT`, :const:`COMPILER_PROTO`, and :const:`COMPILER_PATH`.
+If not explicitly provided, this is composed from :const:`PREVIEW_HOST`,
+:const:`PREVIEW_PORT`, :const:`PREVIEW_PROTO`, and :const:`PREVIEW_PATH`.
 """
 
-COMPILER_VERIFY = bool(int(environ.get('COMPILER_VERIFY', '1')))
-"""Enable/disable SSL certificate verification for compiler service."""
+PREVIEW_VERIFY = bool(int(environ.get('PREVIEW_VERIFY', '1')))
+"""Enable/disable SSL certificate verification for preview service."""
 
-if COMPILER_PROTO == 'https' and not COMPILER_VERIFY:
-    warnings.warn('Certificate verification for compiler is disabled; this'
+if PREVIEW_PROTO == 'https' and not PREVIEW_VERIFY:
+    warnings.warn('Certificate verification for preview is disabled; this'
                   ' should not be disabled in production.')
 
 
@@ -452,6 +482,6 @@ If not explicitly provided, this is composed from :const:`CANONICAL_HOST`,
 CANONICAL_VERIFY = bool(int(environ.get('CANONICAL_VERIFY', '1')))
 """Enable/disable SSL certificate verification for canonical service."""
 
-if COMPILER_PROTO == 'https' and not CANONICAL_VERIFY:
+if PREVIEW_PROTO == 'https' and not CANONICAL_VERIFY:
     warnings.warn('Certificate verification for canonical service is disabled;'
                   ' this should not be disabled in production.')
