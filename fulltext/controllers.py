@@ -35,7 +35,7 @@ def service_status() -> Response:
     }
     if all(stat.values()):
         return stat, status.OK, {}
-    raise InternalServerError(stat)
+    raise InternalServerError(stat)    # type: ignore
 
 
 def retrieve(identifier: str,                                # arch: controller

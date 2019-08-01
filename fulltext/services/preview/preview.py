@@ -24,6 +24,8 @@ class AlreadyExists(exceptions.BadRequest):
 
 
 class PreviewMeta(TypedDict):
+    """Return struct for the preview metadata endpoint."""
+
     added: str
     size_bytes: int
     checksum: str

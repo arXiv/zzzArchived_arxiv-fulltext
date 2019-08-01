@@ -161,6 +161,7 @@ def _retrieve_pdf(identifier: str, id_type: str, token: Optional[str]) \
         -> IO[bytes]:
     canonical = legacy.CanonicalPDF.current_session()
     previews = preview.PreviewService.current_session()
+    pdf_content: IO[bytes]
     if id_type == SupportedBuckets.ARXIV:
         pdf_content = canonical.retrieve(identifier)
     elif id_type == SupportedBuckets.SUBMISSION:
