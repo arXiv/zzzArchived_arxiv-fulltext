@@ -64,7 +64,7 @@ from arxiv.integration.meta import MetaIntegration
 from arxiv.base.globals import get_application_global, get_application_config
 from arxiv.base import logging
 
-from ..domain import Extraction, SupportedFormats, SupportedBuckets
+from ...domain import Extraction, SupportedFormats, SupportedBuckets
 
 logger = logging.getLogger(__name__)
 MonkeyPatch.patch_fromisoformat()
@@ -94,9 +94,6 @@ class Storage(metaclass=MetaIntegration):
                 os.makedirs(self._volume)
             except Exception as e:
                 raise ConfigurationError("Cannot create storage volume") from e
-
-        if not self.is_available():
-            raise ConfigurationError("Cannot access storage volume")
 
     def is_available(self, **kwargs: Any) -> bool:
         """Determine whether storage is available."""

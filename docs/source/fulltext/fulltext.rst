@@ -14,14 +14,13 @@ Subpackages
     fulltext.agent
     fulltext.process
     fulltext.services
+    fulltext.tests
 
 Submodules
 ----------
 
 .. toctree::
 
-   fulltext.celery
-   fulltext.celeryconfig
    fulltext.config
    fulltext.controllers
    fulltext.domain

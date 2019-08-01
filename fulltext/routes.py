@@ -68,7 +68,8 @@ def ok() -> Response:
 @scoped(scopes.CREATE_FULLTEXT, resource=resource_id)
 def start_extraction(id_type: str, identifier: str) -> Response:
     """Handle requests for fulltext extraction."""
-    force = request.args.get('force', False)
+    payload: Optional[dict] = request.get_json()
+    force: bool = payload.get('force', False) if payload is not None else False
     token = request.environ['token']
 
     # Authorization is required to work with submissions.

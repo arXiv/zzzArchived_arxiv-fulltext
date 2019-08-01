@@ -69,7 +69,7 @@ and ``fulltext:read``.
 
 To extract text from submissions, you will also need ``compile:read`` and
 ``compile:create``. Your user ID will also need to match the owner stated by
-the mock compiler endpoint in [``mock_arxiv.py``](./mock_arxiv.py).
+the mock preview endpoint in [``mock_arxiv.py``](./mock_arxiv.py).
 
 You should pass this token as the value of the ``Authorization`` header in
 all requests to the API. For example:

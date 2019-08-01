@@ -10,3 +10,5 @@ omit =
     fulltext/config.py
     fulltext/celeryconfig.py
     mock_arxiv.py
+    mock_vault.py
+    fulltext/agent/__main__.py

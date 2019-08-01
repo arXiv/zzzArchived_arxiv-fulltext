@@ -8,11 +8,14 @@ from docker.errors import ImageNotFound, APIError
 
 from arxiv.base import logging
 from arxiv.vault.manager import ConfigManager
-from fulltext.factory import create_worker_app, celery_app
+
+from fulltext.factory import create_web_app
+from fulltext.extract import create_worker_app
 
 logger = logging.getLogger(__name__)
-app = create_worker_app()
+app = create_web_app(for_worker=True)
 app.app_context().push()
+celery_app = create_worker_app(app)
 
 
 __secrets__: Optional[ConfigManager] = None

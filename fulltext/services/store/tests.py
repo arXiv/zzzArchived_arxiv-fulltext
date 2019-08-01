@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from pytz import UTC
 from unittest import TestCase, mock
-from .. import store
+from . import store
 from ...domain import Extraction, SupportedFormats, SupportedBuckets
 
 
@@ -39,15 +39,6 @@ class TestInitialize(TestCase):
         """The storage integration is initialized with an unwritable path."""
         subvolume = os.path.join(self.volume, 'foo', 'baz')
         os.chmod(self.volume, stat.S_IREAD)  # Owner can read.
-
-        with self.assertRaises(store.ConfigurationError):
-            store.Storage(subvolume)
-
-    def test_init_with_no_write_access_to_create_files(self):
-        """The storage integration is initialized with an unwritable path."""
-        subvolume = os.path.join(self.volume, 'foo', 'baz')
-        os.makedirs(subvolume)
-        os.chmod(subvolume, stat.S_IREAD)  # Owner can read.
 
         with self.assertRaises(store.ConfigurationError):
             store.Storage(subvolume)

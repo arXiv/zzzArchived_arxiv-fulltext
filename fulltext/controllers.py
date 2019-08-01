@@ -10,7 +10,7 @@ from werkzeug.exceptions import NotFound, InternalServerError, BadRequest, \
 
 from arxiv.base import logging
 
-from .services import store, pdf, compiler
+from .services import store, legacy, preview
 from . import extract
 from .domain import Extraction, SupportedFormats, SupportedBuckets
 
@@ -29,9 +29,13 @@ Authorizer = Callable[[str, Optional[str]], bool]
 def service_status() -> Response:
     """Handle a request for the status of this service."""
     # This is the critical upstream integration.
-    if store.Storage.current_session().is_available():
-        return {'storage': True}, status.OK, {}
-    raise InternalServerError('Failed readiness check')
+    stat = {
+        'storage': store.Storage.current_session().is_available(),
+        'extractor': extract.is_available(await_result=True)
+    }
+    if all(stat.values()):
+        return stat, status.OK, {}
+    raise InternalServerError(stat)    # type: ignore
 
 
 def retrieve(identifier: str,                                # arch: controller
@@ -94,9 +98,9 @@ def start_extraction(id_type: str, identifier: str, token: str,
     if id_type not in SupportedBuckets:
         raise NotFound('Unsupported identifier')
 
-    canonical = pdf.CanonicalPDF.current_session()
+    canonical = legacy.CanonicalPDF.current_session()
     storage = store.Storage.current_session()
-    compilations = compiler.Compiler.current_session()
+    previews = preview.PreviewService.current_session()
 
     # Before creating an extraction task, check that the intended document
     # even exists. This gives the client a clear failure now, rather than
@@ -117,10 +121,10 @@ def start_extraction(id_type: str, identifier: str, token: str,
             raise NotFound('No such document')
     elif id_type == SupportedBuckets.SUBMISSION:
         try:
-            owner = compilations.owner(identifier, token)
+            owner = previews.get_owner(identifier, token)
             logger.debug('Got owner %s', owner)
-        except compiler.exceptions.NotFound as e:
-            logger.debug('Compiler returned 404 Not Found for %s', identifier)
+        except preview.exceptions.NotFound as e:
+            logger.debug('Preview returned 404 Not Found for %s', identifier)
             raise NotFound('No such document') from e
 
         # Make sure that the client is authorized to work with this resource.
@@ -195,6 +199,8 @@ def get_task_status(identifier: str, id_type: str = SupportedBuckets.ARXIV,
         logger.debug('requester not authorized; return 404 Not Found')
         raise NotFound('No such task')
 
+    logger.debug('Task has status: %s', product.status)
+
     if product.status is Extraction.Status.SUCCEEDED:
         logger.debug('Task for %s is already complete', identifier)
         target = url_for('fulltext.retrieve', identifier=identifier,
@@ -206,7 +212,9 @@ def get_task_status(identifier: str, id_type: str = SupportedBuckets.ARXIV,
     try:
         task = extract.get_task(identifier, id_type, version)
     except extract.NoSuchTask as e:
-        raise NotFound('No such task') from e
+        logger.debug(f'No such task: {e}')
+        # raise NotFound('No such task') from e
+        task = product
     return _task_redirect(task, product)
 
 

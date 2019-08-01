@@ -18,7 +18,7 @@ from arxiv.vault.manager import ConfigManager
 
 from retry.api import retry_call
 
-from fulltext.extract import extract
+from fulltext import extract
 
 logger = logging.getLogger(__name__)
 # logger.propagate = True
@@ -142,4 +142,4 @@ class FulltextRecordProcessor(BaseConsumer):
 
         arxiv_id: str = deserialized.get('document_id')
         logger.info(f'Processing notification for %s', arxiv_id)
-        extract.delay(arxiv_id, url_for('pdf', identifier=arxiv_id))
+        extract.create_task(arxiv_id, 'arxiv')

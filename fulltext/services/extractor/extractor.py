@@ -17,6 +17,10 @@ from arxiv.base import logging
 logger = logging.getLogger(__name__)
 
 
+class NoContentError(RuntimeError):
+    """No content was extracted from the PDF."""
+
+
 class Extractor:
     """
     Integrates with Docker to perform plain text extraction.
@@ -53,8 +57,7 @@ class Extractor:
         _, name, tag = self.image
         client.images.pull(name, tag)
 
-    def _cleanup(self, pdfpath: str, outpath: str) -> None:
-        os.remove(pdfpath)
+    def _cleanup(self, outpath: str) -> None:
         os.remove(outpath.replace('.txt', '.pdf2txt'))
         os.remove(outpath)    # Cleanup.
 
@@ -78,12 +81,11 @@ class Extractor:
 
         # This is the path in this container/env where PDFs are stored.
         workdir = current_app.config['WORKDIR']
-        logger.debug('WORKDIR: %s', workdir)
+
         # This is the path on the Docker host that should be mapped into the
         # extractor container at /pdf. This is the same volume that should be
         # mounted at ``workdir`` in this container/env.
         mountdir = current_app.config['MOUNTDIR']
-        logger.debug('MOUNTDIR: %s', mountdir)
         # The result is something like:
         #
         #                       | <-- {workdir} (worker)
@@ -96,16 +98,13 @@ class Extractor:
 
         client = self._new_client()
 
-        # The PDF is in a temporary directory; we need to copy it in to the
-        # working volume so that the extractor can find it.
-        fldr, name = os.path.split(filename)
-        stub, ext = os.path.splitext(os.path.basename(filename))
-        pdfpath = os.path.join(workdir, name)
-        shutil.copyfile(filename, pdfpath)
-        logger.info('Copied %s to %s', filename, pdfpath)
+        # Get the name of the file so that we know how to refer to it within
+        # the container running the extractor.
+        # _, name = os.path.split(filename)
+        name = filename.split(workdir, 1)[1].strip('/')
+        stub, _ = os.path.splitext(name)
 
-        # Pull and run the extractor image.
-        try:
+        try:    # Pull and run the extractor image.
             self._pull_image(client)
             volumes = {mountdir: {'bind': '/pdfs', 'mode': 'rw'}}
             client.containers.run(image, f'/pdfs/{name}', volumes=volumes)
@@ -116,17 +115,17 @@ class Extractor:
         # volume.
         outpath = os.path.join(workdir, '{}.txt'.format(stub))
         if not os.path.exists(outpath):
-            raise FileNotFoundError('%s not found, expected output' % outpath)
+            raise NoContentError('%s not found, expected output' % outpath)
         with open(outpath, 'rb') as f:
             content = f.read().decode('utf-8')
 
         # Cleanup any left-over files.
-        self._cleanup(pdfpath, outpath)
+        self._cleanup(outpath)
         duration = (start_time - datetime.now()).microseconds
         logger.info(f'Finished extraction for %s in %s ms', filename, duration)
 
         if not content:
-            raise RuntimeError('No content extracted from %s', filename)
+            raise NoContentError(f'No content extracted from {filename}')
         return content
 
 
