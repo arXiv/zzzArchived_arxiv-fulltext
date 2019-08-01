@@ -14,11 +14,11 @@ downstream applications.
 
    System context for the fulltext extraction service.
 
-The submission worker process will request fulltext content for submissions by
+The submission agent will request fulltext content for submissions by
 making a GET request to the fulltext service. If an extraction for the
 submission using the latest version of the extractor does not exist, the
 service will retrieve the compiled PDF for the submission from the compilation
-service and perform the extraction. The submission worker may force
+service and perform the extraction. The submission agent may force
 re-extraction (e.g. if the submission content changes) by making a POST
 request.
 
