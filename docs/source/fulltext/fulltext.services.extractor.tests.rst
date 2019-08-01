@@ -1,7 +1,7 @@
-fulltext.services.tests.test\_pdf module
+fulltext.services.extractor.tests module
 ========================================
 
-.. automodule:: fulltext.services.tests.test_pdf
+.. automodule:: fulltext.services.extractor.tests
     :members:
     :undoc-members:
     :show-inheritance:
