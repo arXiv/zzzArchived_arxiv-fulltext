@@ -12,6 +12,8 @@ script:
   - pipenv install --dev
   - docker pull redis
   - docker pull atlassianlabs/localstack
+  - docker pull arxiv/fulltext-extractor:0.3
+  - docker pull arxiv/preview:0.0
   - WITH_INTEGRATION=1 pipenv run nose2 -s extractor
   - WITH_INTEGRATION=1 pipenv run nose2 -s ./ --with-coverage --coverage-report=term-missing
 after_success:
