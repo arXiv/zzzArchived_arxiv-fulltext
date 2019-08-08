@@ -452,6 +452,9 @@ if PREVIEW_PROTO == 'https' and not PREVIEW_VERIFY:
     warnings.warn('Certificate verification for preview is disabled; this'
                   ' should not be disabled in production.')
 
+PREVIEW_AWAIT = bool(int(environ.get('CANONICAL_AWAIT', '1')))
+"""Enable/disable status check for preview service during start-up."""
+
 
 # Integration with the canonical service.
 #
@@ -488,3 +491,6 @@ CANONICAL_VERIFY = bool(int(environ.get('CANONICAL_VERIFY', '1')))
 if PREVIEW_PROTO == 'https' and not CANONICAL_VERIFY:
     warnings.warn('Certificate verification for canonical service is disabled;'
                   ' this should not be disabled in production.')
+
+CANONICAL_AWAIT = bool(int(environ.get('CANONICAL_AWAIT', '1')))
+"""Enable/disable status check for canonical service during start-up."""

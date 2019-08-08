@@ -63,8 +63,10 @@ def create_web_app(for_worker: bool = False) -> Flask:
         time.sleep(app.config['WAIT_ON_STARTUP'])
         with app.app_context():
             wait_for(store.Storage.current_session())
-            wait_for(legacy.CanonicalPDF.current_session())
-            wait_for(preview.PreviewService.current_session())
+            if app.config['CANONICAL_AWAIT']:
+                wait_for(legacy.CanonicalPDF.current_session())
+            if app.config['PREVIEW_AWAIT']:
+                wait_for(preview.PreviewService.current_session())
             if for_worker:
                 wait_for(extractor.do_extraction)
             else:
