@@ -90,8 +90,7 @@ class TestPreviewIntegration(TestCase):
 
             stream, preview_checksum = pv.get(f'{source_id}/{checksum}', token)
             self.assertEqual(stream.read(), b'foocontent')
-            self.assertEqual(preview_checksum,
-                             '7b0ae08001dd093e79335b947f028b10')
+            self.assertEqual(preview_checksum, 'ewrggAHdCT55M1uUfwKLEA==')
 
     def test_does_exist(self):
         """Check for the existance of a preview."""
@@ -108,8 +107,7 @@ class TestPreviewIntegration(TestCase):
             ok, preview_checksum = pv.does_exist(f'{source_id}/{checksum}',
                                                  token)
             self.assertTrue(ok, 'Preview exists')
-            self.assertEqual(preview_checksum,
-                             '7b0ae08001dd093e79335b947f028b10')
+            self.assertEqual(preview_checksum, 'ewrggAHdCT55M1uUfwKLEA==')
 
     def test_get_nonexistant_preview(self):
         """Try to retrieve a non-existant preview."""

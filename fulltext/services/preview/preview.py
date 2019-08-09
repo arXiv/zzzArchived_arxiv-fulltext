@@ -35,7 +35,7 @@ class PreviewService(service.HTTPIntegration):
     """Represents an interface to the submission preview."""
 
     SERVICE = 'preview'
-    VERSION = '0.0'
+    VERSION = '4c4e282'
 
     class Meta:
         """Configuration for :class:`PreviewService` integration."""
