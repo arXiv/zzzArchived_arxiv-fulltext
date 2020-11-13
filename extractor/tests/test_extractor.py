@@ -5,6 +5,7 @@ import subprocess
 import os
 import tempfile
 import shutil
+import sys
 
 DOCKER_REGISTRY = os.environ.get('DOCKER_REGISTRY', '')
 
@@ -18,13 +19,14 @@ class TestExtractorE2E(TestCase):
     def setUpClass(cls):
         basepath, _ = os.path.split(os.path.abspath(__file__))
         runpath, _ = os.path.split(basepath)
-        print(basepath)
-        print(runpath)
         build_result = subprocess.run(
             "docker build %s -f %s/Dockerfile "
             "-t arxiv/fulltext-extractor:0.3" % (runpath, runpath),
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+            capture_output=True, shell=True
         )
+        if build_result.returncode != 0:
+          print(build_result.stdout.decode("utf-8"))
+          print(build_result.stderr.decode("utf-8"), file=sys.stderr)
         assert build_result.returncode == 0
 
     def do_test_extract(self, pdf_filename):
