@@ -9,23 +9,24 @@ from datetime import datetime
 from pytz import UTC
 from unittest import TestCase, mock
 from . import store
-from ...domain import Extraction, SupportedFormats, SupportedBuckets
+from ...domain import Extraction, Status\
+    ,SupportedFormats, SupportedBuckets
 
 
 class TestInitialize(TestCase):
     """We are instantiating the :class:`.Storage` integration with a volume."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """We have a volume."""
         self.volume = tempfile.mkdtemp()
 
-    def test_init(self):
+    def test_init(self) -> None:
         """The storage integration is initialized with a volume."""
         storage = store.Storage(self.volume)
         self.assertTrue(storage.is_available(),
                         "The storage service is available")
 
-    def test_init_with_subvolume(self):
+    def test_init_with_subvolume(self) -> None:
         """The storage integration is initialized with a non-existant path."""
         subvolume = os.path.join(self.volume, 'foo', 'baz')
         self.assertFalse(os.path.exists(subvolume), "Nonexistant subvolume")
@@ -35,7 +36,7 @@ class TestInitialize(TestCase):
                         "The storage service is available")
         self.assertTrue(os.path.exists(subvolume), "The subvolume is created")
 
-    def test_init_with_no_write_access_to_create_paths(self):
+    def test_init_with_no_write_access_to_create_paths(self) -> None:
         """The storage integration is initialized with an unwritable path."""
         subvolume = os.path.join(self.volume, 'foo', 'baz')
         os.chmod(self.volume, stat.S_IREAD)  # Owner can read.
@@ -43,7 +44,7 @@ class TestInitialize(TestCase):
         with self.assertRaises(store.ConfigurationError):
             store.Storage(subvolume)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Remove the volume."""
         try:
             shutil.rmtree(self.volume)
@@ -54,26 +55,26 @@ class TestInitialize(TestCase):
 class TestRetrieveNonexistantExtraction(TestCase):
     """We are attempting to retrieve an extraction that does not exist."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """We have an instance of the :class:`.Storage` integration."""
         self.volume = tempfile.mkdtemp()
         self.storage = store.Storage(self.volume)
 
-    def test_retrieve_newstyle(self):
+    def test_retrieve_newstyle(self) -> None:
         """We request a non-existant extraction."""
         with self.assertRaises(store.DoesNotExist):
             self.storage.retrieve('1901.00123')
         with self.assertRaises(store.DoesNotExist):
             self.storage.retrieve('1901.00123', '1')
 
-    def test_retrieve_legacy(self):
+    def test_retrieve_legacy(self) -> None:
         """We request a non-existant extraction."""
         with self.assertRaises(store.DoesNotExist):
             self.storage.retrieve('cs/0001982')
         with self.assertRaises(store.DoesNotExist):
             self.storage.retrieve('cs/0001982', '1')
 
-    def test_retrieve_submission(self):
+    def test_retrieve_submission(self) -> None:
         """We request a non-existant extraction."""
         with self.assertRaises(store.DoesNotExist):
             self.storage.retrieve('1234567',
@@ -82,7 +83,7 @@ class TestRetrieveNonexistantExtraction(TestCase):
             self.storage.retrieve('1234567', '1',
                                   bucket=SupportedBuckets.SUBMISSION)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Remove the volume."""
         shutil.rmtree(self.volume)
 
@@ -90,17 +91,17 @@ class TestRetrieveNonexistantExtraction(TestCase):
 class TestRetrieveExtractionInProgress(TestCase):
     """An extraction is in progress, and we attempt to retrieve it."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """We have a :class:`.Storage` integration."""
         self.volume = tempfile.mkdtemp()
         self.storage = store.Storage(self.volume)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Remove the volume."""
         shutil.rmtree(self.volume)
 
     def create_meta(self, identifier: str, version: str, bucket: str,
-                    **kwargs) -> None:
+                    **kwargs: str) -> None:
         """Create a metadata record."""
         meta = {
             'identifier': identifier,
@@ -116,65 +117,65 @@ class TestRetrieveExtractionInProgress(TestCase):
         with open(meta_path, 'w') as f:
             json.dump(meta, f)
 
-    def test_retrieve_legacy(self):
+    def test_retrieve_legacy(self) -> None:
         """Retrieve extraction metadata for a legacy e-print."""
         self.create_meta('cs/0001982', '1', SupportedBuckets.ARXIV)
 
         extraction = self.storage.retrieve('cs/0001982')
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.IN_PROGRESS)
+        self.assertEqual(extraction.status, Status.IN_PROGRESS)
         self.assertIsNone(extraction.content)
 
         extraction = self.storage.retrieve('cs/0001982', '1')
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.IN_PROGRESS)
+        self.assertEqual(extraction.status, Status.IN_PROGRESS)
         self.assertIsNone(extraction.content)
 
-    def test_retrieve_newstyle(self):
+    def test_retrieve_newstyle(self) -> None:
         """Retrieve extraction metadata for a newstyle e-print."""
         self.create_meta('1901.00123', '1', SupportedBuckets.ARXIV)
 
         extraction = self.storage.retrieve('1901.00123')
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.IN_PROGRESS)
+        self.assertEqual(extraction.status, Status.IN_PROGRESS)
         self.assertIsNone(extraction.content)
 
         extraction = self.storage.retrieve('1901.00123', '1')
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.IN_PROGRESS)
+        self.assertEqual(extraction.status, Status.IN_PROGRESS)
         self.assertIsNone(extraction.content)
 
-    def test_retrieve_submission(self):
+    def test_retrieve_submission(self) -> None:
         """Retrieve extraction metadata for a submission."""
         self.create_meta('1234567', '1', SupportedBuckets.SUBMISSION)
 
         extraction = self.storage.retrieve('1234567',
                                            bucket=SupportedBuckets.SUBMISSION)
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.IN_PROGRESS)
+        self.assertEqual(extraction.status, Status.IN_PROGRESS)
         self.assertIsNone(extraction.content)
 
         extraction = self.storage.retrieve('1234567', '1',
                                            bucket=SupportedBuckets.SUBMISSION)
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.IN_PROGRESS)
+        self.assertEqual(extraction.status, Status.IN_PROGRESS)
         self.assertIsNone(extraction.content)
 
 
 class TestRetrieveExtraction(TestCase):
     """We attempt to retrieve an extraction that exists."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """We have a :class:`.Storage` integration."""
         self.volume = tempfile.mkdtemp()
         self.storage = store.Storage(self.volume)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Remove the volume."""
         shutil.rmtree(self.volume)
 
     def create_meta(self, identifier: str, version: str, bucket: str,
-                    **kwargs) -> None:
+                    **kwargs: str) -> None:
         """Create a metadata record."""
         meta = {
             'identifier': identifier,
@@ -198,7 +199,7 @@ class TestRetrieveExtraction(TestCase):
         with open(content_path, 'wb') as f:
             f.write(content.encode('utf-8'))
 
-    def test_retrieve_legacy(self):
+    def test_retrieve_legacy(self) -> None:
         """Retrieve extraction for a legacy e-print."""
         self.create_meta('cs/0001982', '1', SupportedBuckets.ARXIV)
         self.create_content('cs/0001982', '1', SupportedFormats.PLAIN,
@@ -206,20 +207,20 @@ class TestRetrieveExtraction(TestCase):
 
         extraction = self.storage.retrieve('cs/0001982')
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.SUCCEEDED)
+        self.assertEqual(extraction.status, Status.SUCCEEDED)
         self.assertEqual(extraction.content, 'foöcontent')
 
         extraction = self.storage.retrieve('cs/0001982', '1')
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.SUCCEEDED)
+        self.assertEqual(extraction.status, Status.SUCCEEDED)
         self.assertEqual(extraction.content, 'foöcontent')
 
         extraction = self.storage.retrieve('cs/0001982', '1', meta_only=True)
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.SUCCEEDED)
+        self.assertEqual(extraction.status, Status.SUCCEEDED)
         self.assertIsNone(extraction.content)
 
-    def test_retrieve_newstyle(self):
+    def test_retrieve_newstyle(self) -> None:
         """Retrieve extraction for a newstyle e-print."""
         self.create_meta('1901.00123', '1', SupportedBuckets.ARXIV)
         self.create_content('1901.00123', '1', SupportedFormats.PLAIN,
@@ -227,20 +228,20 @@ class TestRetrieveExtraction(TestCase):
 
         extraction = self.storage.retrieve('1901.00123')
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.SUCCEEDED)
+        self.assertEqual(extraction.status, Status.SUCCEEDED)
         self.assertEqual(extraction.content, 'foöcontent')
 
         extraction = self.storage.retrieve('1901.00123', '1')
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.SUCCEEDED)
+        self.assertEqual(extraction.status, Status.SUCCEEDED)
         self.assertEqual(extraction.content, 'foöcontent')
 
         extraction = self.storage.retrieve('1901.00123', '1', meta_only=True)
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.SUCCEEDED)
+        self.assertEqual(extraction.status, Status.SUCCEEDED)
         self.assertIsNone(extraction.content)
 
-    def test_retrieve_submission(self):
+    def test_retrieve_submission(self) -> None:
         """Retrieve extraction for a submission."""
         self.create_meta('1234567', '1', SupportedBuckets.SUBMISSION)
         self.create_content('1234567', '1', SupportedFormats.PLAIN,
@@ -249,35 +250,35 @@ class TestRetrieveExtraction(TestCase):
         extraction = self.storage.retrieve('1234567',
                                            bucket=SupportedBuckets.SUBMISSION)
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.SUCCEEDED)
+        self.assertEqual(extraction.status, Status.SUCCEEDED)
         self.assertEqual(extraction.content, 'foöcontent')
 
         extraction = self.storage.retrieve('1234567', '1',
                                            bucket=SupportedBuckets.SUBMISSION)
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.SUCCEEDED)
+        self.assertEqual(extraction.status, Status.SUCCEEDED)
         self.assertEqual(extraction.content, 'foöcontent')
 
         extraction = self.storage.retrieve('1234567', '1', meta_only=True,
                                            bucket=SupportedBuckets.SUBMISSION)
         self.assertIsInstance(extraction, Extraction)
-        self.assertEqual(extraction.status, Extraction.Status.SUCCEEDED)
+        self.assertEqual(extraction.status, Status.SUCCEEDED)
         self.assertIsNone(extraction.content)
 
 
 class TestStoreExtraction(TestCase):
     """We attempt to store a new extraction."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """We have a :class:`.Storage` integration."""
         self.volume = tempfile.mkdtemp()
         self.storage = store.Storage(self.volume)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Remove the volume."""
         shutil.rmtree(self.volume)
 
-    def test_store_meta_only(self):
+    def test_store_meta_only(self) -> None:
         """Store only metadata."""
         bucket = SupportedBuckets.ARXIV
         identifier = '1901.00123'
@@ -290,7 +291,7 @@ class TestStoreExtraction(TestCase):
                 bucket=bucket,
                 started=datetime.now(UTC),
                 task_id=f"{bucket}::{identifier}::{version}",
-                status=Extraction.Status.IN_PROGRESS,
+                status=Status.IN_PROGRESS,
                 content=None
             ),
             fmt
@@ -307,7 +308,7 @@ class TestStoreExtraction(TestCase):
         extraction = self.storage.retrieve(identifier, version)
         self.assertIsNone(extraction.content)
 
-    def test_store(self):
+    def test_store(self) -> None:
         """Store only metadata."""
         bucket = SupportedBuckets.ARXIV
         identifier = '1901.00123'
@@ -320,7 +321,7 @@ class TestStoreExtraction(TestCase):
                 bucket=bucket,
                 started=datetime.now(UTC),
                 task_id=f"{bucket}::{identifier}::{version}",
-                status=Extraction.Status.SUCCEEDED,
+                status=Status.SUCCEEDED,
                 content='föcontent'
             ),
             fmt

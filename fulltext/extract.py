@@ -18,7 +18,7 @@ from arxiv.base import logging
 
 from fulltext.services import legacy, store, preview, extractor
 from fulltext.process import psv
-from .domain import Extraction, SupportedFormats, SupportedBuckets
+from .domain import Extraction, Status, SupportedFormats, SupportedBuckets
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ def create_task(identifier: str, id_type: str, owner: Optional[str] = None,
             bucket=id_type,
             owner=owner,
             task_id=_task_id,
-            status=Extraction.Status.IN_PROGRESS,
+            status=Status.IN_PROGRESS,
         ))
         # Dispatch the extraction task.
         celery_app = get_or_create_worker_app(current_app)
@@ -137,12 +137,12 @@ def get_task(identifier: str, id_type: str, version: str) -> Extraction:
     if result.status == 'PENDING':
         raise NoSuchTask('No such task')
     elif result.status in ['SENT', 'STARTED', 'RETRY']:
-        _status = Extraction.Status.IN_PROGRESS
+        _status = Status.IN_PROGRESS
     elif result.status == 'FAILURE':
-        _status = Extraction.Status.FAILED
+        _status = Status.FAILED
         exception = str(result.result)
     elif result.status == 'SUCCESS':
-        _status = Extraction.Status.SUCCEEDED
+        _status = Status.SUCCEEDED
         owner = str(result.result['owner'])
     else:
         raise RuntimeError(f'Unexpected state: {result.status}')
@@ -211,7 +211,7 @@ def extract(identifier: str, id_type: str, version: str,
 
     except Exception as e:
         logger.error('Failed to process %s: %s', identifier, e)
-        storage.store(extraction.copy(status=Extraction.Status.FAILED,
+        storage.store(extraction.copy(status=Status.FAILED,
                                       ended=datetime.now(UTC),
                                       exception=str(e)))
         raise e
@@ -219,7 +219,7 @@ def extract(identifier: str, id_type: str, version: str,
         if pdf_path is not None:
             os.remove(pdf_path)    # Cleanup.
 
-    extraction = extraction.copy(status=Extraction.Status.SUCCEEDED,
+    extraction = extraction.copy(status=Status.SUCCEEDED,
                                  ended=datetime.now(UTC),
                                  content=content)
     storage.store(extraction, 'plain')

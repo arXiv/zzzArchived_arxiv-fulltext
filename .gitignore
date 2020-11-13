@@ -8,3 +8,4 @@ build
 .coverage
 .mypy_cache
 .pytest_cache
+mypy_test_errors.txt

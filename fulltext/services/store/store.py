@@ -64,7 +64,8 @@ from arxiv.integration.meta import MetaIntegration
 from arxiv.base.globals import get_application_global, get_application_config
 from arxiv.base import logging
 
-from ...domain import Extraction, SupportedFormats, SupportedBuckets
+from ...domain import Extraction, Status\
+    , SupportedFormats, SupportedBuckets
 
 logger = logging.getLogger(__name__)
 MonkeyPatch.patch_fromisoformat()
@@ -226,10 +227,10 @@ class Storage(metaclass=MetaIntegration):
 
             # mypy does not know about fromisoformat yet, apparently.
             if 'started' in meta and meta['started']:
-                meta['started'] = datetime.fromisoformat(meta['started'])   # type: ignore
+                meta['started'] = datetime.fromisoformat(meta['started'])
             if 'ended' in meta and meta['ended']:
-                meta['ended'] = datetime.fromisoformat(meta['ended'])   # type: ignore
-            meta['status'] = Extraction.Status(meta['status'])
+                meta['ended'] = datetime.fromisoformat(meta['ended'])
+            meta['status'] = Status(meta['status'])
         except FileNotFoundError as e:
             logger.debug('File does not exist: %s', content_path)
             raise DoesNotExist("No such resource") from e

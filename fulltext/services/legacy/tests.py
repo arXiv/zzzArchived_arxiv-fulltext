@@ -7,6 +7,7 @@ from flask import Flask
 
 from arxiv import status
 from arxiv.integration.api import service
+from arxiv.users.domain import Session
 
 from . import legacy
 
@@ -14,13 +15,13 @@ from . import legacy
 class TestExists(TestCase):
     """Tests for :func:`fulltext.services.legacy.CanonicalPDF.exists`."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Start an app so that we have some context."""
         self.app = Flask('test')
         legacy.CanonicalPDF.init_app(self.app)
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_pdf_exists(self, session):
+    def test_pdf_exists(self, session: Session) -> None:
         """A PDF exists at the passed URL."""
         mock_response = mock.MagicMock(status_code=status.HTTP_200_OK)
         session.return_value = mock.MagicMock(
@@ -31,7 +32,7 @@ class TestExists(TestCase):
             self.assertTrue(canonical.exists('1234.56789'))
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_pdf_does_not_exist(self, session):
+    def test_pdf_does_not_exist(self, session: Session) -> None:
         """A PDF does not exist at the passed URL."""
         mock_response = mock.MagicMock(status_code=status.HTTP_404_NOT_FOUND)
         session.return_value = mock.MagicMock(
@@ -42,7 +43,7 @@ class TestExists(TestCase):
             self.assertFalse(canonical.exists('1234.56789'))
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_pdf_returns_error(self, session):
+    def test_pdf_returns_error(self, session: Session) -> None:
         """An unexpected status was returned."""
         mock_response = mock.MagicMock(status_code=status.HTTP_403_FORBIDDEN)
         session.return_value = mock.MagicMock(
@@ -56,13 +57,13 @@ class TestExists(TestCase):
 class TestRetrieve(TestCase):
     """Tests for :func:`fulltext.services.legacy.CanonicalPDF.retrieve`."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Start an app so that we have some context."""
         self.app = Flask('test')
         legacy.CanonicalPDF.init_app(self.app)
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_pdf_exists(self, session):
+    def test_pdf_exists(self, session: Session) -> None:
         """A PDF exists at the passed URL."""
         mock_response = mock.MagicMock(
             status_code=status.HTTP_200_OK,
@@ -79,7 +80,7 @@ class TestRetrieve(TestCase):
         self.assertEqual(pdf_content.read(), b'foo')
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_pdf_not_ready(self, session):
+    def test_pdf_not_ready(self, session: Session) -> None:
         """A PDF still needs to be rendered."""
         mock_html_response = mock.MagicMock(
             status_code=status.HTTP_200_OK,
@@ -105,7 +106,7 @@ class TestRetrieve(TestCase):
         self.assertEqual(mock_get.call_count, 2)
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_pdf_never_ready(self, session):
+    def test_pdf_never_ready(self, session: Session) -> None:
         """A PDF cannot be rendered."""
         mock_html_response = mock.MagicMock(
             status_code=status.HTTP_200_OK,
@@ -121,7 +122,7 @@ class TestRetrieve(TestCase):
         self.assertGreater(mock_get.call_count, 2)
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_pdf_does_not_exist(self, session):
+    def test_pdf_does_not_exist(self, session: Session) -> None:
         """A PDF does not exist at the passed URL."""
         mock_response = mock.MagicMock(status_code=status.HTTP_404_NOT_FOUND)
         session.return_value = mock.MagicMock(
@@ -133,7 +134,7 @@ class TestRetrieve(TestCase):
                 canonical.retrieve('1234.56789')
 
     @mock.patch(f'{service.__name__}.requests.Session')
-    def test_pdf_returns_error(self, session):
+    def test_pdf_returns_error(self, session: Session) -> None:
         """An unexpected status was returned."""
         mock_response = mock.MagicMock(status_code=status.HTTP_403_FORBIDDEN)
         session.return_value = mock.MagicMock(

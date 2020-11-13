@@ -4,6 +4,7 @@ import os
 import tempfile
 from unittest import TestCase, mock
 
+from docker import DockerClient
 from docker.errors import ContainerError, APIError
 from flask import Flask
 
@@ -13,7 +14,7 @@ from . import extractor
 class TestExtract(TestCase):
     """We have a PDF from which to extract text."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Create an app."""
         self.workdir = tempfile.mkdtemp()
         self.app = Flask('foo')
@@ -32,7 +33,8 @@ class TestExtract(TestCase):
             f.write('hello pdf2txt')
 
     @mock.patch(f'{extractor.__name__}.DockerClient')
-    def test_extract_successfully(self, mock_DockerClient):
+    def test_extract_successfully(self\
+      , mock_DockerClient: DockerClient) -> None:
         """Perform a successful extraction."""
         mock_client = mock.MagicMock()
         mock_DockerClient.return_value = mock_client
@@ -41,11 +43,12 @@ class TestExtract(TestCase):
             self.assertEqual(extractor.do_extraction(self.path), 'hello world')
 
     @mock.patch(f'{extractor.__name__}.DockerClient')
-    def test_container_error(self, mock_DockerClient):
+    def test_container_error(self\
+        , mock_DockerClient: DockerClient) -> None:
         """There is a container error while running the extractor."""
         mock_client = mock.MagicMock()
 
-        def raise_containererror(*args, **kwargs):
+        def raise_containererror(*args: str, **kwargs: str) -> None:
             raise ContainerError('container', 'exit_status', 'command',
                                  'image', 'stderr')
 
@@ -57,11 +60,11 @@ class TestExtract(TestCase):
                 extractor.do_extraction(self.path)
 
     @mock.patch(f'{extractor.__name__}.DockerClient')
-    def test_api_error(self, mock_DockerClient):
+    def test_api_error(self, mock_DockerClient: DockerClient) -> None:
         """There is a Docker API error while running the extractor."""
         mock_client = mock.MagicMock()
 
-        def raise_apiererror(*args, **kwargs):
+        def raise_apiererror(*args: str, **kwargs: str) -> None:
             raise APIError('foo', 'bar')
 
         mock_client.containers.run.side_effect = raise_apiererror
@@ -72,7 +75,7 @@ class TestExtract(TestCase):
                 extractor.do_extraction(self.path)
 
     @mock.patch(f'{extractor.__name__}.DockerClient')
-    def test_no_output_file(self, mock_DockerClient):
+    def test_no_output_file(self, mock_DockerClient: DockerClient) -> None:
         """The extractor does not generate an output file."""
         os.unlink(self.outpath)
         mock_client = mock.MagicMock()
@@ -83,7 +86,8 @@ class TestExtract(TestCase):
                 extractor.do_extraction(self.path)
 
     @mock.patch(f'{extractor.__name__}.DockerClient')
-    def test_output_file_is_empty(self, mock_DockerClient):
+    def test_output_file_is_empty(self\
+        , mock_DockerClient: DockerClient) -> None:
         """The extractor generates an empty output file."""
         with open(self.outpath, 'w') as f:
             f.write('')

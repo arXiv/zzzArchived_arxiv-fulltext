@@ -16,10 +16,16 @@ from .preview import PreviewService, AlreadyExists, exceptions
 class TestPreviewIntegration(TestCase):
     """Integration tests for the preview service module."""
 
+    network: Flask
+    localstack: Flask
+    container: Flask
+    app: Flask
+
+
     __test__  = bool(int(os.environ.get('WITH_INTEGRATION', '0')))
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Start up the preview service, backed by localstack S3."""
         client = docker.from_env()
         image = f'arxiv/{PreviewService.SERVICE}'
@@ -56,7 +62,7 @@ class TestPreviewIntegration(TestCase):
         PreviewService.init_app(cls.app)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         """Tear down the preview service and localstack."""
         cls.container.kill()
         cls.container.remove()
@@ -64,19 +70,19 @@ class TestPreviewIntegration(TestCase):
         cls.localstack.remove()
         cls.network.remove()
 
-    def test_get_status(self):
+    def test_get_status(self) -> None:
         """Get the status endpoint."""
         with self.app.app_context():
             pv = PreviewService.current_session()
             self.assertEqual(pv.get_status(), {'iam': 'ok'})
 
-    def test_is_available(self):
+    def test_is_available(self) -> None:
         """Poll for availability."""
         with self.app.app_context():
             pv = PreviewService.current_session()
             self.assertTrue(pv.is_available())
 
-    def test_retrieve(self):
+    def test_retrieve(self) -> None:
         """Retrieve a preview."""
         with self.app.app_context():
             pv = PreviewService.current_session()
@@ -92,7 +98,7 @@ class TestPreviewIntegration(TestCase):
             self.assertEqual(stream.read(), b'foocontent')
             self.assertEqual(preview_checksum, 'ewrggAHdCT55M1uUfwKLEA==')
 
-    def test_does_exist(self):
+    def test_does_exist(self) -> None:
         """Check for the existance of a preview."""
         with self.app.app_context():
             pv = PreviewService.current_session()
@@ -109,14 +115,14 @@ class TestPreviewIntegration(TestCase):
             self.assertTrue(ok, 'Preview exists')
             self.assertEqual(preview_checksum, 'ewrggAHdCT55M1uUfwKLEA==')
 
-    def test_get_nonexistant_preview(self):
+    def test_get_nonexistant_preview(self) -> None:
         """Try to retrieve a non-existant preview."""
         with self.app.app_context():
             pv = PreviewService.current_session()
             with self.assertRaises(exceptions.NotFound):
                 pv.get('9876/foochex==', 'footoken')
 
-    def test_has_nonexistant_preview(self):
+    def test_has_nonexistant_preview(self) -> None:
         """Try to retrieve a non-existant preview."""
         with self.app.app_context():
             pv = PreviewService.current_session()

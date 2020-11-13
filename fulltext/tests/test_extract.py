@@ -10,13 +10,16 @@ from flask import Flask
 from arxiv.integration.api.exceptions import NotFound
 
 from ..services import extractor
+from ..services.extractor import Extractor
+from ..services.legacy import CanonicalPDF
+from ..services.store import Storage
 from .. import extract
 
 
 class TestExtract(TestCase):
     """We have a PDF from which to extract text."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Create an app."""
         self.workdir = tempfile.mkdtemp()
         self.app = Flask('foo')
@@ -37,17 +40,18 @@ class TestExtract(TestCase):
     @mock.patch(f'{extract.__name__}.preview.PreviewService', mock.MagicMock())
     @mock.patch(f'{extract.__name__}.store.Storage')
     @mock.patch(f'{extract.__name__}.legacy.CanonicalPDF')
-    def test_extract_no_canonical_pdf(self, mock_CanonicalPDF, mock_Storage):
+    def test_extract_no_canonical_pdf(self \
+        , mock_CanonicalPDF: CanonicalPDF, mock_Storage: Storage) -> None:
         """Failure to retrieve a PDF."""
         # Mock store returns an extraction.
         mock_extraction = mock.MagicMock()
         mock_extraction.copy.return_value = mock_extraction
         mock_store = mock.MagicMock()
         mock_store.retrieve.return_value = mock_extraction
-        mock_Storage.current_session.return_value = mock_store
+        mock_Storage.current_session.return_value = mock_store # type: ignore
 
         # Mock canonical raises a NotFound exception.
-        def raise_not_found(*args, **kwargs):
+        def raise_not_found(*args: str, **kwargs: str) -> None:
             raise NotFound('foo', mock.MagicMock())
 
         mock_canonical = mock.MagicMock()
@@ -65,15 +69,15 @@ class TestExtract(TestCase):
     @mock.patch(f'{extract.__name__}.preview.PreviewService', mock.MagicMock())
     @mock.patch(f'{extract.__name__}.store.Storage')
     @mock.patch(f'{extract.__name__}.legacy.CanonicalPDF')
-    def test_extract_failed(self, mock_CanonicalPDF, mock_Storage,
-                            mock_extractor):
+    def test_extract_failed(self, mock_CanonicalPDF: CanonicalPDF \
+        , mock_Storage: Storage, mock_extractor: Extractor) -> None:
         """Text extraction fails."""
         # Mock store returns an extraction.
         mock_extraction = mock.MagicMock()
         mock_extraction.copy.return_value = mock_extraction
         mock_store = mock.MagicMock()
         mock_store.retrieve.return_value = mock_extraction
-        mock_Storage.current_session.return_value = mock_store
+        mock_Storage.current_session.return_value = mock_store  # type: ignore
 
         # Mock canonical returns a PDF.
         mock_canonical = mock.MagicMock()
@@ -81,7 +85,7 @@ class TestExtract(TestCase):
         mock_CanonicalPDF.current_session.return_value = mock_canonical
 
         # Extractor generates no text content.
-        mock_extractor.do_extraction.side_effect = extractor.NoContentError
+        mock_extractor.do_extraction.side_effect = extractor.NoContentError # type: ignore
 
         with self.app.app_context():
             # Exception propagates.
@@ -95,15 +99,15 @@ class TestExtract(TestCase):
     @mock.patch(f'{extract.__name__}.preview.PreviewService', mock.MagicMock())
     @mock.patch(f'{extract.__name__}.store.Storage')
     @mock.patch(f'{extract.__name__}.legacy.CanonicalPDF')
-    def test_extract_succeeds(self, mock_CanonicalPDF, mock_Storage,
-                              mock_extractor):
+    def test_extract_succeeds(self, mock_CanonicalPDF: CanonicalPDF \
+        , mock_Storage: Storage, mock_extractor: Extractor) -> None:
         """Text is successfully extracted."""
         # Mock store returns an extraction.
         mock_extraction = mock.MagicMock()
         mock_extraction.copy.return_value = mock_extraction
         mock_store = mock.MagicMock()
         mock_store.retrieve.return_value = mock_extraction
-        mock_Storage.current_session.return_value = mock_store
+        mock_Storage.current_session.return_value = mock_store # type: ignore
 
         # Mock canonical returns a PDF.
         mock_canonical = mock.MagicMock()
@@ -111,7 +115,7 @@ class TestExtract(TestCase):
         mock_CanonicalPDF.current_session.return_value = mock_canonical
 
         # Extractor generates no text content.
-        mock_extractor.do_extraction.return_value = 'FOO pDf cOntent'
+        mock_extractor.do_extraction.return_value = 'FOO pDf cOntent'  # type: ignore
 
         with self.app.app_context():
             result = extract.extract('1234.56789', 'arxiv', '3.4.5')

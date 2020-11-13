@@ -12,15 +12,16 @@ from arxiv.base import logging
 
 from .services import store, legacy, preview
 from . import extract
-from .domain import Extraction, SupportedFormats, SupportedBuckets
+from .domain import Extraction, Status\
+    , SupportedFormats, SupportedBuckets
 
 logger = logging.getLogger(__name__)
 
 ACCEPTED = {'reason': 'fulltext extraction in process'}
 ALREADY_EXISTS = {'reason': 'extraction already exists'}
-TASK_IN_PROGRESS = {'status': Extraction.Status.IN_PROGRESS.value}
-TASK_FAILED = {'status': Extraction.Status.FAILED.value}
-TASK_COMPLETE = {'status': Extraction.Status.SUCCEEDED.value}
+TASK_IN_PROGRESS = {'status': Status.IN_PROGRESS.value}
+TASK_FAILED = {'status': Status.FAILED.value}
+TASK_COMPLETE = {'status': Status.SUCCEEDED.value}
 
 Response = Tuple[Dict[str, Any], int, Dict[str, Any]]
 Authorizer = Callable[[str, Optional[str]], bool]
@@ -84,7 +85,7 @@ def retrieve(identifier: str,                                # arch: controller
         raise NotFound('No such extraction')
 
     if product.content is None \
-            and product.status is Extraction.Status.IN_PROGRESS:
+            and product.status is Status.IN_PROGRESS:
         target = url_for('fulltext.task_status', identifier=identifier,
                          id_type=id_type)
         return TASK_IN_PROGRESS, status.SEE_OTHER, {'Location': target}
@@ -201,7 +202,7 @@ def get_task_status(identifier: str, id_type: str = SupportedBuckets.ARXIV,
 
     logger.debug('Task has status: %s', product.status)
 
-    if product.status is Extraction.Status.SUCCEEDED:
+    if product.status is Status.SUCCEEDED:
         logger.debug('Task for %s is already complete', identifier)
         target = url_for('fulltext.retrieve', identifier=identifier,
                          id_type=id_type)
@@ -226,7 +227,7 @@ def _redirect(extraction: Extraction,
         logger.debug('Requester is not authorized')
         raise NotFound('No such extraction')
 
-    if extraction.status is Extraction.Status.IN_PROGRESS:
+    if Status is Status.IN_PROGRESS:
         logger.debug('Extraction in progress')
         target = url_for('fulltext.task_status',
                          identifier=extraction.identifier,
@@ -245,12 +246,12 @@ def _task_redirect(task: Extraction, product: Extraction) -> Response:
     data: Dict[str, Any] = product.to_dict()
     code: int = status.OK
     headers: Dict[str, str] = {}
-    if task.status is Extraction.Status.IN_PROGRESS:
+    if task.status is Status.IN_PROGRESS:
         data.update(TASK_IN_PROGRESS)
-    elif task.status is Extraction.Status.FAILED:
+    elif task.status is Status.FAILED:
         logger.error('%s: failed task: %s', task.task_id, task.exception)
         data.update({'reason': str(task.exception)})
-    elif task.status is Extraction.Status.SUCCEEDED:
+    elif task.status is Status.SUCCEEDED:
         logger.debug('Task for %s is already complete', task.identifier)
         target = url_for('fulltext.retrieve', identifier=task.identifier,
                          id_type=task.bucket)

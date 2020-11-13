@@ -18,6 +18,8 @@ class TestExtractorE2E(TestCase):
     def setUpClass(cls):
         basepath, _ = os.path.split(os.path.abspath(__file__))
         runpath, _ = os.path.split(basepath)
+        print(basepath)
+        print(runpath)
         build_result = subprocess.run(
             "docker build %s -f %s/Dockerfile "
             "-t arxiv/fulltext-extractor:0.3" % (runpath, runpath),

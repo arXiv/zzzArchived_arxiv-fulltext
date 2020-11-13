@@ -2,8 +2,8 @@
 
 from typing import Optional, Callable, Any, List
 from flask import request, Blueprint, Response, make_response
-from werkzeug.exceptions import NotAcceptable, BadRequest, NotFound
 from flask.json import jsonify
+from werkzeug.exceptions import NotAcceptable, BadRequest, NotFound
 from arxiv import status
 from arxiv.users.domain import Session, Scope
 from arxiv.users.auth import scopes
@@ -27,15 +27,15 @@ def make_authorizer(scope: Scope) -> Authorizer:
     def inner(identifier: str, owner_id: Optional[str]) -> bool:
         """Check whether the session is authorized for a specific resource."""
         logger.debug('Authorize for %s owned by %s', identifier, owner_id)
-        logger.debug('Client user id is %s', request.auth.user.user_id)
+        logger.debug('Client user id is %s', request.auth.user.user_id) # type: ignore
         try:
             source_id, checksum = identifier.split('/', 1)
         except ValueError as e:
             logger.debug('Bad identifier? %s', e)
             raise NotFound('Unsupported identifier') from e
-        return (request.auth.is_authorized(scope, source_id)
-                or (request.auth.user
-                    and str(request.auth.user.user_id) == owner_id))
+        return (request.auth.is_authorized(scope, source_id) # type: ignore
+                or (request.auth.user # type: ignore
+                    and str(request.auth.user.user_id) == owner_id)) # type: ignore
     return inner
 
 
@@ -46,11 +46,11 @@ def resource_id(id_type: str, identifier: str, *args: Any, **kw: Any) -> str:
     return identifier
 
 
-def best_match(available: List[str], default: str) -> str:
+def best_match(available: List[str], default: str) -> Optional[str]:
     """Determine best content type given Accept header and available types."""
     if 'Accept' not in request.headers:
         return default
-    ctype: str = request.accept_mimetypes.best_match(available)
+    ctype: Optional[str] = request.accept_mimetypes.best_match(available)
     return ctype
 
 

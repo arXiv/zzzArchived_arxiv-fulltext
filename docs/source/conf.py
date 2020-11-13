@@ -193,7 +193,7 @@ texinfo_documents = [
 
 
 intersphinx_mapping = {
-    'python':  ('https://docs.python.org/3.6', None),
+    'python':  ('https://docs.python.org/3.7', None),
     'arxitecture':  ('https://arxiv.github.io/arxiv-arxitecture/', None),
     'arxiv.taxonomy': ('https://arxiv.github.io/arxiv-base', None),
     'arxiv.base':  ('https://arxiv.github.io/arxiv-base', None),

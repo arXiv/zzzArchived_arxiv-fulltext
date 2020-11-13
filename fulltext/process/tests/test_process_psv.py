@@ -24,7 +24,7 @@ long after 1.0 comes 1.1.*
 class TestConvertToPSV(TestCase):
     """We have raw plain text extracted from a PDF."""
 
-    def test_tidy_text(self):
+    def test_tidy_text(self) -> None:
         """All of the cleanup procedures are applied."""
         text = PAULI.replace('\n', ' \n').split('\n')
         expected = [
@@ -48,7 +48,7 @@ class TestConvertToPSV(TestCase):
             'comes']
         self.assertEqual(expected, psv.tidy_txt_from_pdf(text))
 
-    def test_to_psv(self):
+    def test_to_psv(self) -> None:
         expected = (
             "pauli virtanen is scipy benevolent dictator for life bdfl"
             " he says truthfully speaking we could have released scipy long"
@@ -70,7 +70,7 @@ class TestConvertToPSV(TestCase):
 class TestConvertToPSVUnits(TestCase):
     """We have raw plain text extracted from a PDF."""
 
-    def test_expand_words(self):
+    def test_expand_words(self) -> None:
         """The text contains common abbreviations."""
         raw = "Lorem Prof. Dr. ipsum dolor Fig. sit amet Sects. 1 Refs Eqs. 2"
         expanded = psv.expandWords(raw)
@@ -81,21 +81,21 @@ class TestConvertToPSVUnits(TestCase):
             "Abbreviations should be expanded."
         )
 
-    def test_text_has_symbols(self):
+    def test_text_has_symbols(self) -> None:
         """The text has symbols."""
         raw = "Bacon ipsum$@@ dolor amet lan!!!#djaeger chuc&&&^k bacon"
         expected = "Bacon ipsum    dolor amet lan    djaeger chuc    k bacon"
         self.assertEqual(psv._remove_Symbols(raw), expected,
                          "Symbols should be removed")
 
-    def test_text_has_numbers(self):
+    def test_text_has_numbers(self) -> None:
         """The text has numbers."""
         raw = "Pork 2chop boudin5 picanha chic4ken"
         expected = "Pork  chop boudin  picanha chic ken"
         self.assertEqual(psv._remove_Numbers(raw), expected,
                          "Numbers should be removed")
 
-    def test_text_has_unwanted_keywords(self):
+    def test_text_has_unwanted_keywords(self) -> None:
         """The text has some unwanted content identified by keywords."""
         raw = [
             "Bacon ipsum dolor amet landjaeger chuck bacon boudin sausage",
@@ -117,7 +117,7 @@ class TestConvertToPSVUnits(TestCase):
         ]
         self.assertEqual(expected, psv._remove_Keyword(raw))
 
-    def test_text_has_continuations(self):
+    def test_text_has_continuations(self) -> None:
         """The text has hyphenated continuations. Yuck."""
         raw = [
             "Bacon ipsum dolor amet landjaeger chuck bacon boudin saus- ",
@@ -132,7 +132,7 @@ class TestConvertToPSVUnits(TestCase):
         ]
         self.assertEqual(expected, psv._remove_BadEOL(raw))
 
-    def test_whitespace_all_over_the_place(self):
+    def test_whitespace_all_over_the_place(self) -> None:
         """The text has a variety of whitespace."""
         raw = [
             "Meatball\t pastrami chicken hamburger brisket ham hock capicola.",
@@ -146,7 +146,7 @@ class TestConvertToPSVUnits(TestCase):
         ]
         self.assertEqual(expected, psv._remove_WhiteSpace(raw))
 
-    def test_remove_whitespace_is_idempotent(self):
+    def test_remove_whitespace_is_idempotent(self) -> None:
         """Re-applying whitespace removal has no effect."""
         raw = [
             "Meatball\t pastrami chicken hamburger brisket ham hock capicola.",
