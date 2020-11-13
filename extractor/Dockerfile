@@ -14,7 +14,7 @@ RUN apt update &&\
     #rm -rf /tmp/* /var/tmp/* &&\
     #rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir pdfminer3k==1.3.1
+RUN pip3 install --no-cache-dir pdfminer3k==1.3.4
 
 ADD fulltext /scripts
 
