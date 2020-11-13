@@ -9,7 +9,7 @@ python:
   - "3.7"
 script:
   - pip install -U pip pipenv
-  - pipenv install --dev
+  - pipenv sync --dev
   - docker pull redis
   - docker pull atlassianlabs/localstack
   - docker pull arxiv/fulltext-extractor:0.3
