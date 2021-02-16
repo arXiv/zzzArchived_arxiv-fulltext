@@ -1,6 +1,6 @@
 # arxiv/fulltext
 
-ARG BASE_VERSION=0.16.1
+ARG BASE_VERSION=0.17.0
 
 FROM arxiv/base:${BASE_VERSION}
 

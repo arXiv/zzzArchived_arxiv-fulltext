@@ -9,3 +9,7 @@ build
 .mypy_cache
 .pytest_cache
 mypy_test_errors.txt
+
+
+# Editor files
+*~

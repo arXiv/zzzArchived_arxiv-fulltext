@@ -1,8 +1,11 @@
 # Mock arXiv.org
 
-FROM arxiv/base:0.15.6
+FROM arxiv/base:0.17.0
 
 WORKDIR /opt/arxiv
+
+# remove conflicting mariadb-libs from arxiv/base
+RUN yum remove -y mariadb-libs
 
 # MySQL is needed for the arxiv-auth package.
 RUN yum install -y which mysql mysql-devel
