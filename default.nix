@@ -5,7 +5,8 @@ stdenv.mkDerivation {
   buildInputs = [
     file
 
-    # Docker-related    docker-compose
+    # Docker-related
+    docker-compose
 
     # these packages are required for virtualenv and pip to work:
     #

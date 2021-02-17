@@ -19,9 +19,8 @@ services:
     ports:
       - "4572:4572"
       - "4568:4568"
-    environment:
-      USE_SSL: 'true'
-      DEBUG: 'true'
+    env_file:
+      - ./localstack.env
 
   plaintext-dind:
     image: docker:18-dind
@@ -49,8 +48,9 @@ services:
       context: .
       dockerfile: Dockerfile-mock
     container_name: mock-arxiv
-    environment:
-      JWT_SECRET: foosecret
+    env_file:
+      - ./mock_arxiv.env
+      - ./jwt_secret.env
     networks:
       - plaintext-test
 
@@ -60,8 +60,9 @@ services:
       context: .
       dockerfile: Dockerfile-mock-vault
     container_name: mock-plaintext-vault
-    environment:
-      JWT_SECRET: foosecret
+    env_file:
+      - ./vault.env
+      - ./jwt_secret.env
     networks:
       - plaintext-test
 
