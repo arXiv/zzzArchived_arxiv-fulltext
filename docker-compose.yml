@@ -8,8 +8,8 @@ services:
       - plaintext-test
     logging:
       driver: none
-    # ports:
-    #   - "6379:6379"
+    ports:
+      - "6379:6379"
 
   plaintext-test-localstack:
     image: atlassianlabs/localstack
