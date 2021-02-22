@@ -43,13 +43,35 @@ Note that the DinD container has its own image storage, so it will need to pull
 down the extractor image before the API will start handling requests.
 
 ```bash
-docker-compose build    # Will build the API and worker images.
+docker-compose build
 docker-compose up
 ```
 
 This will also start a mock arXiv server that yields a PDF for requests to
 ``/pdf/<arxiv id>``. Note that the same PDF is returned no matter what ID is
 requested.
+
+While the above takes care of container dependencies, we still need
+to start containers for the services contained within this repository.
+The can be started by *additionally* running:
+
+```bash
+docker-compose -f docker-compose.full.yml build    # Will build the API and worker images.
+docker-compose -f docker-compose.full.yml up
+```
+
+
+### Development
+
+It may be useful to develop and test code outside of Docker (such as in the
+provided `default.nix` environment). In this case, it is still useful to refer
+to `docker-compose.full.yml`; the `.env` files for each service can be find there
+and instead be `source`d directly in a shell where the service will be run.
+Similarly, to start the service, you can refer to the `command` section, but may need
+to change some arguments. Notably, the api service should specify the uwsgi.ini file
+like: `uwsgi --ini ./uwsgi.ini`. It is also useful to refer to the `depends_on` section
+to see which order services should be started.
+
 
 ### Authn/z
 
