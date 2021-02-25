@@ -66,7 +66,7 @@ def ok() -> Response:
 
 @blueprint.route(ARXIV_PREFIX, methods=['POST'])
 @blueprint.route(SUBMISSION_PREFIX, methods=['POST'])
-@scoped(scopes.CREATE_FULLTEXT, resource=resource_id)
+# @scoped(scopes.CREATE_FULLTEXT, resource=resource_id)
 def start_extraction(id_type: str, identifier: str) -> Response:
     """Handle requests for fulltext extraction."""
     payload: Optional[dict] = request.get_json()
@@ -94,7 +94,7 @@ def start_extraction(id_type: str, identifier: str) -> Response:
 @blueprint.route(SUBMISSION_PREFIX + '/version/<version>')
 @blueprint.route(SUBMISSION_PREFIX + '/format/<content_fmt>')
 @blueprint.route(SUBMISSION_PREFIX)
-@scoped(scopes.READ_FULLTEXT, resource=resource_id)
+# @scoped(scopes.READ_FULLTEXT, resource=resource_id)
 def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
              content_fmt: str = SupportedFormats.PLAIN) -> Response:
     """Retrieve full-text content for an arXiv paper."""
@@ -128,7 +128,7 @@ def retrieve(id_type: str, identifier: str, version: Optional[str] = None,
 @blueprint.route(ARXIV_PREFIX + '/status')
 @blueprint.route(SUBMISSION_PREFIX + '/version/<version>/status')
 @blueprint.route(SUBMISSION_PREFIX + '/status')
-@scoped(scopes.READ_FULLTEXT, resource=resource_id)
+# @scoped(scopes.READ_FULLTEXT, resource=resource_id)
 def task_status(id_type: str, identifier: str,
                 version: Optional[str] = None) -> Response:
     """Get the status of a text extraction task."""
