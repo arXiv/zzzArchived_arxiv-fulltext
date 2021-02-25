@@ -14,8 +14,8 @@ from werkzeug.exceptions import HTTPException, Forbidden, Unauthorized, \
 from werkzeug.routing import BaseConverter, ValidationError
 
 from arxiv.base import Base, logging
-from arxiv.users.auth import Auth
-from arxiv.users import auth
+# from arxiv.users.auth import Auth
+# from arxiv.users import auth
 from arxiv.base.middleware import wrap, request_logs
 from arxiv import vault
 
@@ -46,13 +46,15 @@ def create_web_app(for_worker: bool = False) -> Flask:
         pylogging.getLogger('botocore').setLevel(pylogging.ERROR)
 
     Base(app)
-    Auth(app)
+    # Auth(app) # TODO: auth disabled
     app.register_blueprint(routes.blueprint)
     store.Storage.current_session().init_app(app)
     legacy.CanonicalPDF.init_app(app)
     preview.PreviewService.init_app(app)
 
-    middleware = [auth.middleware.AuthMiddleware]
+    # TODO: auth disabled
+    # middleware = [auth.middleware.AuthMiddleware]
+    middleware = []
     if app.config['VAULT_ENABLED']:
         middleware.insert(0, vault.middleware.VaultMiddleware)
     wrap(app, middleware)

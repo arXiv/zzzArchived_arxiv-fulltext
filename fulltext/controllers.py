@@ -131,10 +131,12 @@ def start_extraction(id_type: str, identifier: str, token: str,
         # Make sure that the client is authorized to work with this resource.
         # For submissions, an authorizer function must be provided, so we
         # should deny access if one is mistakenly not provided.
-        if authorizer is None or not authorizer(identifier, owner):
-            logger.debug('Client is not authorized to work with this resource')
-            # Pretend that the resource does not even exist.
-            raise NotFound('No such document')
+
+        # TODO: auth disabled
+        # if authorizer is None or not authorizer(identifier, owner):
+        #     logger.debug('Client is not authorized to work with this resource')
+        #     # Pretend that the resource does not even exist.
+        #     raise NotFound('No such document')
     else:
         raise NotFound('No such document')
 

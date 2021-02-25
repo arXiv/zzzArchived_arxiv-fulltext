@@ -10,6 +10,10 @@ build
 .pytest_cache
 mypy_test_errors.txt
 
+# Secrets
+auth_token.env
 
 # Editor files
 *~
+.#*
+#*
