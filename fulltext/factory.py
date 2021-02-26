@@ -5,7 +5,7 @@ import os
 import re
 import sys
 import time
-from typing import Any
+from typing import List, Any
 
 from flask import Flask, jsonify, Response
 from typing_extensions import Protocol
@@ -54,7 +54,7 @@ def create_web_app(for_worker: bool = False) -> Flask:
 
     # TODO: auth disabled
     # middleware = [auth.middleware.AuthMiddleware]
-    middleware = []
+    middleware: List[Any] = []
     if app.config['VAULT_ENABLED']:
         middleware.insert(0, vault.middleware.VaultMiddleware)
     wrap(app, middleware)

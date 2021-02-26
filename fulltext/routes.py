@@ -71,7 +71,12 @@ def start_extraction(id_type: str, identifier: str) -> Response:
     """Handle requests for fulltext extraction."""
     payload: Optional[dict] = request.get_json()
     force: bool = payload.get('force', False) if payload is not None else False
-    token = request.environ['token']
+
+    token = ''
+    try:
+        token = request.environ['token']
+    except Exception:
+        logger.warning("start_extraction: request.environ['token'] is undefined")
 
     # Authorization is required to work with submissions.
     authorizer: Optional[Authorizer] = None
